@@ -1,8 +1,8 @@
 $ErrorActionPreference = 'Stop'
 
-$resourceGroup = 'rg-fdrycodex'
+$resourceGroup = 'rg-zava-claims'
 $location = 'eastus2'
-$deploymentName = 'fdrycodex-deploy'
+$deploymentName = 'zava-claims-deploy'
 
 az group create --name $resourceGroup --location $location | Out-Null
 
