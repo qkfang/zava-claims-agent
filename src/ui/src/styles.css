@@ -110,7 +110,7 @@ aside h2 {
 #agents-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .agent-card {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  grid-template-columns: 40px 1fr auto;
   gap: 10px;
   align-items: center;
   padding: 8px 10px;
@@ -121,6 +121,20 @@ aside h2 {
 .agent-card .swatch {
   width: 22px; height: 22px; border-radius: 6px;
   border: 2px solid rgba(0, 0, 0, 0.35);
+}
+.agent-card .figure {
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex; align-items: center; justify-content: center;
+}
+.agent-card .figure svg {
+  width: 100%; height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  shape-rendering: crispEdges;
 }
 .agent-card .name { font-weight: 600; font-size: 13px; }
 .agent-card .role { font-size: 11px; color: var(--muted); }
@@ -317,7 +331,7 @@ body[data-scene="neighbourhood"] .metrics {
 .profile-card.hidden { display: none; }
 .profile-card header {
   display: grid;
-  grid-template-columns: 36px 1fr auto;
+  grid-template-columns: 56px 1fr auto;
   gap: 12px;
   align-items: center;
   padding: 14px 16px;
@@ -326,6 +340,20 @@ body[data-scene="neighbourhood"] .metrics {
 .profile-card .swatch {
   width: 32px; height: 32px; border-radius: 8px;
   border: 2px solid rgba(0, 0, 0, 0.35);
+}
+.profile-card .figure {
+  width: 56px; height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex; align-items: center; justify-content: center;
+}
+.profile-card .figure svg {
+  width: 100%; height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  shape-rendering: crispEdges;
 }
 .profile-card .profile-name {
   font-weight: 700; font-size: 15px; line-height: 1.2;
