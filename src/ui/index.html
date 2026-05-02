@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zava Insurance — Claims Agent Demo</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <canvas id="renderCanvas" touch-action="none"></canvas>
+    <header id="topbar">
+      <div class="brand">
+        <span class="logo">Z</span>
+        <div>
+          <h1>Zava Insurance</h1>
+          <p>Claims Agent Office — live AI simulation</p>
+        </div>
+      </div>
+      <div class="metrics">
+        <div><span id="metric-submitted">0</span><label>Submitted</label></div>
+        <div><span id="metric-processing">0</span><label>In&nbsp;flight</label></div>
+        <div><span id="metric-approved">0</span><label>Approved</label></div>
+        <div><span id="metric-rejected">0</span><label>Rejected</label></div>
+      </div>
+    </header>
+
+    <aside id="agents-panel">
+      <h2>AI Agents</h2>
+      <ul id="agents-list"></ul>
+    </aside>
+
+    <aside id="log-panel">
+      <h2>Activity</h2>
+      <ol id="log-list"></ol>
+    </aside>
+
+    <footer id="hint">
+      Drag to orbit · Scroll to zoom · Click <button id="spawn-btn">Submit a claim</button>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
