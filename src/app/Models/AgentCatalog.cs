@@ -38,7 +38,7 @@ public record AgentDefinition(
     string Accent);
 
 /// <summary>
-/// Static catalog of all eight Zava Claims agents and their scenario demos.
+/// Static catalog of all eight Zava Insurance agents and their scenario demos.
 /// The two scenarios covered are scenario 1 (Michael Harris — home / burst pipe)
 /// and scenario 2 (Aisha Khan — motor / rear-end collision), per docs/characters.md.
 /// </summary>

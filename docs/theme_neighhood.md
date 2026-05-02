@@ -1,14 +1,16 @@
 # Claims Neighbourhood Visual Theme
 
+> Part of **Claims Team in a Day** — the AI claims office demo for **Zava Insurance**.
+
 ![Claims neighbourhood with customers reporting auto, home, medical, business, and liability claims](res/img-neighhood.png)
 
 ## Overview
 
-The neighbourhood is the **starting point of the entire claims journey**. Before any AI agent or claims officer is involved, something happens in everyday life — a burst pipe, a fender-bender, a small fire, a lost suitcase — and a customer suddenly needs to make a claim.
+The neighbourhood is the **starting point of the entire claims journey** in *Claims Team in a Day*. Before any AI agent or claims officer is involved, something happens in everyday life — a burst pipe, a fender-bender, a small fire, a lost suitcase — and a customer suddenly needs to make a claim with **Zava Insurance**.
 
-The neighbourhood theme shows this moment: ordinary people in ordinary places, facing the unexpected events that **trigger** the claims office to spring into action.
+The neighbourhood theme shows this moment: ordinary people in ordinary places, facing the unexpected events that **trigger** the Zava Insurance claims office to spring into action.
 
-It is presented as a **voxel-style miniature town**, sitting alongside the claims office diorama. Customers can be seen running, calling, or hurrying from their incident location toward the **Zava Claims Office** at the centre of the neighbourhood.
+It is presented as a **voxel-style miniature town**, sitting alongside the claims office diorama. Customers can be seen running, calling, or hurrying from their incident location toward the **Zava Insurance Claims Office** at the centre of the neighbourhood.
 
 ---
 
@@ -47,7 +49,7 @@ It should look like a **miniature voxel town** with:
 - A car park
 - A small airport gate or train station corner
 - Streetlights, post boxes, benches, and bins
-- The Zava Claims Office building visible at the centre or edge as the destination
+- The Zava Insurance Claims Office building visible at the centre or edge as the destination
 
 The neighbourhood layout should feel:
 
@@ -103,7 +105,7 @@ Each customer follows a simple, readable path on screen:
 1. **Incident happens** in their zone (small visual alert appears).
 2. **Customer reacts** — phone in hand, worried expression, looking around.
 3. **Customer leaves** the incident location.
-4. **Customer travels** along streets toward the Zava Claims Office.
+4. **Customer travels** along streets toward the Zava Insurance Claims Office.
 5. **Customer arrives** at the office reception — handing the story over to the AI claims agents.
 
 This journey should feel like a tiny living diorama, with multiple customers in motion at the same time, each carrying their own claim story toward the same destination.
@@ -123,7 +125,7 @@ Important visual characteristics:
 - Small, readable incident markers (e.g. "!" bubbles, smoke puffs, water drops)
 - Voxel customer characters matching the staff style of the office
 - Visible roads and walkways connecting every incident zone to the office
-- The Zava Claims Office as the **most prominent building**, acting as a visual anchor
+- The Zava Insurance Claims Office as the **most prominent building**, acting as a visual anchor
 
 Avoid:
 
@@ -158,7 +160,7 @@ Markers should be informative, not alarming.
 
 The neighbourhood and the office are designed to be viewed together:
 
-- The **Zava Claims Office** sits at the centre or edge of the neighbourhood.
+- The **Zava Insurance Claims Office** sits at the centre or edge of the neighbourhood.
 - Customers physically walk, drive, or are shown travelling toward it.
 - When a customer enters the office, the camera can transition into the **office theme** (`theme_office.md`), where the AI claims agents take over.
 - The neighbourhood is the **trigger**; the office is the **response**.
@@ -178,7 +180,7 @@ To help viewers read the scene at a glance, use light, friendly labels:
 - "High Street — Business Claims"
 - "Travel Hub — Travel Claims"
 - "Family Home — Life Claims"
-- "Zava Claims Office"
+- "Zava Insurance Claims Office"
 
 Labels should feel like map pins, not advertising.
 
@@ -186,4 +188,4 @@ Labels should feel like map pins, not advertising.
 
 ## Summary
 
-The neighbourhood theme is the **origin point** of every claim in the demo. It shows real people in everyday situations encountering the kinds of events that insurance is designed to protect them from. By visualising the incident, the worry, and the short journey to the Zava Claims Office, the neighbourhood gives the claims process a clear, human starting point — and sets up the seamless hand-off into the AI-powered claims office where each specialised agent begins their work.
+The neighbourhood theme is the **origin point** of every claim in the demo. It shows real people in everyday situations encountering the kinds of events that insurance is designed to protect them from. By visualising the incident, the worry, and the short journey to the Zava Insurance Claims Office, the neighbourhood gives the claims process a clear, human starting point — and sets up the seamless hand-off into the AI-powered claims office where each specialised agent begins their work.

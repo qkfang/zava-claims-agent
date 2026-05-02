@@ -1,8 +1,10 @@
 # Claims Industry Characters
 
+> Part of **Claims Team in a Day** — the AI claims office demo for **Zava Insurance**.
+
 ## Overview
 
-This document describes realistic characters in the claims industry, split between **staff** and **customers**. These characters can be used for journey mapping, product demos, AI agent design, training scenarios, service design, or role-play.
+This document describes realistic characters in the **Zava Insurance** claims team featured in *Claims Team in a Day*, split between **staff** and **customers**. These characters can be used for journey mapping, product demos, AI agent design, training scenarios, service design, or role-play.
 
 Each staff member is supported by one or two specialised AI agents. The agents handle day-to-day, repeatable tasks and report findings, drafts, and recommendations back to the human, who keeps final judgement and accountability.
 

@@ -3,14 +3,14 @@
 
 @if (AgentModel is null)
 {
-    <PageTitle>Agent not found — Zava Claims</PageTitle>
+    <PageTitle>Agent not found — Claims Team in a Day</PageTitle>
     <h1>Agent not found</h1>
     <p>No agent with id <code>@Id</code> exists.</p>
     <a href="/">Back to the claims office</a>
 }
 else
 {
-    <PageTitle>@AgentModel.Name — Zava Claims</PageTitle>
+    <PageTitle>@AgentModel.Name — Claims Team in a Day</PageTitle>
 
     <div class="agent-header" style="--accent: @AgentModel.Accent">
         <a class="back-link" href="/">&larr; Claims office</a>

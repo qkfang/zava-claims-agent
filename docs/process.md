@@ -1,8 +1,10 @@
 # Claims Industry AI Agent Characters
 
+> Part of **Claims Team in a Day** — the AI claims office demo for **Zava Insurance**.
+
 ## Overview
 
-This document describes realistic staff-based AI agents for the claims industry. Each AI agent is based on a common claims role and is designed to support human staff, improve customer experience, reduce manual effort, and make claims handling more consistent.
+This document describes realistic staff-based AI agents for the **Zava Insurance** claims team in *Claims Team in a Day*. Each AI agent is based on a common claims role and is designed to support human staff, improve customer experience, reduce manual effort, and make claims handling more consistent.
 
 ---
 

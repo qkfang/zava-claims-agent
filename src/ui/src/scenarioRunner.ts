@@ -172,10 +172,10 @@ export class ScenarioRunner {
         this.nhCustomer?.setWalking(true);
         if (this.currentPersona) {
           this.hooks.updateBannerNarration(
-            `${this.currentPersona.name} heads to the Zava Claims Office.`,
+            `${this.currentPersona.name} heads to the Zava Insurance Claims Office.`,
           );
           this.hud.log(
-            `${this.currentPersona.name} heads to the Zava Claims Office`,
+            `${this.currentPersona.name} heads to the Zava Insurance Claims Office`,
             "warn",
           );
         }

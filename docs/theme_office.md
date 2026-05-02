@@ -1,10 +1,12 @@
 # Claims Office Visual Theme
 
-![Voxel-style claims office diorama](res/img-office.png)
+> Part of **Claims Team in a Day** — the AI claims office demo for **Zava Insurance**.
+
+![Voxel-style Zava Insurance claims office diorama](res/img-office.png)
 
 ## Overview
 
-The visual theme for the demo is a **voxel-style insurance claims department**, presented as a miniature isometric diorama. The office should feel professional, organised, approachable, and busy but not chaotic.
+The visual theme for *Claims Team in a Day* is a **voxel-style Zava Insurance claims department**, presented as a miniature isometric diorama. The office should feel professional, organised, approachable, and busy but not chaotic.
 
 ---
 

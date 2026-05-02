@@ -24,7 +24,7 @@ import { VoxelCharacter } from "./voxelCharacter";
  *   - Travel hub               — travel insurance (lost luggage)
  *   - Quiet suburb home        — life insurance (bereavement)
  *
- * The Zava Claims Office sits at the centre as the visual anchor. Roads
+ * The Zava Insurance Claims Office sits at the centre as the visual anchor. Roads
  * connect every zone to the office door so customers can be seen "heading
  * to the office".
  *
@@ -883,7 +883,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   };
 
   // A subtle dashed path line tracing a customer's route from an incident
-  // zone toward the Zava Claims Office. The theme guide calls these out as
+  // zone toward the Zava Insurance Claims Office. The theme guide calls these out as
   // "a subtle path line showing the customer's route to the claims office".
   // We emit a series of short, low-profile tiles between two points.
   const makePathLine = (
@@ -1316,7 +1316,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeMailbox(35.6, oz - 1.6);
   }
 
-  // ----- Zava Claims Office (central anchor) -----
+  // ----- Zava Insurance Claims Office (central anchor) -----
   // The office sits just north-west of the roundabout so the front door
   // faces the central crossroads.
   const officeRoot = new TransformNode("nh_office_root", scene);
@@ -1367,7 +1367,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   sctx.fillText("Z", 70, 105);
   sctx.fillStyle = "#ffffff";
   sctx.font = "bold 90px sans-serif";
-  sctx.fillText("ZAVA CLAIMS OFFICE", 200, 110);
+  sctx.fillText("ZAVA INSURANCE", 200, 110);
   signTex.update();
 
   const signMat = new StandardMaterial("nh_office_sign_mat", scene);
@@ -1410,7 +1410,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   attach(path);
 
   // Office label
-  makeLabel(-7, 13, "Zava Claims Office", "#2a3a5c");
+  makeLabel(-7, 13, "Zava Insurance Claims Office", "#2a3a5c");
 
   // ----- Zone 1: Residential Street — Home Insurance (burst pipe) -----
   // North-east quadrant
