@@ -290,13 +290,34 @@ function bootstrap(): void {
   // Spawn the first random customer immediately so the demo has something to show.
   setTimeout(() => sim.spawnCustomer(), 800);
 
+  // ---------------- Simulation speed control ----------------
+  // The user can scale how fast the simulation/animation advances using
+  // the x1 / x2 / x5 pills next to "Submit a claim". This multiplies the
+  // per-frame delta so all dt-driven movement, scenario timing, and
+  // ambient animation speed up uniformly.
+  let simSpeed = 1;
+  const speedButtons = document.querySelectorAll<HTMLButtonElement>(
+    ".sim-speed button[data-speed]",
+  );
+  speedButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const value = Number(btn.dataset.speed);
+      if (!Number.isFinite(value) || value <= 0) return;
+      simSpeed = value;
+      speedButtons.forEach((b) => b.classList.toggle("active", b === btn));
+    });
+  });
+
   // Per-frame tick — driven from the render loop so we tick exactly once
   // per frame regardless of which scene is rendered.
   let last = performance.now();
   const tick = (): void => {
     const now = performance.now();
-    const dt = Math.min(0.1, (now - last) / 1000);
+    // Cap real elapsed time before scaling so a long stall doesn't get
+    // amplified into a huge simulation jump at high speeds.
+    const realDt = Math.min(0.1, (now - last) / 1000);
     last = now;
+    const dt = realDt * simSpeed;
     if (activeScene === "office") {
       sim.update(dt);
     } else {
