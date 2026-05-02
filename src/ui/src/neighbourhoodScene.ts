@@ -1240,7 +1240,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // east (to x≈22) so it reaches the new south-east connector and the
   // relocated nh_birch_b house no longer sits on the central N-S asphalt.
   makeRoad("nh_road_birch", 50, 3.5, new Vector3(-3, 0.05, -10));
-  sideRoadDash("nh_dash_birch", "x", -10, -28, 22);
+  sideRoadDash("nh_dash_birch", "x", -10, -26, 20);
   makeKerb("nh_kerb_birch_n", 50, 0.9, new Vector3(-3, 0.07, -7.8));
   makeKerb("nh_kerb_birch_s", 50, 0.9, new Vector3(-3, 0.07, -12.2));
 
