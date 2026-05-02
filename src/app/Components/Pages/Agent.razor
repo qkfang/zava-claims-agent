@@ -1,0 +1,270 @@
+@page "/agents/{Id}"
+@inject NavigationManager Nav
+
+@if (AgentModel is null)
+{
+    <PageTitle>Agent not found — Zava Claims</PageTitle>
+    <h1>Agent not found</h1>
+    <p>No agent with id <code>@Id</code> exists.</p>
+    <a href="/">Back to the claims office</a>
+}
+else
+{
+    <PageTitle>@AgentModel.Name — Zava Claims</PageTitle>
+
+    <div class="agent-header" style="--accent: @AgentModel.Accent">
+        <a class="back-link" href="/">&larr; Claims office</a>
+        <div class="agent-header-row">
+            <div class="agent-header-icon">@AgentModel.Icon</div>
+            <div>
+                <div class="agent-header-dept">@AgentModel.Department</div>
+                <h1>@AgentModel.Name</h1>
+                <div class="agent-header-persona">@AgentModel.Persona</div>
+                <p class="tagline">@AgentModel.Tagline</p>
+            </div>
+        </div>
+    </div>
+
+    <section class="panel">
+        <h2>What this agent does</h2>
+        <p>@AgentModel.Purpose</p>
+        <div class="two-col">
+            <div>
+                <h3>Responsibilities</h3>
+                <ul>
+                    @foreach (var item in AgentModel.Responsibilities)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            </div>
+            <div>
+                <h3>Tools available</h3>
+                <ul>
+                    @foreach (var item in AgentModel.Tools)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+                <h3>Human approval</h3>
+                <p class="approval">@AgentModel.HumanApproval</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Demo: how this agent helps with the claim</h2>
+        <p class="muted">
+            Two demo scenarios are walked through below. These follow scenarios 1 and 2 from
+            <code>docs/characters.md</code>. Each scenario shows the trigger that wakes the agent,
+            the actions it performs, and the handoff to the next part of the claims office.
+        </p>
+
+        @foreach (var scenario in AgentModel.Scenarios)
+        {
+            <article class="scenario" style="--accent: @AgentModel.Accent">
+                <header class="scenario-head">
+                    <div class="scenario-num">Scenario @scenario.ScenarioId</div>
+                    <h3>@scenario.CustomerName — @scenario.ClaimType</h3>
+                </header>
+
+                <div class="scenario-grid">
+                    <div class="scenario-card">
+                        <div class="scenario-card-label">Situation</div>
+                        <p>@scenario.Situation</p>
+                        <blockquote>“@scenario.CustomerQuote”</blockquote>
+                    </div>
+                    <div class="scenario-card">
+                        <div class="scenario-card-label">Trigger</div>
+                        <p>@scenario.Trigger</p>
+                    </div>
+                </div>
+
+                <h4>Agent actions</h4>
+                <ol class="actions">
+                    @foreach (var action in scenario.Actions)
+                    {
+                        <li>
+                            <div class="action-title">@action.Title</div>
+                            <div class="action-detail">@action.Detail</div>
+                        </li>
+                    }
+                </ol>
+
+                <div class="handoff">
+                    <span class="handoff-label">Handoff →</span> @scenario.Handoff
+                </div>
+            </article>
+        }
+    </section>
+
+    <section class="panel">
+        <h2>Other agents in the claims office</h2>
+        <div class="other-agents">
+            @foreach (var other in AgentCatalog.All.Where(a => a.Id != AgentModel.Id))
+            {
+                <a class="other-agent" href="@($"/agents/{other.Id}")">
+                    <span class="other-agent-icon">@other.Icon</span>
+                    <span>@other.Name</span>
+                </a>
+            }
+        </div>
+    </section>
+}
+
+<style>
+    .back-link {
+        display: inline-block;
+        margin-bottom: .75rem;
+        color: #475569;
+        text-decoration: none;
+        font-size: .9rem;
+    }
+    .back-link:hover { color: #0f172a; text-decoration: underline; }
+
+    .agent-header {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-top: 6px solid var(--accent);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    .agent-header-row { display: flex; gap: 1.1rem; align-items: flex-start; }
+    .agent-header-icon { font-size: 2.5rem; line-height: 1; }
+    .agent-header h1 { margin: .1rem 0 .15rem 0; }
+    .agent-header-dept {
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        font-size: .78rem;
+        font-weight: 600;
+        color: var(--accent);
+    }
+    .agent-header-persona { color: #475569; font-size: .95rem; }
+    .agent-header .tagline { margin: .35rem 0 0 0; color: #334155; font-style: italic; }
+
+    .panel {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    .panel h2 { margin-top: 0; font-size: 1.2rem; color: #0f172a; }
+    .panel h3 { font-size: .95rem; margin-bottom: .35rem; color: #0f172a; }
+    .panel .muted { color: #64748b; font-size: .92rem; }
+    .panel ul { margin: 0; padding-left: 1.1rem; }
+    .panel ul li { margin-bottom: .25rem; }
+    .approval { color: #334155; }
+
+    .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        margin-top: .75rem;
+    }
+    @@media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+
+    .scenario {
+        border: 1px solid #e5e7eb;
+        border-left: 4px solid var(--accent);
+        border-radius: 10px;
+        padding: 1rem 1.1rem;
+        margin-top: 1rem;
+        background: #f8fafc;
+    }
+    .scenario-head { display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap; }
+    .scenario-num {
+        background: var(--accent);
+        color: #fff;
+        padding: .15rem .55rem;
+        border-radius: 999px;
+        font-size: .75rem;
+        font-weight: 600;
+        letter-spacing: .04em;
+    }
+    .scenario h3 { margin: 0; font-size: 1.05rem; color: #0f172a; }
+
+    .scenario-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: .75rem;
+        margin: .75rem 0;
+    }
+    @@media (max-width: 720px) { .scenario-grid { grid-template-columns: 1fr; } }
+    .scenario-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: .65rem .85rem;
+    }
+    .scenario-card-label {
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: .25rem;
+    }
+    .scenario-card p { margin: 0; font-size: .92rem; color: #334155; }
+    .scenario-card blockquote {
+        margin: .5rem 0 0 0;
+        padding: .35rem .75rem;
+        border-left: 3px solid #cbd5e1;
+        color: #475569;
+        font-style: italic;
+        font-size: .9rem;
+    }
+
+    .scenario h4 {
+        margin: .85rem 0 .35rem 0;
+        font-size: .85rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: #475569;
+    }
+    ol.actions {
+        margin: 0;
+        padding-left: 1.25rem;
+    }
+    ol.actions li { margin-bottom: .55rem; }
+    .action-title { font-weight: 600; color: #0f172a; }
+    .action-detail { color: #334155; font-size: .92rem; }
+
+    .handoff {
+        margin-top: .75rem;
+        font-size: .92rem;
+        color: #0f172a;
+        background: #fff;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+        padding: .55rem .75rem;
+    }
+    .handoff-label { font-weight: 600; color: var(--accent); }
+
+    .other-agents {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+    .other-agent {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .4rem .7rem;
+        border-radius: 999px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        text-decoration: none;
+        color: #0f172a;
+        font-size: .85rem;
+    }
+    .other-agent:hover { background: #e2e8f0; }
+    .other-agent-icon { font-size: 1rem; }
+</style>
+
+@code {
+    [Parameter] public string Id { get; set; } = string.Empty;
+
+    private AgentDefinition? AgentModel => AgentCatalog.FindById(Id);
+}
