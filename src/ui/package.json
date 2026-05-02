@@ -1,0 +1,19 @@
+{
+  "name": "zava-claims-agent-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Browser demo of an insurance claims office staffed by AI agents (Babylon.js + voxel style).",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^7.54.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.20"
+  }
+}
