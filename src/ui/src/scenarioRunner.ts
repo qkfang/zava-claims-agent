@@ -16,6 +16,16 @@ import type { HudLogger } from "./hud";
 import { PALETTES, VoxelCharacter } from "./voxelCharacter";
 
 /**
+ * Hook the runner uses to drive the neighbourhood scene's per-scenario
+ * incident animation (e.g. the burst-pipe water spurt). Implemented by
+ * the result of `buildNeighbourhood`.
+ */
+export interface NeighbourhoodIncidentController {
+  playIncident(id: ScenarioId): void;
+  clearIncident(): void;
+}
+
+/**
  * Scenario states (used internally to gate camera + scene transitions).
  */
 type RunnerState =
@@ -69,6 +79,7 @@ export class ScenarioRunner {
     private readonly sim: ClaimSimulation,
     private readonly hud: HudLogger,
     private readonly hooks: ScenarioRunnerHooks,
+    private readonly incidents: NeighbourhoodIncidentController,
   ) {}
 
   isPlaying(): boolean {
@@ -117,7 +128,11 @@ export class ScenarioRunner {
     });
 
     this.state = "neighbourhood-arrive";
-    this.nhArriveDelay = 2.0;
+    // Hold the customer at the incident zone a little longer so the
+    // viewer can watch the scripted "story of the accident" animation
+    // play out (e.g. burst pipe water spurt) before they walk to the
+    // office.
+    this.nhArriveDelay = 4.5;
     this.hooks.updateBannerNarration(
       `${persona.name} — ${persona.situation_long}`,
     );
@@ -125,6 +140,10 @@ export class ScenarioRunner {
       `${persona.name} reports ${persona.claim_type} from the neighbourhood`,
       "warn",
     );
+
+    // Kick off the per-scenario incident animation in the neighbourhood
+    // (e.g. burst pipe spurts water, rear-end collision shakes both cars).
+    this.incidents.playIncident(persona.id);
 
     // Sanity check: if state changes underneath us, abort.
     if (myRunId !== this.runId) return;
@@ -143,6 +162,7 @@ export class ScenarioRunner {
       this.closingHandle = null;
     }
     this.cleanupNeighbourhoodCustomer();
+    this.incidents.clearIncident();
     this.releaseFocus();
     this.hooks.hideBanner();
     this.hooks.setSceneToggleDisabled(false);
@@ -238,8 +258,10 @@ export class ScenarioRunner {
     // Brief CSS fade
     await this.hooks.fadeTransition();
 
-    // Tear down the neighbourhood customer.
+    // Tear down the neighbourhood customer and stop its incident
+    // animation now that the scene is no longer being shown.
     this.cleanupNeighbourhoodCustomer();
+    this.incidents.clearIncident();
 
     // Switch scenes
     this.hooks.setActiveScene("office");

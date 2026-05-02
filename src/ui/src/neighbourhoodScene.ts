@@ -9,6 +9,15 @@ import {
   Vector3,
 } from "@babylonjs/core";
 import { PALETTES } from "./characterPalettes";
+import {
+  NeighbourhoodAmbient,
+  makeBurstPipeIncident,
+  makeCalmGlowIncident,
+  makeLuggageIncident,
+  makeRearEndIncident,
+  makeSmokeIncident,
+} from "./neighbourhoodAmbient";
+import type { ScenarioId } from "./personaData";
 import { VoxelCharacter } from "./voxelCharacter";
 
 /**
@@ -52,6 +61,12 @@ export interface IncidentZones {
 export interface NeighbourhoodResult {
   root: TransformNode;
   zones: IncidentZones;
+  /** Per-frame tick — drives ambient cars/people/pets and active incidents. */
+  update(dtSec: number): void;
+  /** Play the scripted incident animation for the given scenario. */
+  playIncident(id: ScenarioId): void;
+  /** Stop any in-flight incident animation (e.g. on cancel). */
+  clearIncident(): void;
 }
 
 export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
@@ -1412,6 +1427,22 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // Office label
   makeLabel(-7, 13, "Zava Claims Office", "#2a3a5c");
 
+  // ----- Captures: scenery meshes referenced by incident animations -----
+  // These are populated as each zone is built below, then handed to the
+  // ambient controller at the very end so each scenario can replay its
+  // "story of the accident" animation when started.
+  let homePuddle: Mesh | null = null;
+  let homeKitchenSource: Vector3 | null = null;
+  let motorLeadCar: Mesh[] = [];
+  let motorRearCar: Mesh[] = [];
+  let motorContact: Vector3 | null = null;
+  let cafeSmokeMeshes: Mesh[] = [];
+  let cafeFlickerAt: Vector3 | null = null;
+  let travelSuitcase: Mesh | null = null;
+  let travelTrolleyTop: Vector3 | null = null;
+  let travelLostRest: Vector3 | null = null;
+  let lifeHomeCenter: Vector3 | null = null;
+
   // ----- Zone 1: Residential Street — Home Insurance (burst pipe) -----
   // North-east quadrant
   {
@@ -1449,7 +1480,11 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeBox("nh_van_roof", 2.4, 0.6, 1.3, new Vector3(zx + 3.2, 1.55, zz - 4.5), "#3a8fd6");
     makeBox("nh_van_window", 1.0, 0.5, 1.3, new Vector3(zx + 4.3, 1.05, zz - 4.5), "#cfe7ff");
     // Water puddle
-    makeBox("nh_puddle", 1.6, 0.05, 1.0, new Vector3(zx - 0.5, 0.07, zz - 3.5), "#6cb8e8");
+    const puddle = makeBox("nh_puddle", 1.6, 0.05, 1.0, new Vector3(zx - 0.5, 0.07, zz - 3.5), "#6cb8e8");
+    homePuddle = puddle;
+    // Source of the burst — a point inside the kitchen wall, just under
+    // the south window, where the water visibly spurts upward.
+    homeKitchenSource = new Vector3(zx - 0.5, 1.6, zz - 1.8);
 
     // Neighbouring house — also gets a real gable roof + chimney.
     makeBox("nh_home_h2_found", 4.6, 0.4, 4.0, new Vector3(zx + 8, 0.2, zz), "#9a8f7a");
@@ -1519,13 +1554,17 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     const zz = 0;
 
     // Two cars touching bumpers
-    makeBox("nh_car1_body", 2.6, 0.8, 1.4, new Vector3(zx, 0.55, zz - 0.8), "#c44a3a");
-    makeBox("nh_car1_top", 1.6, 0.6, 1.2, new Vector3(zx - 0.2, 1.25, zz - 0.8), "#a23a2c");
-    makeBox("nh_car1_win", 1.4, 0.4, 1.25, new Vector3(zx - 0.2, 1.25, zz - 0.8), "#cfe7ff");
+    const car1Body = makeBox("nh_car1_body", 2.6, 0.8, 1.4, new Vector3(zx, 0.55, zz - 0.8), "#c44a3a");
+    const car1Top = makeBox("nh_car1_top", 1.6, 0.6, 1.2, new Vector3(zx - 0.2, 1.25, zz - 0.8), "#a23a2c");
+    const car1Win = makeBox("nh_car1_win", 1.4, 0.4, 1.25, new Vector3(zx - 0.2, 1.25, zz - 0.8), "#cfe7ff");
 
-    makeBox("nh_car2_body", 2.6, 0.8, 1.4, new Vector3(zx + 3, 0.55, zz - 0.8), "#3a6dc4");
-    makeBox("nh_car2_top", 1.6, 0.6, 1.2, new Vector3(zx + 3.2, 1.25, zz - 0.8), "#2a55a0");
-    makeBox("nh_car2_win", 1.4, 0.4, 1.25, new Vector3(zx + 3.2, 1.25, zz - 0.8), "#cfe7ff");
+    const car2Body = makeBox("nh_car2_body", 2.6, 0.8, 1.4, new Vector3(zx + 3, 0.55, zz - 0.8), "#3a6dc4");
+    const car2Top = makeBox("nh_car2_top", 1.6, 0.6, 1.2, new Vector3(zx + 3.2, 1.25, zz - 0.8), "#2a55a0");
+    const car2Win = makeBox("nh_car2_win", 1.4, 0.4, 1.25, new Vector3(zx + 3.2, 1.25, zz - 0.8), "#cfe7ff");
+
+    motorLeadCar = [car1Body, car1Top, car1Win];
+    motorRearCar = [car2Body, car2Top, car2Win];
+    motorContact = new Vector3(zx + 1.4, 1.0, zz - 0.8);
 
     // Hazard triangle (small red pyramid via rotated box)
     makeBox("nh_hazard", 0.4, 0.5, 0.05, new Vector3(zx + 1.4, 0.3, zz - 1.8), "#e84b3a");
@@ -1645,12 +1684,13 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
 
     // Smoke wisps over Tom's café (middle shop)
     const cafeX = zx + 4.4;
+    const smokeMeshes: Mesh[] = [];
     for (const [dx, dy, sz] of [
       [-0.4, 4.4, 1.0],
       [0.6, 5.0, 1.2],
       [-0.2, 5.6, 0.9],
     ] as Array<[number, number, number]>) {
-      makeBox(
+      const wisp = makeBox(
         `nh_smoke_${dx}_${dy}`,
         sz,
         sz * 0.9,
@@ -1658,7 +1698,10 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
         new Vector3(cafeX + dx, dy, zz),
         "#9aa0a8",
       );
+      smokeMeshes.push(wisp);
     }
+    cafeSmokeMeshes = smokeMeshes;
+    cafeFlickerAt = new Vector3(cafeX, 1.0, zz - 1.79);
 
     // "Closed" sign
     makeBox("nh_closed_sign", 0.9, 0.4, 0.06, new Vector3(cafeX, 1.4, zz - 1.95), "#c44a3a");
@@ -1761,7 +1804,12 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     // (third spot intentionally empty)
 
     // Lone suitcase further away — the missing one's mate
-    makeBox("nh_lug_lost", 0.7, 0.4, 0.5, new Vector3(zx + 5, 0.3, zz + 2), "#5a8a4a");
+    const lostCase = makeBox("nh_lug_lost", 0.7, 0.4, 0.5, new Vector3(zx + 5, 0.3, zz + 2), "#5a8a4a");
+    travelSuitcase = lostCase;
+    // Trolley top is the position the suitcase "starts on" before
+    // tumbling off in the incident animation.
+    travelTrolleyTop = new Vector3(zx - 2, 1.0, zz + 1.5);
+    travelLostRest = new Vector3(zx + 5, 0.3, zz + 2);
 
     // Worried traveller (Grace) on phone
     makePerson(zx - 1, zz + 0.5, "customerTravel", { x: -7, z: -4 });
@@ -1783,6 +1831,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   {
     const zx = 16;
     const zz = -16;
+    lifeHomeCenter = new Vector3(zx, 0.1, zz);
 
     // Calm house, set apart — full suburban detail with a slate gable
     // roof, a chimney, mullioned windows, and a soft front path.
@@ -2170,5 +2219,147 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     life: new Vector3(16 - 1, 0, -16 + 2),
   };
 
-  return { root, zones };
+  // ----- Ambient life: cars, pedestrians, pets, and incident animations -----
+  // Mirrors the "always animated" feel of the office scene, where staff and
+  // customers are constantly moving around. Routes are picked to avoid the
+  // static incident scenery (parked cars, smashed bumpers, plumber van etc.).
+  const ambient = new NeighbourhoodAmbient(scene, root);
+
+  // Cars looping along the side streets.
+  // Maple Crescent (z=20) — runs east-west; lanes at z=19 (eastbound) and z=21 (westbound).
+  ambient.addCar(
+    "maple_e",
+    [
+      [8, 19],
+      [32, 19],
+    ],
+    { bodyColor: "#5fa657", topColor: "#3a7a3a", speed: 4.5 },
+  );
+  ambient.addCar(
+    "maple_w",
+    [
+      [32, 21],
+      [8, 21],
+    ],
+    { bodyColor: "#c188d4", topColor: "#7a4f9c", speed: 4.0 },
+  );
+  // Birch Lane (z=-10) — east-west. Eastbound lane only to keep clear of the
+  // apartment block / café approach.
+  ambient.addCar(
+    "birch_e",
+    [
+      [-26, -11],
+      [6, -11],
+    ],
+    { bodyColor: "#ffd166", topColor: "#c4a14a", speed: 4.2 },
+  );
+  // Oak Drive (x=33) — north-south, avoiding the motor incident at x=22.
+  ambient.addCar(
+    "oak_n",
+    [
+      [34, -4],
+      [34, 20],
+    ],
+    { bodyColor: "#3a8fd6", topColor: "#1f5fa0", speed: 4.0 },
+  );
+  // Cedar Way (x=-26) — north-south on the west side.
+  ambient.addCar(
+    "cedar_s",
+    [
+      [-27, 18],
+      [-27, -1],
+    ],
+    { bodyColor: "#e84b3a", topColor: "#a23a2c", speed: 4.0 },
+  );
+
+  // Wandering pedestrians on sidewalks. Routes hug the kerbs so the
+  // walkers stay clear of the road centres and the static personas.
+  ambient.addPedestrian(
+    "main_n_walker",
+    "customerContents",
+    [
+      [-30, 3.4],
+      [-10, 3.4],
+      [-10, 3.4],
+      [-30, 3.4],
+    ],
+    1.5,
+  );
+  ambient.addPedestrian(
+    "main_s_walker",
+    "customerHome",
+    [
+      [10, -3.4],
+      [30, -3.4],
+      [30, -3.4],
+      [10, -3.4],
+    ],
+    1.4,
+  );
+  ambient.addPedestrian(
+    "maple_walker",
+    "customerBusiness",
+    [
+      [10, 17.4],
+      [30, 17.4],
+    ],
+    1.3,
+  );
+  ambient.addPedestrian(
+    "vert_walker",
+    "customerTravel",
+    [
+      [3.4, 14],
+      [3.4, 28],
+      [3.4, 28],
+      [3.4, 14],
+    ],
+    1.4,
+  );
+
+  // Friendly pets bumbling around grass patches well clear of the roads
+  // and incident scenery (corners of the map are mostly empty grass).
+  ambient.addPet("nw_dog", { cx: -30, cz: 28, radius: 3.0 }, { furColor: "#c8a878" });
+  ambient.addPet("se_dog", { cx: 30, cz: -28, radius: 3.0 }, { furColor: "#5a4a3a" });
+  ambient.addPet("ne_dog", { cx: 30, cz: 30, radius: 2.5 }, { furColor: "#e7c8a0" });
+
+  // Register per-scenario incident animations.
+  if (homePuddle && homeKitchenSource) {
+    ambient.registerIncident(
+      "home",
+      makeBurstPipeIncident(scene, root, homePuddle, homeKitchenSource),
+    );
+  }
+  if (motorLeadCar.length && motorRearCar.length && motorContact) {
+    ambient.registerIncident(
+      "motor",
+      makeRearEndIncident(scene, root, motorLeadCar, motorRearCar, motorContact),
+    );
+  }
+  if (cafeSmokeMeshes.length && cafeFlickerAt) {
+    ambient.registerIncident(
+      "business",
+      makeSmokeIncident(scene, root, cafeSmokeMeshes, cafeFlickerAt),
+    );
+  }
+  if (travelSuitcase && travelTrolleyTop && travelLostRest) {
+    ambient.registerIncident(
+      "travel",
+      makeLuggageIncident(root, travelSuitcase, travelTrolleyTop, travelLostRest),
+    );
+  }
+  if (lifeHomeCenter) {
+    ambient.registerIncident(
+      "life",
+      makeCalmGlowIncident(scene, root, lifeHomeCenter),
+    );
+  }
+
+  return {
+    root,
+    zones,
+    update: (dt) => ambient.update(dt),
+    playIncident: (id) => ambient.playIncident(id),
+    clearIncident: () => ambient.clearIncident(),
+  };
 }
