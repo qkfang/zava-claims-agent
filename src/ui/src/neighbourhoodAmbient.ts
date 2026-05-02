@@ -39,6 +39,10 @@ interface IncidentAnimation {
 /**
  * Build a simple voxel sedan (chassis + cabin + windows + four wheels)
  * parented under a single TransformNode the caller can move and rotate.
+ *
+ * The car's long axis runs along local +Z so that `parent.rotation.y =
+ * Math.atan2(nx, nz)` (which yields 0 when travelling +Z) orients the
+ * car correctly along its direction of travel.
  */
 function buildCarMeshes(
   scene: Scene,
@@ -48,7 +52,7 @@ function buildCarMeshes(
 ): void {
   const body = MeshBuilder.CreateBox(
     `${parent.name}_body`,
-    { width: 2.4, height: 0.7, depth: 1.3 },
+    { width: 1.3, height: 0.7, depth: 2.4 },
     scene,
   );
   body.parent = parent;
@@ -60,7 +64,7 @@ function buildCarMeshes(
 
   const top = MeshBuilder.CreateBox(
     `${parent.name}_top`,
-    { width: 1.4, height: 0.55, depth: 1.2 },
+    { width: 1.2, height: 0.55, depth: 1.4 },
     scene,
   );
   top.parent = parent;
@@ -72,7 +76,7 @@ function buildCarMeshes(
 
   const win = MeshBuilder.CreateBox(
     `${parent.name}_win`,
-    { width: 1.2, height: 0.4, depth: 1.25 },
+    { width: 1.25, height: 0.4, depth: 1.2 },
     scene,
   );
   win.parent = parent;
@@ -82,18 +86,20 @@ function buildCarMeshes(
   winMat.specularColor = new Color3(0.1, 0.1, 0.1);
   win.material = winMat;
 
-  // Four wheels (just dark boxes).
+  // Four wheels (just dark boxes). Wheel positions sit at the four
+  // corners of the body (which now runs along local +Z), with the wheels'
+  // narrow axis pointing outward from the sides of the car.
   const wheelMat = new StandardMaterial(`${parent.name}_wheel_mat`, scene);
   wheelMat.diffuseColor = Color3.FromHexString("#1c2230");
   for (const [dx, dz] of [
-    [0.8, 0.55],
-    [-0.8, 0.55],
-    [0.8, -0.55],
-    [-0.8, -0.55],
+    [0.55, 0.8],
+    [-0.55, 0.8],
+    [0.55, -0.8],
+    [-0.55, -0.8],
   ] as Array<[number, number]>) {
     const w = MeshBuilder.CreateBox(
       `${parent.name}_wheel_${dx}_${dz}`,
-      { width: 0.45, height: 0.45, depth: 0.25 },
+      { width: 0.25, height: 0.45, depth: 0.45 },
       scene,
     );
     w.parent = parent;
@@ -242,6 +248,14 @@ export class NeighbourhoodAmbient {
     );
     const start = waypoints[0];
     carRoot.position = new Vector3(start[0], 0.05, start[1]);
+    // Orient the car along the first leg so it doesn't pop into rotation
+    // on the very first frame.
+    {
+      const next = waypoints[1];
+      const nx = next[0] - start[0];
+      const nz = next[1] - start[1];
+      carRoot.rotation.y = Math.atan2(nx, nz);
+    }
     let idx = 1;
     const speed = opts.speed ?? 4.5;
     this.movers.push({
@@ -249,7 +263,21 @@ export class NeighbourhoodAmbient {
         const wp = waypoints[idx];
         const target = new Vector3(wp[0], 0.05, wp[1]);
         if (stepToward(carRoot, target, speed, dt)) {
-          idx = (idx + 1) % waypoints.length;
+          idx++;
+          if (idx >= waypoints.length) {
+            // Loop one-way: teleport back to the start of the route so
+            // the car always travels in the intended direction along its
+            // lane, instead of bouncing back along it in reverse.
+            const first = waypoints[0];
+            carRoot.position.x = first[0];
+            carRoot.position.z = first[1];
+            const next = waypoints[1];
+            carRoot.rotation.y = Math.atan2(
+              next[0] - first[0],
+              next[1] - first[1],
+            );
+            idx = 1;
+          }
         }
       },
     });
