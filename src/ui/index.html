@@ -38,14 +38,36 @@
       <button type="button" class="np-close" aria-label="Cancel scenario">×</button>
     </div>
 
-    <aside id="agents-panel">
-      <h2>AI Agents</h2>
-      <ul id="agents-list"></ul>
+    <aside id="agents-panel" class="collapsible">
+      <div class="panel-header">
+        <h2>AI Agents</h2>
+        <button
+          type="button"
+          class="panel-toggle"
+          data-target="agents-panel"
+          aria-label="Collapse AI Agents panel"
+          aria-expanded="true"
+        >−</button>
+      </div>
+      <div class="panel-body">
+        <ul id="agents-list"></ul>
+      </div>
     </aside>
 
-    <aside id="log-panel">
-      <h2>Activity</h2>
-      <ol id="log-list"></ol>
+    <aside id="log-panel" class="collapsible">
+      <div class="panel-header">
+        <h2>Activity</h2>
+        <button
+          type="button"
+          class="panel-toggle"
+          data-target="log-panel"
+          aria-label="Collapse Activity panel"
+          aria-expanded="true"
+        >−</button>
+      </div>
+      <div class="panel-body">
+        <ol id="log-list"></ol>
+      </div>
     </aside>
 
     <footer id="hint">

@@ -17,6 +17,7 @@ import { buildOffice } from "./officeScene";
 import { ProfileCard } from "./profileCard";
 import { ScenarioPicker } from "./scenarioPicker";
 import { ScenarioRunner } from "./scenarioRunner";
+import { initCollapsiblePanels } from "./collapsiblePanels";
 import type { CharacterPickMetadata } from "./voxelCharacter";
 
 type SceneKey = "office" | "neighbourhood";
@@ -70,6 +71,7 @@ function bootstrap(): void {
   const layout = buildOffice(officeScene);
   const hud = new HudLogger();
   const sim = new ClaimSimulation(officeScene, layout, hud);
+  initCollapsiblePanels();
   hud.log("Office is open — simulation started", "good");
 
   // ---------------- Neighbourhood scene ----------------
