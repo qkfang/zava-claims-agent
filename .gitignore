@@ -13,6 +13,11 @@ out/
 .parcel-cache/
 .turbo/
 
+# .NET build output
+bin/
+obj/
+*.user
+
 # Logs
 logs/
 *.log
