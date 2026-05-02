@@ -265,6 +265,10 @@ function bootstrap(): void {
           });
       },
     },
+    {
+      playIncident: (id) => nhResult.playIncident(id),
+      clearIncident: () => nhResult.clearIncident(),
+    },
   );
 
   bannerCloseBtn.addEventListener("click", () => runner.cancel());
@@ -293,6 +297,8 @@ function bootstrap(): void {
     last = now;
     if (activeScene === "office") {
       sim.update(dt);
+    } else {
+      nhResult.update(dt);
     }
     runner.update(dt);
   };
