@@ -57,6 +57,8 @@ export class VoxelCharacter {
 
   /** Thought-bulb meshes shown above the head when the staff is delegating to AI agents. */
   private thoughtBulbs: Mesh[] = [];
+  /** Base Y position of each thought bulb (used to apply the bob without drift). */
+  private thoughtBaseY: number[] = [];
   private thoughtPhase = 0;
 
   constructor(
@@ -721,6 +723,7 @@ export class VoxelCharacter {
       base.position = new Vector3(0, -0.18, 0);
       base.isPickable = false;
       this.thoughtBulbs.push(bulb);
+      this.thoughtBaseY.push(offsets[i][1]);
     }
     this.thoughtPhase = 0;
   }
@@ -729,6 +732,7 @@ export class VoxelCharacter {
   hideThoughtBulbs(): void {
     for (const b of this.thoughtBulbs) b.dispose();
     this.thoughtBulbs = [];
+    this.thoughtBaseY = [];
   }
 
   /** Per-frame update — advances the walk animation if active. */
@@ -737,7 +741,10 @@ export class VoxelCharacter {
       this.thoughtPhase += dtSec * 4;
       for (let i = 0; i < this.thoughtBulbs.length; i++) {
         const b = this.thoughtBulbs[i];
-        b.position.y += Math.sin(this.thoughtPhase + i * 0.7) * dtSec * 0.18;
+        // Apply sine offset to the stored base Y so the bulb bobs in place
+        // without any per-frame drift.
+        b.position.y =
+          this.thoughtBaseY[i] + Math.sin(this.thoughtPhase + i * 0.7) * 0.12;
         b.rotation.y += dtSec * 0.6;
       }
     }
