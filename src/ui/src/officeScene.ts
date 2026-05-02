@@ -395,6 +395,18 @@ export function buildOffice(scene: Scene): OfficeLayout {
   buildPlant(scene, mat, new Vector3(-13.5, 0, -8.5));
   buildPlant(scene, mat, new Vector3(-7.5, 0, -9.5));
 
+  // Lobby decor — cushions on sofas, magazines on coffee table, a floor
+  // lamp by the corner, a framed photo and a wall clock above reception.
+  buildCushion(scene, mat, "lobbyCushion1", new Vector3(-12.3, 0.7, -9.2), "#ffb347");
+  buildCushion(scene, mat, "lobbyCushion2", new Vector3(-11.7, 0.7, -8.8), "#e8504c");
+  buildCushion(scene, mat, "lobbyCushion3", new Vector3(-9.3, 0.7, -9.2), "#2e8a6e");
+  buildCushion(scene, mat, "lobbyCushion4", new Vector3(-8.7, 0.7, -8.8), "#b56fbf");
+  buildMagazines(scene, mat, "lobbyMags", new Vector3(-10.5, 0.51, -9.0));
+  buildFloorLamp(scene, mat, "lobbyFloorLamp", new Vector3(-13.7, 0, -9.6), "#ffb347");
+  buildWallClock(scene, mat, "recClock", new Vector3(-12.5, 2.6, 14.84));
+  buildFramedArt(scene, mat, "recArt1", new Vector3(-17.5, 2.0, 14.84), 1.6, 1.2, "#3a5fb0");
+  buildFramedArt(scene, mat, "recArt2", new Vector3(-15.5, 2.0, 14.84), 1.6, 1.2, "#2e8a6e");
+
   // ----- Department grid -----
   // We arrange 7 numbered cubicles in a 2-row grid plus a Team Leader
   // open office and a Meeting Room across the back of the floor.
@@ -646,6 +658,33 @@ function buildCubicle(
   docTray.position = new Vector3(cx + 1.1, 0.95, cz + 0.3);
   docTray.material = mat(`docTrayMat_${label}`, "#f4ecdb");
 
+  // Desk lamp, mug, and a small book stack — small voxel desktop props
+  // inspired by the voxel-furniture-pack aesthetic. Colours are seeded
+  // off the cubicle label so each desk feels a little different.
+  const mugColors = ["#e8504c", "#ffb347", "#6ec1ff", "#2e8a6e", "#a06a4c", "#b56fbf"];
+  const lampColors = ["#3a5fb0", "#e8504c", "#2e8a6e", "#ffb347", "#a06a4c", "#1a1f2c", "#b56fbf"];
+  const seed = label.charCodeAt(0) + label.length;
+  buildDeskLamp(
+    scene,
+    mat,
+    `lamp_${label}`,
+    new Vector3(cx + 1.35, 0.91, cz + 0.95),
+    lampColors[seed % lampColors.length],
+  );
+  buildMug(
+    scene,
+    mat,
+    `mug_${label}`,
+    new Vector3(cx + 0.5, 0.92, cz + 0.85),
+    mugColors[seed % mugColors.length],
+  );
+  buildBookStack(
+    scene,
+    mat,
+    `books_${label}`,
+    new Vector3(cx - 1.3, 0.92, cz + 0.85),
+  );
+
   // Chair (in front of desk)
   const chairSeat = MeshBuilder.CreateBox(
     `chairSeat_${label}`,
@@ -831,6 +870,33 @@ function buildTeamLeaderOffice(
     stripe.position = new Vector3(origin.x + 1.5, 0.4 + s * 0.5, origin.z + 2.6);
     stripe.material = mat("tlShelfStripeMat", "#cdb497");
   }
+
+  // Voxel-pack flair: rug under the desk, desk lamp + mug + books on the
+  // executive desk, and a row of coloured books on each shelf level.
+  buildRug(scene, mat, "tlRug", new Vector3(origin.x, 0.15, origin.z + 0.6), 4.0, 2.6, "#a06a4c");
+  buildDeskLamp(scene, mat, "tlDeskLamp", new Vector3(origin.x + 1.4, 0.93, origin.z + 0.5), "#2a3a5c");
+  buildMug(scene, mat, "tlDeskMug", new Vector3(origin.x + 0.8, 0.94, origin.z + 0.6), "#e8504c");
+  buildBookStack(scene, mat, "tlDeskBooks", new Vector3(origin.x - 1.3, 0.93, origin.z + 0.6));
+  for (let s = 0; s < 3; s++) {
+    buildShelfBooks(
+      scene,
+      mat,
+      `tlShelfRow_${s}`,
+      new Vector3(origin.x + 1.5, 0.55 + s * 0.5, origin.z + 2.45),
+      2.4,
+    );
+  }
+  // Small framed photo on the bookshelf top
+  buildFramedArt(
+    scene,
+    mat,
+    "tlFrame",
+    new Vector3(origin.x + 0.4, 1.85, origin.z + 2.6),
+    0.7,
+    0.55,
+    "#e8504c",
+  );
+  buildPlant(scene, mat, new Vector3(origin.x + 2.6, 1.6, origin.z + 2.6));
 }
 
 /** Glass-walled meeting room with a long table and chairs. */
@@ -954,6 +1020,27 @@ function buildMeetingRoom(
     ctx.lineTo(500, 250);
     ctx.stroke();
   });
+
+  // Voxel-pack flair: pendant lamp above the table, laptops + mugs at each
+  // chair, and a centerpiece plant.
+  buildPendantLamp(scene, mat, "mrPendantA", new Vector3(origin.x - 1.0, 3.6, origin.z + 0.5), "#ffb347");
+  buildPendantLamp(scene, mat, "mrPendantB", new Vector3(origin.x + 1.0, 3.6, origin.z + 0.5), "#ffb347");
+  const laptopColors = ["#3a5fb0", "#e8504c", "#2e8a6e", "#a06a4c", "#b56fbf", "#1a1f2c"];
+  let i = 0;
+  for (const cz of [-0.4, 1.4]) {
+    for (const cx of [-1.5, 0, 1.5]) {
+      buildLaptop(
+        scene,
+        mat,
+        `mrLaptop_${cx}_${cz}`,
+        new Vector3(origin.x + cx, 0.93, origin.z + cz + (cz > 0 ? -0.2 : 0.2)),
+        cz > 0,
+        laptopColors[i % laptopColors.length],
+      );
+      i++;
+    }
+  }
+  buildPlant(scene, mat, new Vector3(origin.x, 0.93, origin.z + 0.5));
 }
 
 /**
@@ -1199,6 +1286,16 @@ function buildKitchen(
   );
   coffeeTop.position = new Vector3(origin.x + 1.6, 1.66, origin.z - 1.5);
   coffeeTop.material = mat("kitCoffeeTopMat", "#6ec1ff");
+
+  // Voxel-pack accents: pendant lamp over the breakfast bar, fruit bowl on
+  // the counter, mugs lined up by the coffee machine, and a wall clock.
+  buildPendantLamp(scene, mat, "kitPendantA", new Vector3(origin.x - 2.2, 3.4, origin.z - 1.5), "#e8504c");
+  buildPendantLamp(scene, mat, "kitPendantB", new Vector3(origin.x - 0.6, 3.4, origin.z - 1.5), "#2e8a6e");
+  buildFruitBowl(scene, mat, "kitFruit", new Vector3(origin.x - 0.5, 1.08, origin.z + 2.5));
+  for (const mx of [0.9, 1.2, 1.5]) {
+    buildMug(scene, mat, `kitMug_${mx}`, new Vector3(origin.x + mx, 1.08, origin.z - 1.4), "#ffffff");
+  }
+  buildWallClock(scene, mat, "kitClock", new Vector3(origin.x + 1.5, 2.6, origin.z + 3.05));
 }
 
 /**
@@ -1282,6 +1379,10 @@ function buildCafe(
 
   // Tall corner plant
   buildPlant(scene, mat, new Vector3(origin.x + 1.8, 0, origin.z - 2.5));
+
+  // Voxel-pack accents: pendant lamps over each table.
+  buildPendantLamp(scene, mat, "cafePendantA", new Vector3(origin.x, 3.2, origin.z - 1.6), "#a06a4c");
+  buildPendantLamp(scene, mat, "cafePendantB", new Vector3(origin.x, 3.2, origin.z + 1.6), "#a06a4c");
 }
 
 /**
@@ -1377,4 +1478,420 @@ function buildCollabZone(
     ctx.textBaseline = "middle";
     ctx.fillText("HUDDLE ZONE", 192, 42);
   });
+
+  // Voxel-pack accents: cushions on each sofa, a rug under the table, mugs
+  // and a notepad on the table, plus a tall floor lamp in the corner.
+  buildCushion(scene, mat, "collabCushA1", new Vector3(origin.x - 0.5, 0.78, origin.z - 1.3), "#ffb347");
+  buildCushion(scene, mat, "collabCushA2", new Vector3(origin.x + 0.5, 0.78, origin.z - 1.3), "#e8504c");
+  buildCushion(scene, mat, "collabCushB1", new Vector3(origin.x - 0.5, 0.78, origin.z + 1.3), "#2e8a6e");
+  buildCushion(scene, mat, "collabCushB2", new Vector3(origin.x + 0.5, 0.78, origin.z + 1.3), "#b56fbf");
+  buildRug(scene, mat, "collabRug", new Vector3(origin.x, 0.16, origin.z), 2.2, 3.4, "#f4ecdb");
+  buildMug(scene, mat, "collabMug1", new Vector3(origin.x - 0.3, 0.51, origin.z - 0.15), "#3a5fb0");
+  buildMug(scene, mat, "collabMug2", new Vector3(origin.x + 0.3, 0.51, origin.z + 0.15), "#e8504c");
+  buildBookStack(scene, mat, "collabBooks", new Vector3(origin.x, 0.51, origin.z));
+  buildFloorLamp(scene, mat, "collabFloorLamp", new Vector3(origin.x + 1.6, 0, origin.z - 2.6), "#cfe7ff");
+}
+
+// ===== Voxel-pack-inspired prop helpers =====
+// These are small, blocky, colourful desktop/decor props built from
+// primitives — taking stylistic inspiration from typical voxel furniture
+// packs (lamps, mugs, books, cushions, rugs, frames, clocks, pendants).
+// All meshes are static and named uniquely.
+
+/** Tiny desk lamp: square base, slim stem, coloured shade. */
+function buildDeskLamp(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+  shadeHex: string,
+): void {
+  const base = MeshBuilder.CreateBox(
+    `${name}_base`,
+    { width: 0.28, height: 0.05, depth: 0.28 },
+    scene,
+  );
+  base.position = new Vector3(pos.x, pos.y + 0.025, pos.z);
+  base.material = mat(`${name}_baseMat`, "#22252e");
+  const stem = MeshBuilder.CreateBox(
+    `${name}_stem`,
+    { width: 0.06, height: 0.4, depth: 0.06 },
+    scene,
+  );
+  stem.position = new Vector3(pos.x, pos.y + 0.25, pos.z);
+  stem.material = mat(`${name}_stemMat`, "#22252e");
+  const shade = MeshBuilder.CreateBox(
+    `${name}_shade`,
+    { width: 0.34, height: 0.22, depth: 0.34 },
+    scene,
+  );
+  shade.position = new Vector3(pos.x, pos.y + 0.55, pos.z);
+  shade.material = mat(`${name}_shadeMat`, shadeHex);
+  // A small "bulb glow" cube under the shade
+  const glow = MeshBuilder.CreateBox(
+    `${name}_glow`,
+    { width: 0.18, height: 0.04, depth: 0.18 },
+    scene,
+  );
+  glow.position = new Vector3(pos.x, pos.y + 0.42, pos.z);
+  glow.material = mat(`${name}_glowMat`, "#fff4c2");
+}
+
+/** Coffee mug: short cube body + a thin handle on the side. */
+function buildMug(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+  bodyHex: string,
+): void {
+  const body = MeshBuilder.CreateBox(
+    `${name}_body`,
+    { width: 0.2, height: 0.22, depth: 0.2 },
+    scene,
+  );
+  body.position = new Vector3(pos.x, pos.y + 0.11, pos.z);
+  body.material = mat(`${name}_bodyMat`, bodyHex);
+  const handle = MeshBuilder.CreateBox(
+    `${name}_handle`,
+    { width: 0.05, height: 0.14, depth: 0.05 },
+    scene,
+  );
+  handle.position = new Vector3(pos.x + 0.13, pos.y + 0.13, pos.z);
+  handle.material = mat(`${name}_handleMat`, bodyHex);
+  const rim = MeshBuilder.CreateBox(
+    `${name}_rim`,
+    { width: 0.16, height: 0.02, depth: 0.16 },
+    scene,
+  );
+  rim.position = new Vector3(pos.x, pos.y + 0.22, pos.z);
+  rim.material = mat(`${name}_rimMat`, "#ffffff");
+}
+
+/** A short stack of three differently coloured books on a desk. */
+function buildBookStack(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+): void {
+  const palette = ["#3a5fb0", "#e8504c", "#2e8a6e", "#ffb347", "#b56fbf", "#a06a4c"];
+  const seed = name.length;
+  for (let i = 0; i < 3; i++) {
+    const book = MeshBuilder.CreateBox(
+      `${name}_${i}`,
+      { width: 0.5 - i * 0.05, height: 0.08, depth: 0.32 },
+      scene,
+    );
+    book.position = new Vector3(pos.x, pos.y + 0.04 + i * 0.085, pos.z);
+    book.material = mat(`${name}_${i}_mat`, palette[(seed + i) % palette.length]);
+  }
+}
+
+/** A row of upright books along a shelf, alternating colours. */
+function buildShelfBooks(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+  width: number,
+): void {
+  const palette = ["#3a5fb0", "#e8504c", "#2e8a6e", "#ffb347", "#b56fbf", "#a06a4c", "#1a1f2c", "#6ec1ff"];
+  const count = Math.max(1, Math.floor(width / 0.18));
+  const startX = pos.x - width / 2 + 0.1;
+  for (let i = 0; i < count; i++) {
+    const w = 0.1 + ((i * 7) % 4) * 0.02;
+    const h = 0.32 + ((i * 5) % 3) * 0.05;
+    const book = MeshBuilder.CreateBox(
+      `${name}_${i}`,
+      { width: w, height: h, depth: 0.22 },
+      scene,
+    );
+    book.position = new Vector3(startX + i * 0.18, pos.y + h / 2, pos.z);
+    book.material = mat(`${name}_${i}_mat`, palette[(i * 3 + name.length) % palette.length]);
+  }
+}
+
+/** Plush square cushion — a flat soft-coloured cube. */
+function buildCushion(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+  hex: string,
+): void {
+  const c = MeshBuilder.CreateBox(
+    name,
+    { width: 0.5, height: 0.18, depth: 0.5 },
+    scene,
+  );
+  c.position = new Vector3(pos.x, pos.y, pos.z);
+  c.material = mat(`${name}_mat`, hex);
+}
+
+/** Rectangular rug — a very thin coloured slab with a lighter border. */
+function buildRug(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+  width: number,
+  depth: number,
+  hex: string,
+): void {
+  const rug = MeshBuilder.CreateBox(
+    name,
+    { width, height: 0.04, depth },
+    scene,
+  );
+  rug.position = new Vector3(pos.x, pos.y, pos.z);
+  rug.material = mat(`${name}_mat`, hex);
+  const border = MeshBuilder.CreateBox(
+    `${name}_border`,
+    { width: width - 0.3, height: 0.045, depth: depth - 0.3 },
+    scene,
+  );
+  border.position = new Vector3(pos.x, pos.y + 0.005, pos.z);
+  border.material = mat(`${name}_borderMat`, "#ffffff");
+}
+
+/** Floor lamp: square base, tall thin stem, a tapered shade on top. */
+function buildFloorLamp(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+  shadeHex: string,
+): void {
+  const base = MeshBuilder.CreateBox(
+    `${name}_base`,
+    { width: 0.5, height: 0.08, depth: 0.5 },
+    scene,
+  );
+  base.position = new Vector3(pos.x, pos.y + 0.04, pos.z);
+  base.material = mat(`${name}_baseMat`, "#22252e");
+  const stem = MeshBuilder.CreateBox(
+    `${name}_stem`,
+    { width: 0.08, height: 1.7, depth: 0.08 },
+    scene,
+  );
+  stem.position = new Vector3(pos.x, pos.y + 0.93, pos.z);
+  stem.material = mat(`${name}_stemMat`, "#22252e");
+  const shade = MeshBuilder.CreateBox(
+    `${name}_shade`,
+    { width: 0.6, height: 0.55, depth: 0.6 },
+    scene,
+  );
+  shade.position = new Vector3(pos.x, pos.y + 2.05, pos.z);
+  shade.material = mat(`${name}_shadeMat`, shadeHex);
+  const shadeRim = MeshBuilder.CreateBox(
+    `${name}_shadeRim`,
+    { width: 0.66, height: 0.06, depth: 0.66 },
+    scene,
+  );
+  shadeRim.position = new Vector3(pos.x, pos.y + 1.78, pos.z);
+  shadeRim.material = mat(`${name}_shadeRimMat`, "#22252e");
+}
+
+/** Round-ish wall clock: dark frame, light face, four tick marks and hands. */
+function buildWallClock(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+): void {
+  const frame = MeshBuilder.CreateBox(
+    `${name}_frame`,
+    { width: 0.85, height: 0.85, depth: 0.06 },
+    scene,
+  );
+  frame.position = new Vector3(pos.x, pos.y, pos.z);
+  frame.material = mat(`${name}_frameMat`, "#22252e");
+  const face = MeshBuilder.CreateBox(
+    `${name}_face`,
+    { width: 0.7, height: 0.7, depth: 0.04 },
+    scene,
+  );
+  face.position = new Vector3(pos.x, pos.y, pos.z - 0.04);
+  drawSignTexture(scene, face, 256, 256, (ctx) => {
+    ctx.fillStyle = "#f4ecdb";
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = "#22252e";
+    // Tick marks at 12/3/6/9
+    ctx.fillRect(120, 24, 16, 22);
+    ctx.fillRect(120, 210, 16, 22);
+    ctx.fillRect(24, 120, 22, 16);
+    ctx.fillRect(210, 120, 22, 16);
+    // Hour and minute hands
+    ctx.fillRect(124, 70, 8, 60);
+    ctx.fillRect(124, 124, 70, 8);
+    // Centre dot
+    ctx.beginPath();
+    ctx.arc(128, 128, 8, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+/** Wall-mounted framed art: dark frame around a coloured "canvas" panel. */
+function buildFramedArt(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+  width: number,
+  height: number,
+  hex: string,
+): void {
+  const frame = MeshBuilder.CreateBox(
+    `${name}_frame`,
+    { width, height, depth: 0.06 },
+    scene,
+  );
+  frame.position = new Vector3(pos.x, pos.y, pos.z);
+  frame.material = mat(`${name}_frameMat`, "#22252e");
+  const canvas = MeshBuilder.CreateBox(
+    `${name}_canvas`,
+    { width: width - 0.18, height: height - 0.18, depth: 0.04 },
+    scene,
+  );
+  canvas.position = new Vector3(pos.x, pos.y, pos.z - 0.04);
+  drawSignTexture(scene, canvas, 256, 192, (ctx) => {
+    // Sky gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, 192);
+    grad.addColorStop(0, hex);
+    grad.addColorStop(1, "#f4ecdb");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 192);
+    // Pixel-art mountains
+    ctx.fillStyle = "#2a3a5c";
+    ctx.beginPath();
+    ctx.moveTo(0, 150);
+    ctx.lineTo(70, 80);
+    ctx.lineTo(120, 120);
+    ctx.lineTo(180, 60);
+    ctx.lineTo(256, 130);
+    ctx.lineTo(256, 192);
+    ctx.lineTo(0, 192);
+    ctx.closePath();
+    ctx.fill();
+    // Sun
+    ctx.fillStyle = "#ffb347";
+    ctx.beginPath();
+    ctx.arc(196, 50, 18, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+/** Hanging pendant lamp — cord + shade, ~0.8m drop. */
+function buildPendantLamp(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+  shadeHex: string,
+): void {
+  const cord = MeshBuilder.CreateBox(
+    `${name}_cord`,
+    { width: 0.04, height: 1.0, depth: 0.04 },
+    scene,
+  );
+  cord.position = new Vector3(pos.x, pos.y + 0.5, pos.z);
+  cord.material = mat(`${name}_cordMat`, "#22252e");
+  const shade = MeshBuilder.CreateBox(
+    `${name}_shade`,
+    { width: 0.5, height: 0.35, depth: 0.5 },
+    scene,
+  );
+  shade.position = new Vector3(pos.x, pos.y - 0.18, pos.z);
+  shade.material = mat(`${name}_shadeMat`, shadeHex);
+  const bulb = MeshBuilder.CreateBox(
+    `${name}_bulb`,
+    { width: 0.22, height: 0.06, depth: 0.22 },
+    scene,
+  );
+  bulb.position = new Vector3(pos.x, pos.y - 0.4, pos.z);
+  bulb.material = mat(`${name}_bulbMat`, "#fff4c2");
+}
+
+/** Open laptop on a table: dark base + lighter screen tilted up. */
+function buildLaptop(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+  facingPositiveZ: boolean,
+  bodyHex: string,
+): void {
+  const dir = facingPositiveZ ? 1 : -1;
+  const base = MeshBuilder.CreateBox(
+    `${name}_base`,
+    { width: 0.6, height: 0.04, depth: 0.4 },
+    scene,
+  );
+  base.position = new Vector3(pos.x, pos.y + 0.02, pos.z);
+  base.material = mat(`${name}_baseMat`, bodyHex);
+  const screen = MeshBuilder.CreateBox(
+    `${name}_screen`,
+    { width: 0.6, height: 0.36, depth: 0.04 },
+    scene,
+  );
+  screen.position = new Vector3(pos.x, pos.y + 0.2, pos.z + dir * 0.18);
+  screen.material = mat(`${name}_screenMat`, "#1a1f2c");
+  const screenFace = MeshBuilder.CreateBox(
+    `${name}_screenFace`,
+    { width: 0.52, height: 0.3, depth: 0.02 },
+    scene,
+  );
+  screenFace.position = new Vector3(pos.x, pos.y + 0.2, pos.z + dir * 0.2);
+  screenFace.material = mat(`${name}_screenFaceMat`, "#6ec1ff");
+}
+
+/** A small fruit bowl: shallow bowl + a few coloured fruit cubes inside. */
+function buildFruitBowl(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+): void {
+  const bowl = MeshBuilder.CreateBox(
+    `${name}_bowl`,
+    { width: 0.6, height: 0.12, depth: 0.6 },
+    scene,
+  );
+  bowl.position = new Vector3(pos.x, pos.y + 0.06, pos.z);
+  bowl.material = mat(`${name}_bowlMat`, "#cdd5e0");
+  const fruits = [
+    { c: "#e8504c", dx: -0.12, dz: -0.08 },
+    { c: "#ffb347", dx: 0.1, dz: -0.05 },
+    { c: "#2e8a6e", dx: 0.0, dz: 0.12 },
+    { c: "#b56fbf", dx: -0.05, dz: 0.06 },
+  ];
+  fruits.forEach((f, i) => {
+    const fruit = MeshBuilder.CreateBox(
+      `${name}_fruit_${i}`,
+      { width: 0.16, height: 0.16, depth: 0.16 },
+      scene,
+    );
+    fruit.position = new Vector3(pos.x + f.dx, pos.y + 0.2, pos.z + f.dz);
+    fruit.material = mat(`${name}_fruitMat_${i}`, f.c);
+  });
+}
+
+/** A pair of stacked magazines on a coffee table. */
+function buildMagazines(
+  scene: Scene,
+  mat: MaterialFactory,
+  name: string,
+  pos: Vector3,
+): void {
+  const palette = ["#3a5fb0", "#e8504c", "#ffb347"];
+  for (let i = 0; i < 2; i++) {
+    const m = MeshBuilder.CreateBox(
+      `${name}_${i}`,
+      { width: 0.55, height: 0.04, depth: 0.36 },
+      scene,
+    );
+    m.position = new Vector3(pos.x + i * 0.05, pos.y + 0.02 + i * 0.045, pos.z + i * 0.04);
+    m.material = mat(`${name}_${i}_mat`, palette[i % palette.length]);
+  }
 }
