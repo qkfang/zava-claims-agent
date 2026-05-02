@@ -1,0 +1,104 @@
+@page "/"
+
+<PageTitle>Zava Claims — AI Claims Office</PageTitle>
+
+<div class="hero">
+    <div class="hero-inner">
+        <h1>Zava Claims — Digital Claims Department</h1>
+        <p class="lead">
+            A coordinated team of specialised AI agents that supports human staff through every step
+            of the claims lifecycle. Each card below is one agent — open it to see how that agent
+            helps with two real customer scenarios.
+        </p>
+        <p class="scenarios-line">
+            <strong>Featured scenarios:</strong>
+            <span class="chip">① Michael Harris — Home / burst pipe</span>
+            <span class="chip">② Aisha Khan — Motor / rear-end collision</span>
+        </p>
+    </div>
+</div>
+
+<div class="agent-grid">
+    @foreach (var agent in AgentCatalog.All)
+    {
+        <a class="agent-card" href="@($"/agents/{agent.Id}")" style="--accent: @agent.Accent">
+            <div class="agent-card-icon">@agent.Icon</div>
+            <div class="agent-card-body">
+                <div class="agent-card-dept">@agent.Department</div>
+                <h2>@agent.Name</h2>
+                <div class="agent-card-persona">@agent.Persona</div>
+                <p>@agent.Tagline</p>
+            </div>
+        </a>
+    }
+</div>
+
+<style>
+    .hero {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+        color: #fff;
+        padding: 2.5rem 2rem;
+        border-radius: 14px;
+        margin-bottom: 2rem;
+    }
+    .hero h1 { margin: 0 0 .5rem 0; font-size: 1.9rem; }
+    .hero .lead { font-size: 1.05rem; max-width: 60rem; opacity: .92; }
+    .scenarios-line { margin-top: 1rem; font-size: .95rem; }
+    .chip {
+        display: inline-block;
+        background: rgba(255,255,255,.14);
+        padding: .25rem .65rem;
+        border-radius: 999px;
+        margin-right: .4rem;
+    }
+
+    .agent-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+    .agent-card {
+        display: flex;
+        gap: .9rem;
+        align-items: flex-start;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-left: 6px solid var(--accent, #0ea5e9);
+        border-radius: 12px;
+        padding: 1rem 1rem 1rem .9rem;
+        text-decoration: none;
+        color: inherit;
+        transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .agent-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(15,23,42,.08);
+    }
+    .agent-card-icon {
+        font-size: 1.9rem;
+        line-height: 1;
+        flex: 0 0 auto;
+    }
+    .agent-card-body h2 {
+        font-size: 1.05rem;
+        margin: .15rem 0 .15rem 0;
+        color: #0f172a;
+    }
+    .agent-card-dept {
+        font-size: .75rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--accent);
+        font-weight: 600;
+    }
+    .agent-card-persona {
+        font-size: .82rem;
+        color: #475569;
+        margin-bottom: .3rem;
+    }
+    .agent-card p {
+        margin: 0;
+        font-size: .9rem;
+        color: #334155;
+    }
+</style>
