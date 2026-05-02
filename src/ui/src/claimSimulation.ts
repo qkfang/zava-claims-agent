@@ -19,6 +19,7 @@ import {
   type ScenarioId,
   type StaffPersona,
 } from "./personaData";
+import { getScenario } from "./scenarios";
 
 /**
  * Claims-industry staff roles, mirroring the cast in
@@ -1155,6 +1156,92 @@ export class ClaimSimulation {
   }
 
   /**
+   * Snap the office back to a clean baseline before a scripted scenario
+   * begins, per the JSON `reset` block. Despawns unscripted customers,
+   * clears claim queues / orphan folders, and returns every staff member
+   * to their desk so the camera and the audience start from a known state.
+   */
+  resetForScenario(scenarioId: ScenarioId): void {
+    const def = getScenario(scenarioId);
+    const reset = def.reset.office;
+
+    if (reset.removeUnscriptedCustomers) {
+      // Despawn any non-scripted customer that's currently in flight.
+      for (const c of this.customers) {
+        if (c.claim.script) continue;
+        if (c.state === "done") continue;
+        // Detach folder from customer; we'll dispose it via removeClaim.
+        if (c.claim.mesh.parent === c.character.getHandAnchor()) {
+          c.claim.mesh.parent = null;
+        }
+        this.customersByCharId.delete(c.character.id);
+        c.character.root.dispose();
+        c.state = "done";
+        this.removeClaim(c.claim);
+      }
+      // Compact the customer array.
+      for (let i = this.customers.length - 1; i >= 0; i--) {
+        if (this.customers[i].state === "done") this.customers.splice(i, 1);
+      }
+    }
+
+    if (reset.clearQueues) {
+      // Drop any folders sitting in the inbox / settlement / comms queues.
+      for (const q of [this.inbox, this.settlementQueue, this.communicationsQueue]) {
+        while (q.length > 0) {
+          const claim = q.shift()!;
+          if (!claim.script) this.removeClaim(claim);
+        }
+      }
+      if (this.assessorReady && !this.assessorReady.script) {
+        this.removeClaim(this.assessorReady);
+      }
+      this.assessorReady = null;
+    }
+
+    if (reset.snapStaffToDesks) {
+      // Force every staff member back to their home desk and a clean state.
+      for (const s of this.staff) {
+        // If a staff member is carrying a folder for an unscripted claim, drop it.
+        const held = this.findClaimHeldBy(s.id);
+        if (held && !held.script) {
+          held.mesh.parent = null;
+          this.removeClaim(held);
+        }
+        s.task = { kind: "idle" };
+        s.moveTarget = null;
+        s.onArrive = null;
+        s.processTimer = 0;
+        s.character.setWalking(false);
+        s.character.hideThoughtBulbs();
+        s.character.root.position.x = s.homePoint.x;
+        s.character.root.position.y = 0.2;
+        s.character.root.position.z = s.homePoint.z;
+        s.character.root.rotation.y = 0;
+        // Ambient roles return to their first ambient message; pipeline roles
+        // go back to "Awaiting next claim".
+        s.active = s.persona.active_in_pipeline;
+        const initial = s.persona.ambient[0] ?? "Awaiting next claim";
+        this.logger.setAgentStatus(s.id, false, initial);
+      }
+    }
+
+    // Touch the variable so TypeScript doesn't think `def` is unused if reset
+    // ever becomes a no-op.
+    void def;
+  }
+
+  /** Dispose a claim's folder mesh and remove it from the registry. */
+  private removeClaim(claim: Claim): void {
+    if (claim.mesh && !claim.mesh.isDisposed()) {
+      claim.mesh.dispose();
+    }
+    this.claimsById.delete(claim.id);
+    this.metrics.processing = Math.max(0, this.metrics.processing - 1);
+    this.pushMetrics();
+  }
+
+  /**
    * Begin a scripted scenario in the office. The caller is responsible for
    * the neighbourhood walk + scene transition; once that's done it calls
    * this method which spawns the customer at the office spawn point and
@@ -1167,6 +1254,9 @@ export class ClaimSimulation {
     onClosed?: () => void;
   } = {}): { customer: CustomerAgentInfo; persona: CustomerPersona } {
     this.pauseAutoSpawn();
+    // Apply the JSON reset block so the office is in a clean, deterministic
+    // state regardless of any ambient activity that was in flight.
+    this.resetForScenario(scenarioId);
     const persona = findCustomerPersona(scenarioId);
     const script = buildScriptForScenario(persona);
     script.onFocusChange = hooks.onFocusChange;
@@ -1264,106 +1354,33 @@ function describeCustomerState(c: CustomerAgent): string {
   }
 }
 
-/** Builds a deterministic scenario script for a given customer persona. */
+/**
+ * Builds a deterministic scenario script for a given customer persona,
+ * sourced from the JSON definition in `src/ui/src/scenarios/<id>.json`.
+ * The JSON is the single source of truth — narration, consultations,
+ * outcome — so editing the JSON updates both the on-screen story and
+ * the underlying simulation behaviour.
+ */
 function buildScriptForScenario(p: CustomerPersona): ClaimScript {
-  // Common pipeline beats, customised per scenario based on which agents are involved.
-  const base: Omit<ClaimScript, "scenarioId"> = {
-    approveAtAssessor: true,
-    extras: [],
-    preAssessor: [],
-    settlement: "approved",
+  const def = getScenario(p.id);
+  return {
+    scenarioId: def.id,
+    approveAtAssessor: def.approveAtAssessor,
+    extras: def.extras.map((c) => ({
+      role: c.role as AgentRole,
+      narration: c.narration,
+      duration: c.duration,
+    })),
+    preAssessor: def.preAssessor.map((c) => ({
+      role: c.role as AgentRole,
+      narration: c.narration,
+      duration: c.duration,
+    })),
+    settlement: def.settlement,
     color: p.color,
     personaName: p.name,
-    assessorNarration: `Adam reviews ${p.claim_type} for ${p.name}`,
-    settlementNarration: `Seth reviews settlement for ${p.name}`,
-    commsNarration: `Cara notifies ${p.name} of the outcome — claim closed`,
+    assessorNarration: def.narrations.assessor,
+    settlementNarration: def.narrations.settlement,
+    commsNarration: def.narrations.comms,
   };
-
-  switch (p.id) {
-    case "home":
-      return {
-        scenarioId: "home",
-        ...base,
-        extras: [
-          {
-            role: "Loss Adjuster",
-            narration:
-              "Lara reviews inspection photos and estimates the repair scope.",
-            duration: 3.0,
-          },
-          {
-            role: "Supplier Coordinator",
-            narration: "Sam books an approved plumber and drying gear.",
-            duration: 2.5,
-          },
-        ],
-        commsNarration: `Cara confirms repair plan with ${p.name} — claim closed`,
-      };
-    case "motor":
-      return {
-        scenarioId: "motor",
-        ...base,
-        extras: [
-          {
-            role: "Supplier Coordinator",
-            narration:
-              "Sam assigns an approved repairer and books a rental car.",
-            duration: 3.0,
-          },
-        ],
-        commsNarration: `Cara messages ${p.name} with repairer + rental details — claim closed`,
-      };
-    case "business":
-      return {
-        scenarioId: "business",
-        ...base,
-        extras: [
-          {
-            role: "Loss Adjuster",
-            narration: "Lara schedules a site visit and estimates restoration costs.",
-            duration: 3.0,
-          },
-          {
-            role: "Supplier Coordinator",
-            narration:
-              "Sam lines up smoke-restoration specialists and a temporary kitchen.",
-            duration: 2.5,
-          },
-          {
-            role: "Claims Team Leader",
-            narration: "Theo reviews the high-value claim and signs off.",
-            duration: 2.5,
-          },
-        ],
-        commsNarration: `Cara walks ${p.name} through the staged settlement plan — claim closed`,
-      };
-    case "travel":
-      return {
-        scenarioId: "travel",
-        ...base,
-        extras: [
-          {
-            role: "Fraud Investigator",
-            narration: "Felix runs a quick fraud check — clears the claim.",
-            duration: 2.5,
-          },
-        ],
-        settlement: "partial",
-        commsNarration: `Cara explains partial outcome to ${p.name} — claim closed`,
-      };
-    case "life":
-      return {
-        scenarioId: "life",
-        ...base,
-        preAssessor: [
-          {
-            role: "Claims Team Leader",
-            narration:
-              "Theo personally oversees the bereavement claim for compassionate handling.",
-            duration: 2.5,
-          },
-        ],
-        commsNarration: `Cara calls ${p.name} with empathy and clear next steps — claim closed`,
-      };
-  }
 }
