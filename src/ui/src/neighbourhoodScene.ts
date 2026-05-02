@@ -243,7 +243,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     x: number,
     y: number,
     z: number,
-    icon: "water" | "car" | "fire" | "luggage" | "heart",
+    icon: "water" | "car" | "fire" | "luggage" | "heart" | "fraud",
   ): void => {
     const bubble = MeshBuilder.CreateBox(
       `nh_marker_${x}_${z}`,
@@ -273,6 +273,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
       fire: { color: "#e07a2c", glyph: "🔥" },
       luggage: { color: "#8a5a2a", glyph: "🧳" },
       heart: { color: "#c2566f", glyph: "♥" },
+      fraud: { color: "#5c4a8a", glyph: "🔍" },
     };
     const sym = symbols[icon];
     ctx.fillStyle = sym.color;
@@ -341,6 +342,36 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     pole.position = new Vector3(x, 2.0, z);
     pole.material = mat("labelPole", "#7a7a7a");
     attach(pole);
+  };
+
+  // A subtle dashed path line tracing a customer's route from an incident
+  // zone toward the Zava Claims Office. The theme guide calls these out as
+  // "a subtle path line showing the customer's route to the claims office".
+  // We emit a series of short, low-profile tiles between two points.
+  const makePathLine = (
+    name: string,
+    from: { x: number; z: number },
+    to: { x: number; z: number },
+    color = "#f0d985",
+  ): void => {
+    const dx = to.x - from.x;
+    const dz = to.z - from.z;
+    const dist = Math.hypot(dx, dz);
+    const steps = Math.max(2, Math.floor(dist / 1.6));
+    const stepMat = mat(`pathLine_${color}`, color);
+    for (let i = 0; i < steps; i++) {
+      const t = (i + 0.5) / steps;
+      const px = from.x + dx * t;
+      const pz = from.z + dz * t;
+      const tile = MeshBuilder.CreateBox(
+        `${name}_${i}`,
+        { width: 0.55, height: 0.04, depth: 0.55 },
+        scene,
+      );
+      tile.position = new Vector3(px, 0.085, pz);
+      tile.material = stepMat;
+      attach(tile);
+    }
   };
 
   // ----- Zava Claims Office (central anchor) -----
@@ -473,10 +504,26 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     // Customer (Michael)
     makePerson(zx - 1, zz - 5, "#d6a35c");
 
+    // Water-extraction & drying gear staged out front — supports the
+    // emergency make-safe story (scenario 3, supplier coordination step).
+    makeBox("nh_dry_van_body", 2.4, 1.2, 1.3, new Vector3(zx - 5, 0.7, zz - 4.5), "#e8e8e8");
+    makeBox("nh_dry_van_cab", 1.2, 0.9, 1.25, new Vector3(zx - 6, 1.45, zz - 4.5), "#cfcfcf");
+    makeBox("nh_dry_van_stripe", 2.5, 0.18, 1.32, new Vector3(zx - 5, 0.85, zz - 4.5), "#3a8fd6");
+    // Floor blower / dehumidifier sitting in the driveway
+    makeBox("nh_dry_blower", 0.7, 0.55, 0.7, new Vector3(zx + 0.6, 0.32, zz - 3.2), "#ffd166");
+    makeBox("nh_dry_blower_grill", 0.5, 0.4, 0.05, new Vector3(zx + 0.6, 0.35, zz - 2.85), "#3a3a3a");
+
     // Incident marker over house 1
     makeIncidentMarker(zx, 5.2, zz, "water");
 
-    makeLabel(zx + 4, zz + 4, "Residential — Home Claims", "#3a8fd6");
+    // Route from house to office front door
+    makePathLine(
+      "nh_path_home",
+      { x: zx - 2, z: zz - 4 },
+      { x: -7, z: -4 },
+    );
+
+    makeLabel(zx + 4, zz + 4, "Residential — Home Claims (Michael)", "#3a8fd6");
   }
 
   // ----- Zone 2: Main Road / Intersection — Motor Insurance -----
@@ -505,10 +552,59 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     // Driver standing nearby (Aisha)
     makePerson(zx + 1.2, zz + 1.2, "#b03a6f");
 
+    // Northside Smash Repairs garage — supports the supplier coordination
+    // step in scenario 1 (motor collision).
+    const gx = zx + 4;
+    const gz = zz + 8;
+    makeBox("nh_garage_base", 6.0, 2.6, 4.4, new Vector3(gx, 1.3, gz), "#d8d2c0");
+    makeBox("nh_garage_roof", 6.4, 0.4, 4.8, new Vector3(gx, 2.7, gz), "#3a3a3a");
+    // Roller door
+    makeBox("nh_garage_door", 2.6, 2.0, 0.12, new Vector3(gx - 1.2, 1.0, gz - 2.25), "#9aa0a8");
+    // Garage sign
+    const garageSign = MeshBuilder.CreateBox(
+      "nh_garage_sign",
+      { width: 4.6, height: 0.6, depth: 0.1 },
+      scene,
+    );
+    garageSign.position = new Vector3(gx + 0.6, 3.0, gz - 2.25);
+    const gtex = new DynamicTexture(
+      "nh_garage_sign_tex",
+      { width: 512, height: 96 },
+      scene,
+      false,
+    );
+    const gctx = gtex.getContext() as CanvasRenderingContext2D;
+    gctx.fillStyle = "#1c2230";
+    gctx.fillRect(0, 0, 512, 96);
+    gctx.fillStyle = "#ffd166";
+    gctx.font = "bold 38px sans-serif";
+    gctx.textBaseline = "middle";
+    gctx.textAlign = "center";
+    gctx.fillText("NORTHSIDE SMASH REPAIRS", 256, 50);
+    gtex.update();
+    const gmat = new StandardMaterial("nh_garage_sign_mat", scene);
+    gmat.diffuseTexture = gtex;
+    gmat.emissiveColor = new Color3(0.55, 0.55, 0.55);
+    gmat.specularColor = new Color3(0, 0, 0);
+    garageSign.material = gmat;
+    attach(garageSign);
+    // Courtesy / rental car waiting on the forecourt
+    makeBox("nh_rental_body", 2.4, 0.7, 1.3, new Vector3(gx - 3.2, 0.5, gz + 1.5), "#5fa657");
+    makeBox("nh_rental_top", 1.4, 0.55, 1.2, new Vector3(gx - 3.2, 1.1, gz + 1.5), "#4a8a4a");
+    makeBox("nh_rental_win", 1.2, 0.4, 1.25, new Vector3(gx - 3.2, 1.1, gz + 1.5), "#cfe7ff");
+    makeBox("nh_rental_label", 1.2, 0.3, 0.06, new Vector3(gx - 3.2, 1.65, gz + 0.85), "#ffd166");
+
     // Incident marker
     makeIncidentMarker(zx + 1.5, 3.4, zz - 0.8, "car");
 
-    makeLabel(zx + 3, zz + 4, "Main Road — Motor Claims", "#c44a3a");
+    // Path from collision to office
+    makePathLine(
+      "nh_path_motor",
+      { x: zx, z: zz + 1 },
+      { x: -6, z: -2 },
+    );
+
+    makeLabel(zx + 3, zz + 4, "Main Road — Motor Claims (Aisha)", "#c44a3a");
   }
 
   // ----- Zone 3: High Street — Small Business Insurance (café fire) -----
@@ -590,10 +686,33 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     // Customer (Tom)
     makePerson(cafeX - 1.5, zz - 4.5, "#5a8a4a");
 
+    // Cordon cones around the cafe entrance — fire scene under investigation
+    for (const dx of [-2.4, -0.8, 0.8, 2.4]) {
+      makeBox(
+        `nh_cone_${dx}`,
+        0.3,
+        0.5,
+        0.3,
+        new Vector3(cafeX + dx, 0.27, zz - 3.4),
+        "#e07a2c",
+      );
+    }
+    // Forensic electrician van — supports scenario 4 (cause investigation)
+    makeBox("nh_elec_body", 2.6, 1.2, 1.3, new Vector3(cafeX + 5.5, 0.7, zz - 5), "#2a55a0");
+    makeBox("nh_elec_cab", 1.2, 0.9, 1.25, new Vector3(cafeX + 6.5, 1.45, zz - 5), "#1f3f78");
+    makeBox("nh_elec_stripe", 2.7, 0.18, 1.32, new Vector3(cafeX + 5.5, 0.85, zz - 5), "#ffd166");
+
     // Incident marker
     makeIncidentMarker(cafeX, 3.4, zz, "fire");
 
-    makeLabel(zx + 4, zz - 5.5, "High Street — Business Claims", "#e07a2c");
+    // Path from cafe to office
+    makePathLine(
+      "nh_path_business",
+      { x: cafeX, z: zz - 4 },
+      { x: -7, z: -4 },
+    );
+
+    makeLabel(zx + 4, zz - 5.5, "High Street — Business Claims (Tom)", "#e07a2c");
   }
 
   // ----- Zone 4: Travel Hub — Travel Insurance (lost luggage) -----
@@ -661,7 +780,14 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
 
     makeIncidentMarker(zx - 2, 2.4, zz + 1.5, "luggage");
 
-    makeLabel(zx, zz - 5, "Travel Hub — Travel Claims", "#3a5fb0");
+    // Path from travel hub to office
+    makePathLine(
+      "nh_path_travel",
+      { x: zx + 2, z: zz - 1 },
+      { x: -7, z: 4 },
+    );
+
+    makeLabel(zx, zz - 5, "Travel Hub — Travel Claims (Grace)", "#3a5fb0");
   }
 
   // ----- Zone 5: Quiet Suburb Home — Life Insurance -----
@@ -700,10 +826,103 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     makeTree(zx + 4, zz - 3);
     makeTree(zx - 6, zz + 3, 0.9);
 
+    // A small condolence wreath at the door — gentle, no alarm symbols.
+    makeBox("nh_life_wreath_outer", 0.7, 0.7, 0.08, new Vector3(zx, 1.6, zz - 2.1), "#5fa657");
+    makeBox("nh_life_wreath_inner", 0.4, 0.4, 0.06, new Vector3(zx, 1.6, zz - 2.08), "#fff8e6");
+    makeBox("nh_life_wreath_ribbon", 0.18, 0.55, 0.06, new Vector3(zx, 1.25, zz - 2.08), "#c2566f");
+
+    // Beneficiary (Robert) walking calmly down the path
+    makePerson(zx - 2.5, zz - 4, "#2a3a5c", "#3a3a3a");
+
     // Soft heart marker (gentle)
     makeIncidentMarker(zx, 4.6, zz, "heart");
 
-    makeLabel(zx, zz + 5, "Family Home — Life Claims", "#c2566f");
+    // Path from family home to office (calm, soft tone)
+    makePathLine(
+      "nh_path_life",
+      { x: zx - 2, z: zz - 3 },
+      { x: -6, z: 4 },
+      "#e8d6cf",
+    );
+
+    makeLabel(zx, zz + 5, "Family Home — Life Claims (Robert)", "#c2566f");
+  }
+
+  // ----- Zone 6: Apartment Block — Contents / Suspected Theft -----
+  // South side — featured incident from scenario 2 (Jordan Pierce). The
+  // claim is under fraud review, so the visual stays calm: a small
+  // apartment block with a forced front door, police tape, and an
+  // investigator's magnifier marker rather than alarm symbols.
+  {
+    const zx = -10;
+    const zz = -24;
+
+    // Three-storey apartment block
+    makeBox("nh_apt_base", 7.0, 7.5, 5.0, new Vector3(zx, 3.75, zz), "#cfbfa8");
+    makeBox("nh_apt_roof", 7.4, 0.4, 5.4, new Vector3(zx, 7.7, zz), "#5a4a3a");
+    // Entry stoop
+    makeBox("nh_apt_stoop", 2.6, 0.2, 1.4, new Vector3(zx, 0.2, zz - 2.85), "#b8b0a0");
+
+    // Windows in a 3x3 grid on the front face
+    const aptWin = mat("aptWin", "#cfe7ff");
+    for (let row = 0; row < 3; row++) {
+      for (let col = -1; col <= 1; col++) {
+        const w = MeshBuilder.CreateBox(
+          `nh_apt_win_${row}_${col}`,
+          { width: 1.0, height: 0.8, depth: 0.1 },
+          scene,
+        );
+        w.position = new Vector3(zx + col * 2.2, 1.6 + row * 2.2, zz - 2.55);
+        w.material = aptWin;
+        attach(w);
+      }
+    }
+
+    // Forced / ajar front door (the alleged break-in point)
+    const door = MeshBuilder.CreateBox(
+      "nh_apt_door",
+      { width: 1.0, height: 1.8, depth: 0.16 },
+      scene,
+    );
+    door.position = new Vector3(zx, 0.95, zz - 2.55);
+    door.rotation.y = -0.35; // ajar
+    door.material = mat("aptDoor", "#5a3a22");
+    attach(door);
+    // Splintered door frame highlight
+    makeBox("nh_apt_door_frame", 0.18, 1.9, 0.18, new Vector3(zx + 0.55, 0.95, zz - 2.55), "#3a2a18");
+
+    // "POLICE" tape across the doorway (two thin strips)
+    makeBox("nh_apt_tape1", 2.0, 0.12, 0.04, new Vector3(zx, 1.5, zz - 2.45), "#ffd166");
+    makeBox("nh_apt_tape2", 2.0, 0.12, 0.04, new Vector3(zx, 0.9, zz - 2.45), "#ffd166");
+
+    // A small police evidence marker / cone on the stoop
+    makeBox("nh_apt_evidence", 0.3, 0.5, 0.3, new Vector3(zx + 1.2, 0.27, zz - 2.85), "#3a6dc4");
+
+    // Investigator's car parked out front (plain sedan)
+    makeBox("nh_inv_body", 2.4, 0.7, 1.3, new Vector3(zx + 5, 0.5, zz - 3.5), "#2a3a5c");
+    makeBox("nh_inv_top", 1.4, 0.55, 1.2, new Vector3(zx + 5, 1.1, zz - 3.5), "#1c2230");
+    makeBox("nh_inv_win", 1.2, 0.4, 1.25, new Vector3(zx + 5, 1.1, zz - 3.5), "#cfe7ff");
+
+    // Claimant (Jordan) standing on the path with arms out — body language
+    // is left to the viewer's imagination; he's just a small voxel figure.
+    makePerson(zx - 1.5, zz - 4, "#7a6a8a");
+
+    // Trees / planter beside the building
+    makeTree(zx - 5, zz - 1, 0.9);
+    makeTree(zx + 5.5, zz + 2, 0.9);
+
+    // Investigator marker (magnifier) — calm, not alarming
+    makeIncidentMarker(zx, 9.2, zz, "fraud");
+
+    // Path from apartment to office (broken / dashed already; this zone
+    // is "under review" so the path goes via the central road).
+    makePathLine(
+      "nh_path_apt",
+      { x: zx + 2, z: zz - 3 },
+      { x: -6, z: -4 },
+    );
+
+    makeLabel(zx, zz - 6, "Apartment Block — Contents Claim (under review)", "#5c4a8a");
   }
 
   // ----- Background filler: a few generic suburban houses -----
@@ -712,7 +931,6 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     [-30, -2, "#f0d6b0", "#b04a3a"],
     [30, 10, "#e7d6c0", "#5a6a7c"],
     [30, -8, "#f0e0c8", "#7a4a3a"],
-    [-12, -22, "#e7c8a0", "#b04a3a"],
     [10, 22, "#f0d6b0", "#5a6a7c"],
   ] as Array<[number, number, string, string]>) {
     makeBox(`nh_filler_base_${hx}_${hz}`, 3.6, 2.2, 3.2, new Vector3(hx, 1.1, hz), color);
