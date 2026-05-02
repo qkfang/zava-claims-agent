@@ -50,10 +50,60 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
     model: {
       format: 'OpenAI'
       name: 'gpt-5.4'
-      version: '2025-09-15'
+      version: '2026-03-05'
     }
     versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
     raiPolicyName: 'Microsoft.DefaultV2'
+  }
+}
+
+resource bingAccount 'Microsoft.Bing/accounts@2020-06-10' = {
+  name: '${name}-bing'
+  location: 'global'
+  tags: tags
+  kind: 'Bing.Grounding'
+  sku: {
+    name: 'G1'
+  }
+}
+
+#disable-next-line BCP081
+resource bingSearchConnection 'Microsoft.CognitiveServices/accounts/connections@2025-10-01-preview' = {
+  parent: foundry
+  name: '${name}-bingsearchconnection'
+  properties: {
+    authType: 'ApiKey'
+    category: 'GroundingWithBingSearch'
+    target: 'https://api.bing.microsoft.com/'
+    credentials: {
+      key: bingAccount.listKeys().key1
+    }
+    metadata: {
+      displayName: '${name}-bing'
+      type: 'bing_grounding'
+      ApiType: 'Azure'
+      ResourceId: bingAccount.id
+    }
+  }
+}
+
+#disable-next-line BCP081
+resource bingSearchProjectConnection 'Microsoft.CognitiveServices/accounts/projects/connections@2025-10-01-preview' = {
+  parent: project
+  name: '${name}-bingsearchconnection'
+  properties: {
+    authType: 'ApiKey'
+    category: 'GroundingWithBingSearch'
+    target: 'https://api.bing.microsoft.com/'
+    credentials: {
+      key: bingAccount.listKeys().key1
+    }
+    metadata: {
+      displayName: '${name}-bing'
+      type: 'bing_grounding'
+      ApiType: 'Azure'
+      ResourceId: bingAccount.id
+    }
   }
 }
 
@@ -63,3 +113,5 @@ output projectName string = project.name
 output projectEndpoint string = project.properties.endpoints['AI Foundry API']
 output deploymentName string = modelDeployment.name
 output principalId string = foundry.identity.principalId
+output bingAccountName string = bingAccount.name
+output bingProjectConnectionId string = bingSearchProjectConnection.id
