@@ -76,7 +76,8 @@ export interface ScenarioRunnerHooks {
 export class ScenarioRunner {
   private state: RunnerState = "idle";
   private nhCustomer: VoxelCharacter | null = null;
-  private nhTarget: Vector3 | null = null;
+  /** Remaining waypoints the customer is walking through (last one is the office door). */
+  private nhRoute: Vector3[] = [];
   private nhArriveDelay = 0;
   private currentPersona: CustomerPersona | null = null;
   private currentClaimId: string | null = null;
@@ -229,9 +230,11 @@ export class ScenarioRunner {
     if (this.state === "neighbourhood-arrive") {
       this.nhArriveDelay -= dtSec;
       if (this.nhArriveDelay <= 0) {
-        // Begin walking toward the office door.
+        // Begin walking toward the office door, routed along the road
+        // grid so the customer doesn't stride straight through houses,
+        // shops, or the central roundabout island.
         this.state = "neighbourhood-walk";
-        this.nhTarget = this.zones.officeDoor.clone();
+        this.nhRoute = this.buildNhRoute();
         this.nhWalkRefocusTimer = 0;
         this.nhCustomer?.setWalking(true);
         if (this.currentPersona) {
@@ -260,17 +263,76 @@ export class ScenarioRunner {
 
   private nhWalkRefocusTimer = 0;
 
+  /**
+   * Build a list of waypoints from the customer's current position to
+   * the office front door. The route hugs the main road sidewalks (at
+   * z≈±3.4 and x≈±3.4) so the character walks around houses, the
+   * roundabout island, and other scenery rather than clipping through
+   * them in a straight line.
+   */
+  private buildNhRoute(): Vector3[] {
+    const door = this.zones.officeDoor.clone();
+    door.y = 0.2;
+    const id = this.currentPersona?.id;
+    // Sidewalk corridors just outside the central asphalt (kerbs sit at
+    // ±2.95 with depth 0.9 → walkable strip from ~±3.0 to ~±3.4).
+    const N = 3.4; // north sidewalk z
+    const S = -3.4; // south sidewalk z
+    const W = -3.4; // west sidewalk x
+    const E = 3.4; // east sidewalk x
+    let waypoints: Array<[number, number]> = [];
+    switch (id) {
+      case "home":
+        // Spawn (~14, 10) → south to north sidewalk → west around the
+        // roundabout via the NW corner → south down west sidewalk → door.
+        waypoints = [[14, N], [W, N], [W, -4]];
+        break;
+      case "motor":
+        // Spawn (~23.5, -2) is on the road south of centre — step onto
+        // the south sidewalk then walk west to the door.
+        waypoints = [[14, S], [W, S]];
+        break;
+      case "business":
+        // Spawn (~-17, -12) south-west — walk north to south sidewalk
+        // then east to the door.
+        waypoints = [[-17, S], [W, S]];
+        break;
+      case "travel":
+        // Spawn (~-15, 14) north-west — south to north sidewalk, east
+        // to NW corner, then south to the door.
+        waypoints = [[-15, N], [W, N], [W, -4]];
+        break;
+      case "life":
+        // Spawn (~15, -14) south-east — north to south sidewalk then
+        // west to the door.
+        waypoints = [[15, S], [W, S]];
+        break;
+      default:
+        waypoints = [];
+    }
+    const route = waypoints.map(([x, z]) => new Vector3(x, 0.2, z));
+    route.push(door);
+    return route;
+  }
+
   private advanceNhWalk(dtSec: number): void {
-    if (!this.nhCustomer || !this.nhTarget) return;
+    if (!this.nhCustomer || this.nhRoute.length === 0) return;
     const speed = 3.2;
     this.nhCustomer.update(dtSec);
     const root = this.nhCustomer.root;
-    const dx = this.nhTarget.x - root.position.x;
-    const dz = this.nhTarget.z - root.position.z;
+    const target = this.nhRoute[0];
+    const dx = target.x - root.position.x;
+    const dz = target.z - root.position.z;
     const dist = Math.hypot(dx, dz);
+    // If we're close enough to the current waypoint, advance to the
+    // next. The final waypoint is the office door, so an empty queue
+    // triggers the office transition.
     if (dist < 0.4) {
-      // Arrived at the office boundary — transition to office.
-      this.beginTransition();
+      this.nhRoute.shift();
+      if (this.nhRoute.length === 0) {
+        this.beginTransition();
+        return;
+      }
       return;
     }
     const step = Math.min(dist, speed * dtSec);
@@ -550,7 +612,7 @@ export class ScenarioRunner {
     this.nhCustomer.setHighlight(false);
     this.nhCustomer.root.dispose();
     this.nhCustomer = null;
-    this.nhTarget = null;
+    this.nhRoute = [];
   }
 
   /** Required for use in main.ts dispose flow (currently unused). */
