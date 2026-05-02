@@ -108,9 +108,69 @@ Observant, careful, skeptical, and evidence-driven.
 
 ---
 
+## 6. James O'Connor — Supplier Coordinator
+
+**Role:** Arranges and oversees the third-party suppliers, repairers, and contractors needed to resolve a claim.
+
+**What he does:**
+- Selects approved repairers, builders, or assessors
+- Books inspections and repair appointments
+- Tracks supplier progress and quotes
+- Resolves scheduling and quality issues
+- Keeps the claim file updated with supplier status
+
+**Personality:**
+Organised, pragmatic, vendor-savvy, and dependable.
+
+**Typical line:**
+
+> “I’ve booked an approved repairer; they’ll be on site Tuesday morning.”
+
+---
+
+## 7. Hannah Lee — Settlement Officer
+
+**Role:** Calculates the final claim payout and prepares the settlement.
+
+**What she does:**
+- Reviews the assessment and supplier costs
+- Applies excess, limits, and policy adjustments
+- Prepares the settlement statement
+- Issues payment instructions
+- Confirms settlement details with the customer
+
+**Personality:**
+Numbers-focused, precise, transparent, and customer-fair.
+
+**Typical line:**
+
+> “Once we deduct the excess, your settlement comes to $4,820 — paid into your nominated account.”
+
+---
+
+## 8. Olivia Martin — Customer Communications Specialist
+
+**Role:** Keeps the customer informed and supported throughout the claim.
+
+**What she does:**
+- Sends status updates and outcome letters
+- Explains decisions in plain English
+- Handles customer questions and concerns
+- Coordinates timely responses across departments
+- Ensures empathetic, on-brand messaging
+
+**Personality:**
+Warm, articulate, empathetic, and clear.
+
+**Typical line:**
+
+> “I’ll send you an update today and walk you through what happens next.”
+
+---
+
 # Customer Characters
 
-## 6. Michael Harris — Home Insurance Customer
+## 9. Michael Harris — Home Insurance Customer
 
 **Situation:** His kitchen was damaged after a burst pipe.
 
@@ -131,7 +191,7 @@ Stressed, practical, and eager for a fast answer.
 
 ---
 
-## 7. Aisha Khan — Motor Insurance Customer
+## 10. Aisha Khan — Motor Insurance Customer
 
 **Situation:** Her car was damaged in a rear-end accident.
 
@@ -152,7 +212,7 @@ Busy, direct, and time-sensitive.
 
 ---
 
-## 8. Tom Bradley — Small Business Owner
+## 11. Tom Bradley — Small Business Owner
 
 **Situation:** His café suffered smoke damage after an electrical fire.
 
@@ -173,7 +233,7 @@ Anxious, business-minded, and focused on reopening quickly.
 
 ---
 
-## 9. Grace Williams — Travel Insurance Customer
+## 12. Grace Williams — Travel Insurance Customer
 
 **Situation:** Her luggage was lost during an overseas trip.
 
@@ -194,7 +254,7 @@ Frustrated, overwhelmed, and looking for practical help.
 
 ---
 
-## 10. Robert Chen — Life Insurance Beneficiary
+## 13. Robert Chen — Life Insurance Beneficiary
 
 **Situation:** He is making a claim after a family member passed away.
 

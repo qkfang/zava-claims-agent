@@ -211,12 +211,33 @@ export class VoxelCharacter {
 }
 
 export const PALETTES: Record<string, VoxelCharacterPalette> = {
-  customer1: { skin: "#f3c79b", hair: "#5a3a25", shirt: "#4f8fd6", pants: "#2d3344", shoes: "#1a1a1a" },
-  customer2: { skin: "#e8b48a", hair: "#2d2418", shirt: "#d36b5b", pants: "#3a2f24", shoes: "#1a1a1a" },
-  customer3: { skin: "#f5d2b3", hair: "#9a5a2a", shirt: "#7ab97a", pants: "#2a3344", shoes: "#1a1a1a" },
-  customer4: { skin: "#d9a37e", hair: "#1a1a1a", shirt: "#c188d4", pants: "#3a3a44", shoes: "#1a1a1a" },
-  receptionist: { skin: "#f3c79b", hair: "#3a2418", shirt: "#f4c463", pants: "#3a2a55", shoes: "#1a1a1a", accent: "#b8454a" },
-  validator: { skin: "#e8b48a", hair: "#2d2418", shirt: "#5fb8a8", pants: "#2d3344", shoes: "#1a1a1a", accent: "#1c2230" },
-  approver: { skin: "#f3c79b", hair: "#5a4a35", shirt: "#3a5fb0", pants: "#1c2230", shoes: "#1a1a1a", accent: "#ffb347" },
-  filer: { skin: "#d9a37e", hair: "#3a2418", shirt: "#a8b85f", pants: "#2d3344", shoes: "#1a1a1a" },
+  // ----- Customers (mapped to the 5 personas in storybook/characters.md) -----
+  // Michael Harris — Home Insurance Customer (stressed homeowner)
+  customerHome:    { skin: "#f3c79b", hair: "#5a3a25", shirt: "#4f8fd6", pants: "#2d3344", shoes: "#1a1a1a" },
+  // Aisha Khan — Motor Insurance Customer (busy commuter)
+  customerMotor:   { skin: "#e8b48a", hair: "#2d2418", shirt: "#d36b5b", pants: "#3a2f24", shoes: "#1a1a1a" },
+  // Tom Bradley — Small Business Owner (café owner)
+  customerBusiness: { skin: "#f5d2b3", hair: "#9a5a2a", shirt: "#7ab97a", pants: "#2a3344", shoes: "#1a1a1a" },
+  // Grace Williams — Travel Insurance Customer (frustrated traveller)
+  customerTravel:  { skin: "#d9a37e", hair: "#1a1a1a", shirt: "#c188d4", pants: "#3a3a44", shoes: "#1a1a1a" },
+  // Robert Chen — Life Insurance Beneficiary (quiet, formal)
+  customerLife:    { skin: "#e8c69a", hair: "#1f1a18", shirt: "#3a3a44", pants: "#1c1c22", shoes: "#1a1a1a", accent: "#22252e" },
+
+  // ----- Staff (mapped to storybook/characters.md staff cast) -----
+  // Sarah Mitchell — Claims Intake Officer (warm reception palette)
+  intakeOfficer:    { skin: "#f3c79b", hair: "#3a2418", shirt: "#f4c463", pants: "#3a2a55", shoes: "#1a1a1a", accent: "#b8454a" },
+  // Daniel Cho — Claims Assessor (analytical, navy/teal)
+  claimsAssessor:   { skin: "#e8b48a", hair: "#1a1a1a", shirt: "#5fb8a8", pants: "#2d3344", shoes: "#1a1a1a", accent: "#1c2230" },
+  // Priya Nair — Loss Adjuster (field-oriented, earthy green)
+  lossAdjuster:     { skin: "#d9a37e", hair: "#2d1a10", shirt: "#7a9c5a", pants: "#3a2f24", shoes: "#1a1a1a", accent: "#3a2a20" },
+  // Elena Garcia — Fraud Investigator (sharp purple suit)
+  fraudInvestigator:{ skin: "#e8b48a", hair: "#1a1a1a", shirt: "#7a4f9c", pants: "#1c2230", shoes: "#1a1a1a", accent: "#2a3a5c" },
+  // James O'Connor — Supplier Coordinator (warm orange polo)
+  supplierCoord:    { skin: "#f3c79b", hair: "#cfa050", shirt: "#e07a3a", pants: "#3a3a44", shoes: "#1a1a1a" },
+  // Hannah Lee — Settlement Officer (corporate blue button-down)
+  settlementOfficer:{ skin: "#f5d2b3", hair: "#3a2418", shirt: "#3a5fb0", pants: "#1c2230", shoes: "#1a1a1a", accent: "#ffb347" },
+  // Olivia Martin — Customer Communications Specialist (friendly magenta)
+  commsSpecialist:  { skin: "#e8c69a", hair: "#5a3a25", shirt: "#c14a7a", pants: "#3a3a44", shoes: "#1a1a1a" },
+  // Mark Reynolds — Claims Team Leader (grey suit, confident)
+  teamLeader:       { skin: "#e8b48a", hair: "#5a4a35", shirt: "#cdb497", pants: "#2a2f3a", shoes: "#1a1a1a", accent: "#1c2230" },
 };

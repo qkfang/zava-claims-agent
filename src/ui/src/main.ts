@@ -34,20 +34,21 @@ function bootstrap(): void {
   scene.ambientColor = new Color3(0.6, 0.6, 0.7);
 
   // Isometric-ish camera: high angle, locked pitch range, orbit on user drag.
+  // Office spans roughly x in [-15, 15], z in [-11, 13], so we sit further out.
   const camera = new ArcRotateCamera(
     "cam",
     -Math.PI / 4,            // alpha (rotation around Y)
     Math.PI / 3.4,           // beta  (tilt)
-    32,                      // radius
+    48,                      // radius
     new Vector3(0, 1.2, 1),  // target: roughly center of office
     scene,
   );
   camera.attachControl(canvas, true);
-  camera.lowerRadiusLimit = 18;
-  camera.upperRadiusLimit = 55;
+  camera.lowerRadiusLimit = 28;
+  camera.upperRadiusLimit = 80;
   camera.lowerBetaLimit = Math.PI / 6;
   camera.upperBetaLimit = Math.PI / 2.6;
-  camera.wheelPrecision = 30;
+  camera.wheelPrecision = 20;
   camera.panningSensibility = 0;
 
   // Lighting — soft hemispheric + a directional fill from the windows.

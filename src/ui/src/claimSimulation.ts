@@ -10,21 +10,30 @@ import {
 import { OfficeLayout } from "./officeScene";
 import { PALETTES, VoxelCharacter } from "./voxelCharacter";
 
+/**
+ * Claims-industry staff roles, mirroring the cast in
+ * `storybook/characters.md` and the departments in `res/img-office.png`.
+ */
 export type AgentRole =
-  | "Receptionist"
-  | "Validator"
-  | "Approver"
-  | "Filer";
+  | "Claims Intake Officer"
+  | "Claims Assessor"
+  | "Loss Adjuster"
+  | "Fraud Investigator"
+  | "Supplier Coordinator"
+  | "Settlement Officer"
+  | "Customer Communications Specialist"
+  | "Claims Team Leader";
 
 export type ClaimStatus =
   | "submitted"
-  | "validating"
-  | "validated"
-  | "approving"
+  | "intake"
+  | "assessing"
+  | "assessed"
+  | "settling"
   | "approved"
   | "rejected"
-  | "filing"
-  | "filed";
+  | "communicating"
+  | "closed";
 
 export interface Claim {
   id: string;
@@ -35,13 +44,22 @@ export interface Claim {
   mesh: Mesh;
 }
 
-const CLAIM_TYPES: Array<{ type: string; min: number; max: number }> = [
-  { type: "Auto collision", min: 800, max: 9500 },
-  { type: "Home water damage", min: 1200, max: 18000 },
-  { type: "Travel cancellation", min: 200, max: 4000 },
-  { type: "Health — outpatient", min: 100, max: 2500 },
-  { type: "Property theft", min: 500, max: 12000 },
-  { type: "Pet veterinary", min: 150, max: 3200 },
+/**
+ * Customer claim scenarios — each one matches a customer persona from
+ * `storybook/characters.md` so the simulation tells a recognisable story.
+ */
+const CUSTOMER_SCENARIOS: Array<{
+  persona: string;
+  palette: keyof typeof PALETTES;
+  type: string;
+  min: number;
+  max: number;
+}> = [
+  { persona: "Michael Harris",  palette: "customerHome",     type: "Home — burst pipe damage",     min: 1500, max: 18000 },
+  { persona: "Aisha Khan",      palette: "customerMotor",    type: "Motor — rear-end collision",    min: 800,  max: 9500 },
+  { persona: "Tom Bradley",     palette: "customerBusiness", type: "Business — café smoke damage", min: 4000, max: 35000 },
+  { persona: "Grace Williams",  palette: "customerTravel",   type: "Travel — lost luggage",        min: 200,  max: 4000 },
+  { persona: "Robert Chen",     palette: "customerLife",     type: "Life — beneficiary claim",      min: 5000, max: 50000 },
 ];
 
 /** Unique ID counter — small + readable for the activity log. */
@@ -80,15 +98,15 @@ function moveToward(
   return false;
 }
 
-/** Tasks staff agents can be assigned to. */
+/** Tasks that processing staff agents can be assigned to. */
 type Task =
   | { kind: "idle" }
   | { kind: "pickup"; claim: Claim }
-  | { kind: "validate"; claim: Claim }
-  | { kind: "carry-to-approver"; claim: Claim }
-  | { kind: "approve"; claim: Claim }
-  | { kind: "carry-to-filer"; claim: Claim }
-  | { kind: "file"; claim: Claim };
+  | { kind: "assess"; claim: Claim }
+  | { kind: "carry-to-settlement"; claim: Claim }
+  | { kind: "settle"; claim: Claim }
+  | { kind: "carry-to-comms"; claim: Claim }
+  | { kind: "communicate"; claim: Claim };
 
 interface StaffAgent {
   id: string;
@@ -104,18 +122,28 @@ interface StaffAgent {
   moveTarget: Vector3 | null;
   /** Optional callback invoked once we reach moveTarget. */
   onArrive: (() => void) | null;
+  /** True for staff that participate in the active claim pipeline. */
+  active: boolean;
+  /** Rotating status messages used by ambient staff. */
+  ambientMessages?: string[];
+  ambientIndex?: number;
+  ambientTimer?: number;
 }
 
 interface CustomerAgent {
   character: VoxelCharacter;
   claim: Claim;
+  persona: string;
   state: "entering" | "to-reception" | "leaving" | "done";
   moveTarget: Vector3;
 }
 
 /**
- * Top-level simulation: customers spawn, drop claims at reception, staff
- * agents (Receptionist → Validator → Approver → Filer) process them.
+ * Top-level simulation: customers spawn, drop claims at reception, the
+ * Claims Intake Officer routes them through Claims Assessor → Settlement
+ * Officer → Customer Communications Specialist. Loss Adjuster, Fraud
+ * Investigator, Supplier Coordinator and Team Leader are visible at their
+ * desks with rotating ambient status to reinforce the office metaphor.
  */
 export class ClaimSimulation {
   private readonly scene: Scene;
@@ -125,12 +153,12 @@ export class ClaimSimulation {
   private readonly staff: StaffAgent[] = [];
   private readonly customers: CustomerAgent[] = [];
 
-  /** Claims sitting in the reception inbox awaiting pickup. */
+  /** Claims sitting in the intake inbox awaiting pickup. */
   private readonly inbox: Claim[] = [];
-  /** Claims that have been validated, awaiting an approver pickup. */
-  private readonly approverQueue: Claim[] = [];
-  /** Claims waiting for the filer (approved or rejected). */
-  private readonly filerQueue: Claim[] = [];
+  /** Claims that have been assessed, awaiting a Settlement Officer pickup. */
+  private readonly settlementQueue: Claim[] = [];
+  /** Claims waiting for Customer Communications (approved or rejected). */
+  private readonly communicationsQueue: Claim[] = [];
 
   private spawnTimer = 1.5;
   private metrics = { submitted: 0, processing: 0, approved: 0, rejected: 0 };
@@ -150,38 +178,106 @@ export class ClaimSimulation {
       palette: keyof typeof PALETTES;
       home: Vector3;
       color: string;
+      active: boolean;
+      ambient?: string[];
     }> = [
+      // ----- Active pipeline staff -----
       {
-        id: "rec-1",
-        name: "Riley Park",
-        role: "Receptionist",
-        palette: "receptionist",
-        home: this.layout.receptionistDeskPoint,
+        id: "intake-1",
+        name: "Sarah Mitchell",
+        role: "Claims Intake Officer",
+        palette: "intakeOfficer",
+        home: this.layout.intakeDeskPoint,
         color: "#f4c463",
+        active: true,
       },
       {
-        id: "val-1",
-        name: "Vera Singh",
-        role: "Validator",
-        palette: "validator",
-        home: this.layout.validatorDeskPoint,
+        id: "assessor-1",
+        name: "Daniel Cho",
+        role: "Claims Assessor",
+        palette: "claimsAssessor",
+        home: this.layout.assessorDeskPoint,
         color: "#5fb8a8",
+        active: true,
       },
       {
-        id: "app-1",
-        name: "Aiden Cole",
-        role: "Approver",
-        palette: "approver",
-        home: this.layout.approverDeskPoint,
+        id: "settlement-1",
+        name: "Hannah Lee",
+        role: "Settlement Officer",
+        palette: "settlementOfficer",
+        home: this.layout.settlementDeskPoint,
         color: "#3a5fb0",
+        active: true,
       },
       {
-        id: "fil-1",
-        name: "Finn Yamato",
-        role: "Filer",
-        palette: "filer",
-        home: this.layout.filerDeskPoint,
-        color: "#a8b85f",
+        id: "comms-1",
+        name: "Olivia Martin",
+        role: "Customer Communications Specialist",
+        palette: "commsSpecialist",
+        home: this.layout.communicationsDeskPoint,
+        color: "#c14a7a",
+        active: true,
+      },
+      // ----- Ambient/decorative staff (visible, rotating status messages) -----
+      {
+        id: "loss-1",
+        name: "Priya Nair",
+        role: "Loss Adjuster",
+        palette: "lossAdjuster",
+        home: this.layout.lossAdjusterDeskPoint,
+        color: "#7a9c5a",
+        active: false,
+        ambient: [
+          "Reviewing inspection photos",
+          "Estimating repair costs",
+          "Drafting assessment report",
+          "Calling contractor",
+        ],
+      },
+      {
+        id: "fraud-1",
+        name: "Elena Garcia",
+        role: "Fraud Investigator",
+        palette: "fraudInvestigator",
+        home: this.layout.fraudDeskPoint,
+        color: "#7a4f9c",
+        active: false,
+        ambient: [
+          "Cross-checking claim history",
+          "Verifying timeline",
+          "Compiling investigation notes",
+          "Reviewing documents",
+        ],
+      },
+      {
+        id: "supplier-1",
+        name: "James O'Connor",
+        role: "Supplier Coordinator",
+        palette: "supplierCoord",
+        home: this.layout.supplierDeskPoint,
+        color: "#e07a3a",
+        active: false,
+        ambient: [
+          "Booking approved repairer",
+          "Tracking supplier quotes",
+          "Scheduling inspection",
+          "Updating supplier status",
+        ],
+      },
+      {
+        id: "lead-1",
+        name: "Mark Reynolds",
+        role: "Claims Team Leader",
+        palette: "teamLeader",
+        home: this.layout.teamLeaderDeskPoint,
+        color: "#cdb497",
+        active: false,
+        ambient: [
+          "Reviewing escalations",
+          "Monitoring team workload",
+          "Coaching staff",
+          "Approving high-value claim",
+        ],
       },
     ];
 
@@ -200,6 +296,10 @@ export class ClaimSimulation {
         processTimer: 0,
         moveTarget: null,
         onArrive: null,
+        active: d.active,
+        ambientMessages: d.ambient,
+        ambientIndex: 0,
+        ambientTimer: 3 + Math.random() * 4,
       };
       this.staff.push(agent);
       this.logger.registerAgent({
@@ -208,33 +308,28 @@ export class ClaimSimulation {
         role: d.role,
         color: d.color,
       });
-      this.logger.setAgentStatus(d.id, false, "Waiting at desk");
+      const initialStatus = d.ambient?.[0] ?? "Waiting at desk";
+      this.logger.setAgentStatus(d.id, false, initialStatus);
     }
   }
 
   /** Spawn a new customer with a fresh claim folder. */
   spawnCustomer(): void {
-    const tpl = CLAIM_TYPES[Math.floor(Math.random() * CLAIM_TYPES.length)];
+    const scenario =
+      CUSTOMER_SCENARIOS[Math.floor(Math.random() * CUSTOMER_SCENARIOS.length)];
     const amount = Math.round(
-      tpl.min + Math.random() * (tpl.max - tpl.min),
+      scenario.min + Math.random() * (scenario.max - scenario.min),
     );
     const claimId = `C-${nextClaimNum++}`;
     const claim: Claim = {
       id: claimId,
-      type: tpl.type,
+      type: scenario.type,
       amount,
       status: "submitted",
       mesh: this.makeClaimFolder(claimId),
     };
 
-    const paletteKeys: Array<keyof typeof PALETTES> = [
-      "customer1",
-      "customer2",
-      "customer3",
-      "customer4",
-    ];
-    const palette =
-      PALETTES[paletteKeys[Math.floor(Math.random() * paletteKeys.length)]];
+    const palette = PALETTES[scenario.palette];
     const ch = new VoxelCharacter(this.scene, `cust_${claimId}`, palette);
     ch.root.position = this.layout.spawnPoint.clone();
     ch.root.position.y = 0.2;
@@ -249,6 +344,7 @@ export class ClaimSimulation {
     const customer: CustomerAgent = {
       character: ch,
       claim,
+      persona: scenario.persona,
       state: "entering",
       moveTarget: this.layout.entrancePoint.clone(),
     };
@@ -259,7 +355,7 @@ export class ClaimSimulation {
     this.metrics.processing++;
     this.pushMetrics();
     this.logger.log(
-      `Customer arrived with claim ${claim.id} — ${claim.type}, $${claim.amount.toLocaleString()}`,
+      `${scenario.persona} arrived with claim ${claim.id} — ${claim.type}, $${claim.amount.toLocaleString()}`,
       "info",
     );
   }
@@ -292,6 +388,7 @@ export class ClaimSimulation {
 
     this.updateCustomers(dtSec);
     this.updateStaff(dtSec);
+    this.updateAmbient(dtSec);
   }
 
   private updateCustomers(dtSec: number): void {
@@ -322,7 +419,7 @@ export class ClaimSimulation {
           folder.position.y += this.inbox.length * 0.07;
           this.inbox.push(c.claim);
           this.logger.log(
-            `Claim ${c.claim.id} dropped in reception inbox`,
+            `Claim ${c.claim.id} lodged at reception by ${c.persona}`,
             "info",
           );
           c.state = "leaving";
@@ -339,7 +436,6 @@ export class ClaimSimulation {
     }
     // Compact the customer array occasionally
     if (this.customers.length > 0 && this.customers[0].state === "done") {
-      // Keep array size manageable
       for (let i = this.customers.length - 1; i >= 0; i--) {
         if (this.customers[i].state === "done") this.customers.splice(i, 1);
       }
@@ -349,6 +445,7 @@ export class ClaimSimulation {
   private updateStaff(dtSec: number): void {
     const speed = 2.6;
     for (const s of this.staff) {
+      if (!s.active) continue;
       s.character.update(dtSec);
 
       // Try to assign tasks to idle staff.
@@ -375,8 +472,24 @@ export class ClaimSimulation {
     }
   }
 
+  /** Cycle ambient (non-pipeline) staff through their rotating activities. */
+  private updateAmbient(dtSec: number): void {
+    for (const s of this.staff) {
+      if (s.active || !s.ambientMessages || s.ambientMessages.length === 0) {
+        continue;
+      }
+      s.character.update(dtSec);
+      s.ambientTimer = (s.ambientTimer ?? 0) - dtSec;
+      if (s.ambientTimer <= 0) {
+        s.ambientIndex = ((s.ambientIndex ?? 0) + 1) % s.ambientMessages.length;
+        s.ambientTimer = 4 + Math.random() * 4;
+        this.logger.setAgentStatus(s.id, false, s.ambientMessages[s.ambientIndex]);
+      }
+    }
+  }
+
   private tryAssignTask(s: StaffAgent): void {
-    if (s.role === "Receptionist" && this.inbox.length > 0) {
+    if (s.role === "Claims Intake Officer" && this.inbox.length > 0) {
       const claim = this.inbox.shift()!;
       s.task = { kind: "pickup", claim };
       this.logger.setAgentStatus(s.id, true, `Picking up ${claim.id}`);
@@ -385,46 +498,50 @@ export class ClaimSimulation {
         claim.mesh.parent = s.character.getHandAnchor();
         claim.mesh.position = Vector3.Zero();
         claim.mesh.rotation = Vector3.Zero();
-        // Walk to validator desk and drop on validator's inbox.
-        this.logger.log(`Receptionist routed ${claim.id} to Validator`, "info");
-        s.task = { kind: "validate", claim };
+        // Walk to assessor desk and drop on assessor's inbox.
+        claim.status = "intake";
+        this.logger.log(
+          `Claims Intake routed ${claim.id} to Claims Assessor`,
+          "info",
+        );
+        s.task = { kind: "assess", claim };
         this.logger.setAgentStatus(s.id, true, `Routing ${claim.id}`);
-        const dropPoint = this.layout.validatorDeskPoint.clone();
-        dropPoint.z -= 1.2; // approach side of desk
+        const dropPoint = this.layout.assessorDeskPoint.clone();
+        dropPoint.z -= 1.4; // approach side of desk
         this.gotoAndThen(s, dropPoint, () => {
-          // Drop claim on validator desk top
-          const drop = this.layout.validatorDeskPoint.clone();
+          // Drop claim on assessor desk top
+          const drop = this.layout.assessorDeskPoint.clone();
           drop.y = 1.0;
-          drop.z -= 0.55;
+          drop.z += 0.4;
           claim.mesh.parent = null;
           claim.mesh.position = drop;
           claim.mesh.rotation = Vector3.Zero();
-          claim.status = "validating";
-          // Hand off to validator queue (validator will pick it up).
-          this.handoffForValidator(claim, drop);
-          // Receptionist returns home.
+          claim.status = "assessing";
+          // Hand off to assessor queue (assessor will pick it up).
+          this.handoffForAssessor(claim);
+          // Intake officer returns home.
           s.task = { kind: "idle" };
           this.logger.setAgentStatus(s.id, false, "Returning to desk");
           this.gotoAndThen(s, s.homePoint, () => {
-            this.logger.setAgentStatus(s.id, false, "Waiting at desk");
+            this.logger.setAgentStatus(s.id, false, "Awaiting next claim");
           });
         });
       });
       return;
     }
 
-    if (s.role === "Validator") {
-      // Validator picks claims that have been routed to its desk.
-      const claim = this.popValidatorReady();
+    if (s.role === "Claims Assessor") {
+      // Assessor picks claims that have been routed to its desk.
+      const claim = this.popAssessorReady();
       if (!claim) return;
-      s.task = { kind: "validate", claim };
-      this.logger.setAgentStatus(s.id, true, `Validating ${claim.id}`);
+      s.task = { kind: "assess", claim };
+      this.logger.setAgentStatus(s.id, true, `Assessing ${claim.id}`);
       this.logger.log(
-        `Validator inspecting ${claim.id} (${claim.type})`,
+        `Claims Assessor inspecting ${claim.id} (${claim.type})`,
         "info",
       );
       // Pick up folder from desk
-      const pickupPoint = this.layout.validatorDeskPoint.clone();
+      const pickupPoint = this.layout.assessorDeskPoint.clone();
       pickupPoint.z -= 1.0;
       this.gotoAndThen(s, pickupPoint, () => {
         claim.mesh.parent = s.character.getHandAnchor();
@@ -437,15 +554,15 @@ export class ClaimSimulation {
       return;
     }
 
-    if (s.role === "Approver" && this.approverQueue.length > 0) {
-      const claim = this.approverQueue.shift()!;
-      s.task = { kind: "approve", claim };
+    if (s.role === "Settlement Officer" && this.settlementQueue.length > 0) {
+      const claim = this.settlementQueue.shift()!;
+      s.task = { kind: "settle", claim };
       this.logger.setAgentStatus(s.id, true, `Reviewing ${claim.id}`);
       this.logger.log(
-        `Approver picked up ${claim.id} for review`,
+        `Settlement Officer reviewing ${claim.id} for payout`,
         "info",
       );
-      const pickup = this.layout.approverDeskPoint.clone();
+      const pickup = this.layout.settlementDeskPoint.clone();
       pickup.z -= 1.0;
       this.gotoAndThen(s, pickup, () => {
         claim.mesh.parent = s.character.getHandAnchor();
@@ -457,32 +574,38 @@ export class ClaimSimulation {
       return;
     }
 
-    if (s.role === "Filer" && this.filerQueue.length > 0) {
-      const claim = this.filerQueue.shift()!;
-      s.task = { kind: "file", claim };
-      this.logger.setAgentStatus(s.id, true, `Filing ${claim.id}`);
-      // Pick from approver desk.
-      const pickup = this.layout.approverDeskPoint.clone();
+    if (
+      s.role === "Customer Communications Specialist" &&
+      this.communicationsQueue.length > 0
+    ) {
+      const claim = this.communicationsQueue.shift()!;
+      s.task = { kind: "communicate", claim };
+      this.logger.setAgentStatus(s.id, true, `Notifying customer for ${claim.id}`);
+      // Pick from settlement desk.
+      const pickup = this.layout.settlementDeskPoint.clone();
       pickup.z -= 1.0;
       this.gotoAndThen(s, pickup, () => {
         claim.mesh.parent = s.character.getHandAnchor();
         claim.mesh.position = Vector3.Zero();
-        // Walk to archive and place folder on a shelf.
-        this.gotoAndThen(s, this.layout.filerDeskPoint, () => {
+        // Walk to comms desk and place folder in archive (closed file).
+        this.gotoAndThen(s, this.layout.communicationsDeskPoint, () => {
           const slot = this.layout.archivePoint.clone();
-          slot.x += (Math.random() - 0.5) * 4;
-          slot.z += (Math.random() - 0.5) * 1.2;
+          slot.x += (Math.random() - 0.5) * 1.5;
+          slot.z += (Math.random() - 0.5) * 0.8;
           slot.y += Math.random() * 0.4;
           claim.mesh.parent = null;
           claim.mesh.position = slot;
           claim.mesh.rotation = new Vector3(0, Math.random() * Math.PI, 0);
-          claim.status = "filed";
-          this.logger.log(`Claim ${claim.id} filed in archive`, "good");
+          claim.status = "closed";
+          this.logger.log(
+            `Customer notified — claim ${claim.id} closed`,
+            "good",
+          );
           s.task = { kind: "idle" };
           this.metrics.processing = Math.max(0, this.metrics.processing - 1);
           this.pushMetrics();
           this.gotoAndThen(s, s.homePoint, () => {
-            this.logger.setAgentStatus(s.id, false, "Waiting at desk");
+            this.logger.setAgentStatus(s.id, false, "Awaiting next claim");
           });
         });
       });
@@ -490,109 +613,108 @@ export class ClaimSimulation {
     }
   }
 
-  /** Validator desk inbox state — at most one claim awaiting validation. */
-  private validatorReady: Claim | null = null;
-  private handoffForValidator(claim: Claim, _drop: Vector3): void {
-    // Simple: queue at the validator's desk.
-    this.validatorReady = claim;
+  /** Assessor desk inbox state — at most one claim awaiting assessment. */
+  private assessorReady: Claim | null = null;
+  private handoffForAssessor(claim: Claim): void {
+    this.assessorReady = claim;
   }
-  private popValidatorReady(): Claim | null {
-    if (!this.validatorReady) return null;
-    const c = this.validatorReady;
-    this.validatorReady = null;
+  private popAssessorReady(): Claim | null {
+    if (!this.assessorReady) return null;
+    const c = this.assessorReady;
+    this.assessorReady = null;
     return c;
   }
 
   private completeProcessingStep(s: StaffAgent): void {
     const t = s.task;
-    if (t.kind === "validate") {
+    if (t.kind === "assess") {
       const claim = t.claim;
       // Decide validity: 85% pass.
       const valid = Math.random() < 0.85;
       if (valid) {
-        claim.status = "validated";
+        claim.status = "assessed";
         this.logger.log(
-          `Validator passed ${claim.id} — forwarding to Approver`,
+          `Claims Assessor cleared ${claim.id} — forwarding to Settlement`,
           "good",
         );
-        // Carry folder to approver desk.
-        s.task = { kind: "carry-to-approver", claim };
+        // Carry folder to settlement desk.
+        s.task = { kind: "carry-to-settlement", claim };
         this.logger.setAgentStatus(s.id, true, `Hand-off ${claim.id}`);
-        const drop = this.layout.approverDeskPoint.clone();
-        drop.z -= 1.2;
+        const drop = this.layout.settlementDeskPoint.clone();
+        drop.z -= 1.4;
         this.gotoAndThen(s, drop, () => {
-          const placed = this.layout.approverDeskPoint.clone();
+          const placed = this.layout.settlementDeskPoint.clone();
           placed.y = 1.0;
-          placed.z -= 0.55;
+          placed.z += 0.4;
           claim.mesh.parent = null;
           claim.mesh.position = placed;
           claim.mesh.rotation = Vector3.Zero();
-          this.approverQueue.push(claim);
+          this.settlementQueue.push(claim);
           s.task = { kind: "idle" };
           this.logger.setAgentStatus(s.id, false, "Returning to desk");
           this.gotoAndThen(s, s.homePoint, () => {
-            this.logger.setAgentStatus(s.id, false, "Waiting at desk");
+            this.logger.setAgentStatus(s.id, false, "Awaiting next claim");
           });
         });
       } else {
-        // Rejected at validation — send straight to filer.
+        // Rejected at assessment — send straight to communications.
         claim.status = "rejected";
         this.metrics.rejected++;
         this.pushMetrics();
         this.logger.log(
-          `Validator rejected ${claim.id} (missing documents)`,
+          `Claims Assessor declined ${claim.id} (missing documents)`,
           "bad",
         );
-        s.task = { kind: "carry-to-filer", claim };
+        s.task = { kind: "carry-to-comms", claim };
         this.logger.setAgentStatus(s.id, true, `Hand-off ${claim.id}`);
-        const drop = this.layout.approverDeskPoint.clone();
-        drop.z -= 1.2;
+        const drop = this.layout.settlementDeskPoint.clone();
+        drop.z -= 1.4;
         this.gotoAndThen(s, drop, () => {
-          const placed = this.layout.approverDeskPoint.clone();
+          const placed = this.layout.settlementDeskPoint.clone();
           placed.y = 1.0;
-          placed.z -= 0.55;
+          placed.z += 0.4;
           claim.mesh.parent = null;
           claim.mesh.position = placed;
           claim.mesh.rotation = Vector3.Zero();
-          this.filerQueue.push(claim);
+          this.communicationsQueue.push(claim);
           s.task = { kind: "idle" };
           this.logger.setAgentStatus(s.id, false, "Returning to desk");
           this.gotoAndThen(s, s.homePoint, () => {
-            this.logger.setAgentStatus(s.id, false, "Waiting at desk");
+            this.logger.setAgentStatus(s.id, false, "Awaiting next claim");
           });
         });
       }
-    } else if (t.kind === "approve") {
+    } else if (t.kind === "settle") {
       const claim = t.claim;
-      // Approval rule: large amounts more likely rejected.
+      // Settlement rule: large amounts more likely declined.
       const approveProb = claim.amount < 5000 ? 0.9 : claim.amount < 12000 ? 0.7 : 0.4;
       const approved = Math.random() < approveProb;
       if (approved) {
         claim.status = "approved";
         this.metrics.approved++;
         this.logger.log(
-          `Approver APPROVED ${claim.id} — payout $${claim.amount.toLocaleString()}`,
+          `Settlement APPROVED ${claim.id} — payout $${claim.amount.toLocaleString()}`,
           "good",
         );
       } else {
         claim.status = "rejected";
         this.metrics.rejected++;
         this.logger.log(
-          `Approver REJECTED ${claim.id} (policy review needed)`,
+          `Settlement DECLINED ${claim.id} (escalated for review)`,
           "bad",
         );
       }
       this.pushMetrics();
-      // Drop on desk for filer pickup
-      const drop = this.layout.approverDeskPoint.clone();
+      // Drop on desk for comms pickup
+      const drop = this.layout.settlementDeskPoint.clone();
       drop.y = 1.0;
-      drop.z -= 0.55;
+      drop.z += 0.4;
       claim.mesh.parent = null;
       claim.mesh.position = drop;
       claim.mesh.rotation = Vector3.Zero();
-      this.filerQueue.push(claim);
+      this.communicationsQueue.push(claim);
       s.task = { kind: "idle" };
-      this.logger.setAgentStatus(s.id, false, "Waiting at desk");
+      this.logger.setAgentStatus(s.id, false, "Awaiting next claim");
     }
   }
 
