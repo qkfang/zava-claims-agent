@@ -1,4 +1,4 @@
-# Scenario: Life Insurance Bereavement — Compassionate Claim for a Beneficiary
+# Scenario 5: Life Insurance Bereavement — Compassionate Claim for a Beneficiary
 
 ## Flavor
 

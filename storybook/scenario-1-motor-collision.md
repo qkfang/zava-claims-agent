@@ -1,4 +1,4 @@
-# Scenario: Motor Collision — Rear-End Accident
+# Scenario 1: Motor Collision — Rear-End Accident
 
 ## Flavor
 

@@ -1,4 +1,4 @@
-# Scenario: Suspected Fraud — Staged Theft with Fabricated Receipts
+# Scenario 2: Suspected Fraud — Staged Theft with Fabricated Receipts
 
 ## Flavor
 

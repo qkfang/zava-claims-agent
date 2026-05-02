@@ -1,4 +1,4 @@
-# Scenario: Home Burst Pipe — Urgent Make-Safe and Kitchen Repair
+# Scenario 3: Home Burst Pipe — Urgent Make-Safe and Kitchen Repair
 
 ## Flavor
 

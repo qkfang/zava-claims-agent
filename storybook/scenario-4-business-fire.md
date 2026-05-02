@@ -1,4 +1,4 @@
-# Scenario: Small Business Fire — Property Damage and Business Interruption
+# Scenario 4: Small Business Fire — Property Damage and Business Interruption
 
 ## Flavor
 
