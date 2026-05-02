@@ -1,7 +1,8 @@
-# Zava Claims Office — Foundry Agents (`src/agent`)
+# Claims Team in a Day — Foundry Agents (`src/agent`)
 
 This project hosts the **.NET 10** Azure AI Foundry agents that power the
-Zava digital claims office demo. Each staff character described in
+**Zava Insurance** claims office demo (*Claims Team in a Day*). Each staff
+character described in
 [`docs/characters.md`](../../docs/characters.md) is implemented as
 a specialised Foundry declarative agent, following the role and tooling
 mapping in [`docs/foundry_agents.md`](../../docs/foundry_agents.md).

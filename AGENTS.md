@@ -1,8 +1,12 @@
 # AGENTS.md
 
+## Project Name
+
+The unified name for this project is **Claims Team in a Day**. The fictional business it is built for is **Zava Insurance**. Use these names consistently across all UI, documentation, and demo narration.
+
 ## Demo Purpose
 
-This demo explores how an AI-powered claims office could work inside the insurance claims industry. The goal is to present a realistic, easy-to-understand claims environment where different staff roles are represented as specialized AI agents.
+**Claims Team in a Day** explores how an AI-powered claims office at **Zava Insurance** could work inside the insurance claims industry. The goal is to present a realistic, easy-to-understand claims environment where different staff roles are represented as specialized AI agents.
 
 The demo is designed to show that claims is not a separate industry from insurance, but a key operational function within it. Claims teams manage the process after a customer experiences an insured event, such as a car accident, home damage, lost luggage, business interruption, or bereavement-related life insurance claim.
 
@@ -109,23 +113,15 @@ When generating code, content, UI components, or documentation for this demo:
 
 ---
 
-## Suggested Demo Name Options
+## Project Name
 
-Possible names for the demo:
-
-- Claims Office AI
-- Digital Claims Department
-- Claims Agent Workspace
-- AI Claims Operations Hub
-- Claims Command Center
-- Claims Department Simulator
-- Agentic Claims Office
+The unified name for this demo is **Claims Team in a Day**. The fictional business it represents is **Zava Insurance**. Always refer to the demo by this name; do not introduce alternative names.
 
 ---
 
 ## Summary
 
-This demo presents a voxel-style claims office where each department is represented by a specialised AI agent. The purpose is to explain and visualise how AI can assist with claim intake, assessment, loss adjusting, fraud review, supplier coordination, settlement, customer communications, and team leadership.
+**Claims Team in a Day** presents a voxel-style **Zava Insurance** claims office where each department is represented by a specialised AI agent. The purpose is to explain and visualise how AI can assist with claim intake, assessment, loss adjusting, fraud review, supplier coordination, settlement, customer communications, and team leadership.
 
 The final experience should help viewers quickly understand how claims processing works and how a coordinated set of AI agents can support the full claims lifecycle.
 

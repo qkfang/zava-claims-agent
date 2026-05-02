@@ -1,10 +1,12 @@
 # Mapping Claims Staff Characters into Foundry Agents
 
+> Part of **Claims Team in a Day** — the AI claims office demo for **Zava Insurance**.
+
 ## Core Design Idea
 
-Each staff character becomes a specialised Foundry agent.
+Each staff character at **Zava Insurance** becomes a specialised Foundry agent.
 
-Instead of building one generic “claims chatbot”, the demo should model a digital claims department where every agent owns a specific part of the claim lifecycle.
+Instead of building one generic “claims chatbot”, *Claims Team in a Day* models a digital claims department where every agent owns a specific part of the claim lifecycle.
 
 The shared object across all agents is the `Claim Case`.
 

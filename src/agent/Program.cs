@@ -4,11 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ZavaClaims.Agents;
 
-// Zava Claims Office — .NET 10 Foundry agents
+// Claims Team in a Day — Zava Insurance — .NET 10 Foundry agents
 //
-// Each staff character in the claims office is implemented as a specialised
-// Azure AI Foundry declarative agent. This console host lets you drive any
-// individual agent from the command line for demo / testing purposes.
+// Each staff character in the Zava Insurance claims office is implemented as a
+// specialised Azure AI Foundry declarative agent. This console host lets you
+// drive any individual agent from the command line for demo / testing purposes.
 //
 // Usage:
 //   dotnet run -- --intake          "My kitchen flooded after a pipe burst"
@@ -94,7 +94,7 @@ Console.WriteLine();
 
 static void PrintUsage()
 {
-    Console.WriteLine("Zava Claims Office — Foundry agents");
+    Console.WriteLine("Claims Team in a Day — Zava Insurance — Foundry agents");
     Console.WriteLine();
     Console.WriteLine("Usage:");
     Console.WriteLine("  dotnet run -- --intake          \"<message>\"");

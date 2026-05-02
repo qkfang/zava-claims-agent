@@ -1,7 +1,7 @@
-# Zava Claims — Agent Web App (`src/app`)
+# Claims Team in a Day — Agent Web App (`src/app`)
 
-A .NET 10 Blazor Server web app that gives every AI agent in
-[`src/agent/Agents`](../agent/Agents) its own page.
+A .NET 10 Blazor Server web app for the **Zava Insurance** claims office that gives
+every AI agent in [`src/agent/Agents`](../agent/Agents) its own page.
 
 Each page explains:
 

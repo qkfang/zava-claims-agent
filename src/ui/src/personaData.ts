@@ -423,13 +423,13 @@ export const SCENARIO_BEATS: Record<ScenarioId, ScenarioBeat[]> = {
       at: "customer",
       action: "arrive-at-zone",
       narration:
-        "Michael discovers a burst pipe has flooded the kitchen and calls Zava Claims.",
+        "Michael discovers a burst pipe has flooded the kitchen and calls Zava Insurance.",
       duration: 2.0,
     },
     {
       at: "customer",
       action: "walk-to-office",
-      narration: "Michael heads to the Zava Claims Office to lodge his claim.",
+      narration: "Michael heads to the Zava Insurance Claims Office to lodge his claim.",
     },
     {
       at: "customer",
@@ -500,13 +500,13 @@ export const SCENARIO_BEATS: Record<ScenarioId, ScenarioBeat[]> = {
       at: "customer",
       action: "arrive-at-zone",
       narration:
-        "Aisha is rear-ended at an intersection and calls Zava Claims.",
+        "Aisha is rear-ended at an intersection and calls Zava Insurance.",
       duration: 2.0,
     },
     {
       at: "customer",
       action: "walk-to-office",
-      narration: "Aisha drives to the Zava Claims Office to lodge her claim.",
+      narration: "Aisha drives to the Zava Insurance Claims Office to lodge her claim.",
     },
     {
       at: "customer",
@@ -577,7 +577,7 @@ export const SCENARIO_BEATS: Record<ScenarioId, ScenarioBeat[]> = {
     {
       at: "customer",
       action: "walk-to-office",
-      narration: "Tom heads to the Zava Claims Office to lodge his claim.",
+      narration: "Tom heads to the Zava Insurance Claims Office to lodge his claim.",
     },
     {
       at: "customer",
@@ -656,14 +656,14 @@ export const SCENARIO_BEATS: Record<ScenarioId, ScenarioBeat[]> = {
       at: "customer",
       action: "arrive-at-zone",
       narration:
-        "Grace realises her luggage didn’t arrive and contacts Zava Claims.",
+        "Grace realises her luggage didn’t arrive and contacts Zava Insurance.",
       duration: 2.0,
     },
     {
       at: "customer",
       action: "walk-to-office",
       narration:
-        "Grace heads from the airport to the Zava Claims Office to lodge her claim.",
+        "Grace heads from the airport to the Zava Insurance Claims Office to lodge her claim.",
     },
     {
       at: "customer",
@@ -737,7 +737,7 @@ export const SCENARIO_BEATS: Record<ScenarioId, ScenarioBeat[]> = {
     {
       at: "customer",
       action: "walk-to-office",
-      narration: "Robert travels to the Zava Claims Office to lodge the claim.",
+      narration: "Robert travels to the Zava Insurance Claims Office to lodge the claim.",
     },
     {
       at: "customer",

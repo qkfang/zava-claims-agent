@@ -1,6 +1,6 @@
-# Zava Claims Agent — Web Demo (`src/ui`)
+# Claims Team in a Day — Web Demo (`src/ui`)
 
-A browser-based demo that visualizes an insurance claims office staffed by AI
+A browser-based demo for **Zava Insurance** that visualizes a claims office staffed by AI
 agents. Customers (voxel characters) walk into the lobby, drop off claim
 folders at reception, and a team of staff agents (Receptionist → Validator →
 Approver → Filer) routes, validates, approves/rejects, and files each claim.
