@@ -1225,10 +1225,6 @@ export class ClaimSimulation {
         this.logger.setAgentStatus(s.id, false, initial);
       }
     }
-
-    // Touch the variable so TypeScript doesn't think `def` is unused if reset
-    // ever becomes a no-op.
-    void def;
   }
 
   /** Dispose a claim's folder mesh and remove it from the registry. */

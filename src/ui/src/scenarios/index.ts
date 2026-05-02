@@ -102,6 +102,9 @@ export const SCENARIOS: Record<ScenarioId, ScenarioDefinition> = {
 
 export function getScenario(id: ScenarioId): ScenarioDefinition {
   const s = SCENARIOS[id];
-  if (!s) throw new Error(`Unknown scenario id: ${id}`);
+  if (!s) {
+    const valid = Object.keys(SCENARIOS).join(", ");
+    throw new Error(`Unknown scenario id: ${id}. Valid IDs are: ${valid}`);
+  }
   return s;
 }

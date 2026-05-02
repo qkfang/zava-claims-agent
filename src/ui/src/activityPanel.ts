@@ -12,7 +12,7 @@
  */
 import type { StageInfo } from "./stepGate";
 import { PALETTES } from "./characterPalettes";
-import { findStaffByRole } from "./personaData";
+import { findStaffByRole, type StaffRole } from "./personaData";
 
 export interface ActivityPanelStage {
   staffName: string;
@@ -25,7 +25,7 @@ export interface ActivityPanelStage {
 
 /** Map a StageInfo (from stepGate) to the activity panel view-model. */
 export function stageToActivity(stage: StageInfo): ActivityPanelStage {
-  const persona = findStaffByRole(stage.staffRole as never);
+  const persona = findStaffByRole(stage.staffRole as StaffRole);
   return {
     staffName: stage.staffName,
     staffRole: stage.staffRole,
@@ -118,11 +118,17 @@ export class ActivityPanel {
           <div class="activity-agent-desc"></div>
         </div>
       `;
-      const [agentName, ...descParts] = a.name.split(" — ");
+      // Agent names from `stepGate.STAGE_CONFIG` are formatted as
+      // "Agent <Name> #N — <Specialty>". The em-dash with spaces is the
+      // separator we control, but fall back gracefully if it's absent.
+      const sepIndex = a.name.indexOf(" — ");
+      const agentName = sepIndex >= 0 ? a.name.slice(0, sepIndex) : a.name;
+      const agentSubtitle =
+        sepIndex >= 0 ? a.name.slice(sepIndex + 3) : a.description;
       (li.querySelector(".activity-agent-name") as HTMLElement).textContent =
         agentName;
       (li.querySelector(".activity-agent-desc") as HTMLElement).textContent =
-        descParts.length > 0 ? descParts.join(" — ") : a.description;
+        agentSubtitle;
       list.appendChild(li);
     }
     this.el.classList.remove("hidden");
