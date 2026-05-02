@@ -1,15 +1,26 @@
 import { CUSTOMER_PERSONAS, type ScenarioId } from "./personaData";
+import { SCENARIO_NUMBER } from "./scenarioNumbers";
 
 /**
  * Modal dialog shown when the user clicks "Submit a claim". Lists the
  * five scenario personas plus a Random option. On confirm, calls the
  * provided onPick callback and closes itself.
+ *
+ * The picker also exposes an "Auto-play" checkbox: when checked, the
+ * scenario will run end-to-end without pausing for the per-step gate.
  */
 export class ScenarioPicker {
   private readonly overlay: HTMLDivElement;
   private opened = false;
+  /** Whether the user wants the next scenario to auto-play through every step. */
+  private autoPlay = false;
 
-  constructor(private readonly onPick: (id: ScenarioId | "random") => void) {
+  constructor(
+    private readonly onPick: (
+      id: ScenarioId | "random",
+      opts: { autoPlay: boolean },
+    ) => void,
+  ) {
     const overlay = document.createElement("div");
     overlay.id = "scenario-picker-overlay";
     overlay.className = "modal-overlay hidden";
@@ -29,6 +40,10 @@ export class ScenarioPicker {
         </p>
         <ul class="scenario-grid"></ul>
         <footer>
+          <label class="autoplay-toggle">
+            <input type="checkbox" class="autoplay-checkbox" />
+            <span>Auto-play (skip the step-by-step prompts)</span>
+          </label>
           <button class="random" type="button">Random scenario</button>
         </footer>
       </div>
@@ -37,14 +52,20 @@ export class ScenarioPicker {
     this.overlay = overlay;
 
     const grid = overlay.querySelector(".scenario-grid") as HTMLUListElement;
-    for (const p of CUSTOMER_PERSONAS) {
+    // Sort by scenario number so the picker reads 1..5 left-to-right.
+    const sortedPersonas = [...CUSTOMER_PERSONAS].sort(
+      (a, b) => SCENARIO_NUMBER[a.id] - SCENARIO_NUMBER[b.id],
+    );
+    for (const p of sortedPersonas) {
       const li = document.createElement("li");
       li.className = "scenario-option";
       li.dataset.id = p.id;
       li.tabIndex = 0;
       li.setAttribute("role", "button");
+      const num = SCENARIO_NUMBER[p.id];
       li.innerHTML = `
         <div class="dot" style="background:${p.color}"></div>
+        <div class="scenario-number">Scenario #${num}</div>
         <div class="scenario-name"></div>
         <div class="scenario-type"></div>
         <div class="scenario-situation"></div>
@@ -56,7 +77,7 @@ export class ScenarioPicker {
         p.situation;
       const handler = (): void => {
         this.close();
-        this.onPick(p.id);
+        this.onPick(p.id, { autoPlay: this.autoPlay });
       };
       li.addEventListener("click", handler);
       li.addEventListener("keydown", (ev) => {
@@ -68,11 +89,18 @@ export class ScenarioPicker {
       grid.appendChild(li);
     }
 
+    const checkbox = overlay.querySelector(
+      ".autoplay-checkbox",
+    ) as HTMLInputElement;
+    checkbox.addEventListener("change", () => {
+      this.autoPlay = checkbox.checked;
+    });
+
     (overlay.querySelector(".random") as HTMLButtonElement).addEventListener(
       "click",
       () => {
         this.close();
-        this.onPick("random");
+        this.onPick("random", { autoPlay: this.autoPlay });
       },
     );
 

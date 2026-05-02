@@ -270,7 +270,7 @@ function bootstrap(): void {
   bannerCloseBtn.addEventListener("click", () => runner.cancel());
 
   // ---------------- Scenario picker ----------------
-  const picker = new ScenarioPicker((id) => runner.start(id));
+  const picker = new ScenarioPicker((id, opts) => runner.start(id, opts));
 
   // Manual spawn button — now opens the scenario picker.
   document.getElementById("spawn-btn")?.addEventListener("click", () => {

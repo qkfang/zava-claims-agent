@@ -8,12 +8,26 @@ import {
 import {
   CUSTOMER_PERSONAS,
   findCustomerPersona,
+  findStaffByRole,
   type CustomerPersona,
   type ScenarioId,
 } from "./personaData";
 import type { IncidentZones } from "./neighbourhoodScene";
 import type { HudLogger } from "./hud";
 import { PALETTES, VoxelCharacter } from "./voxelCharacter";
+import {
+  GATED_STAGES,
+  STAGE_CONFIG,
+  StepGate,
+  type StageInfo,
+  type StageKey,
+} from "./stepGate";
+import { SCENARIO_NUMBER } from "./scenarioNumbers";
+import {
+  CustomerResultBanner,
+  ScenarioSummaryModal,
+  type ScenarioOutcome,
+} from "./scenarioSummary";
 
 /**
  * Scenario states (used internally to gate camera + scene transitions).
@@ -60,6 +74,19 @@ export class ScenarioRunner {
   /** Cancellation token incremented to ignore stale callbacks. */
   private runId = 0;
 
+  /** Step-gate UI + state. */
+  private readonly stepGate = new StepGate();
+  private readonly resultBanner = new CustomerResultBanner();
+  private readonly summaryModal = new ScenarioSummaryModal();
+  /** True while running with auto-play (no per-step prompt). */
+  private autoPlay = false;
+  /** Ordered list of steps that have actually fired in this run. */
+  private executedSteps: StageInfo[] = [];
+  /** Staff currently displaying thought bulbs. */
+  private bulbStaffCharId: string | null = null;
+  /** Stages that have already been gated this run (avoid re-prompting). */
+  private gatedStagesSeen = new Set<string>();
+
   constructor(
     private readonly nhScene: Scene,
     private readonly officeScene: Scene,
@@ -78,7 +105,7 @@ export class ScenarioRunner {
   /**
    * Start a scripted scenario. If `id` is "random", picks one at random.
    */
-  start(id: ScenarioId | "random"): void {
+  start(id: ScenarioId | "random", opts: { autoPlay?: boolean } = {}): void {
     if (this.state !== "idle") return;
     const scenarioId: ScenarioId =
       id === "random"
@@ -88,6 +115,11 @@ export class ScenarioRunner {
     const persona = findCustomerPersona(scenarioId);
     this.currentPersona = persona;
     this.runId++;
+    this.autoPlay = !!opts.autoPlay;
+    this.executedSteps = [];
+    this.gatedStagesSeen.clear();
+    this.clearThoughtBulbs();
+    this.resultBanner.hide();
     const myRunId = this.runId;
 
     this.hooks.setSceneToggleDisabled(true);
@@ -142,6 +174,11 @@ export class ScenarioRunner {
       window.clearTimeout(this.closingHandle);
       this.closingHandle = null;
     }
+    // Make sure the simulation isn't left paused if we cancel mid-step-gate.
+    this.sim.setPaused(false);
+    this.stepGate.close();
+    this.resultBanner.hide();
+    this.clearThoughtBulbs();
     this.cleanupNeighbourhoodCustomer();
     this.releaseFocus();
     this.hooks.hideBanner();
@@ -150,6 +187,8 @@ export class ScenarioRunner {
     this.currentPersona = null;
     this.currentClaimId = null;
     this.inflightInfo = null;
+    this.executedSteps = [];
+    this.gatedStagesSeen.clear();
     this.sim.resumeAutoSpawn();
     this.hud.log("Scenario cancelled by user", "warn");
   }
@@ -282,6 +321,109 @@ export class ScenarioRunner {
       this.sim.setHighlightedCharacter(info.characterId);
     }
     this.hooks.updateBannerNarration(info.narration);
+
+    // Is this beat a "step start" we should gate / annotate?
+    const stage = info.stage as StageKey;
+    if (GATED_STAGES.has(stage) && !this.gatedStagesSeen.has(stage)) {
+      this.gatedStagesSeen.add(stage);
+      const stageInfo = this.buildStageInfo(stage, info.narration);
+      if (stageInfo) {
+        this.executedSteps.push(stageInfo);
+        // Show the thought bulbs above the staff member.
+        this.showThoughtBulbsForStage(info.characterId, stageInfo);
+        if (!this.autoPlay) this.openStepGate(stageInfo);
+      }
+    }
+  }
+
+  /** Build a StageInfo (title, staff, agents, narration) for this stage. */
+  private buildStageInfo(stage: StageKey, narration: string): StageInfo | null {
+    const cfg = STAGE_CONFIG[stage];
+    if (!cfg) return null;
+    // Resolve the staff member for this stage.
+    const role = this.staffRoleForStage(stage);
+    const persona = findStaffByRole(role);
+    return {
+      title: cfg.title,
+      staffRole: role,
+      staffName: persona.name,
+      staffColor: persona.color,
+      narration,
+      agents: cfg.agents,
+    };
+  }
+
+  private staffRoleForStage(stage: StageKey):
+    | "Claims Intake Officer"
+    | "Claims Assessor"
+    | "Loss Adjuster"
+    | "Supplier Coordinator"
+    | "Fraud Investigator"
+    | "Claims Team Leader"
+    | "Settlement Officer"
+    | "Customer Communications Specialist" {
+    switch (stage) {
+      case "intake-pickup":
+        return "Claims Intake Officer";
+      case "assessor-pickup":
+        return "Claims Assessor";
+      case "consult:Loss Adjuster":
+        return "Loss Adjuster";
+      case "consult:Supplier Coordinator":
+        return "Supplier Coordinator";
+      case "consult:Fraud Investigator":
+        return "Fraud Investigator";
+      case "consult:Claims Team Leader":
+        return "Claims Team Leader";
+      case "settle":
+        return "Settlement Officer";
+      case "comms-notify":
+        return "Customer Communications Specialist";
+    }
+  }
+
+  private showThoughtBulbsForStage(
+    staffCharId: string,
+    stageInfo: StageInfo,
+  ): void {
+    this.clearThoughtBulbs();
+    const ch = this.sim.getCharacterById(staffCharId);
+    if (!ch) return;
+    ch.showThoughtBulbs(stageInfo.agents.length);
+    this.bulbStaffCharId = staffCharId;
+  }
+
+  private clearThoughtBulbs(): void {
+    if (this.bulbStaffCharId) {
+      const prev = this.sim.getCharacterById(this.bulbStaffCharId);
+      prev?.hideThoughtBulbs();
+      this.bulbStaffCharId = null;
+    }
+  }
+
+  /** Open the step-gate modal and pause the simulation until dismissed. */
+  private openStepGate(stageInfo: StageInfo): void {
+    // Compute step number / total against the executed list (best-effort —
+    // we don't know the full plan ahead of time, so display as "Step N").
+    const stepNumber = this.executedSteps.length;
+    const display: StageInfo = { ...stageInfo, stepNumber };
+    this.sim.setPaused(true);
+    const myRunId = this.runId;
+    this.stepGate.open(display, {
+      onContinue: () => {
+        if (myRunId !== this.runId) return;
+        this.sim.setPaused(false);
+      },
+      onAutoPlay: () => {
+        if (myRunId !== this.runId) return;
+        this.autoPlay = true;
+        this.sim.setPaused(false);
+      },
+      onCancel: () => {
+        if (myRunId !== this.runId) return;
+        this.cancel();
+      },
+    });
   }
 
   private closingHandle: number | null = null;
@@ -289,25 +431,69 @@ export class ScenarioRunner {
   private handleClosed(): void {
     if (this.state !== "office") return;
     this.state = "closing";
+    this.clearThoughtBulbs();
+    const persona = this.currentPersona;
     this.hud.log(
-      `${this.currentPersona?.name ?? "Customer"} scenario complete`,
+      `${persona?.name ?? "Customer"} scenario complete`,
       "good",
     );
     this.hooks.updateBannerNarration(
-      `${this.currentPersona?.name ?? "Customer"} — claim closed.`,
+      `${persona?.name ?? "Customer"} — claim closed.`,
     );
-    // Wait briefly, then release focus and clear the banner.
+
+    // Resolve outcome from the claim status & show the customer result animation.
+    let outcome: ScenarioOutcome = "approved";
+    let amount = 0;
+    if (this.currentClaimId) {
+      const claim = this.sim.getClaim(this.currentClaimId);
+      if (claim) {
+        amount = claim.amount;
+        if (claim.status === "rejected") outcome = "rejected";
+        else if (claim.status === "approved") outcome = "approved";
+      }
+    }
+    if (persona) {
+      this.resultBanner.show(persona, outcome, amount);
+    }
+
+    // After a short hold, show the summary modal. The user dismisses it to
+    // fully end the run (and the camera/banner cleanup runs in onSummaryClosed).
     if (this.closingHandle !== null) window.clearTimeout(this.closingHandle);
+    const myRunId = this.runId;
     this.closingHandle = window.setTimeout(() => {
       this.closingHandle = null;
-      this.releaseFocus();
-      this.hooks.hideBanner();
-      this.hooks.setSceneToggleDisabled(false);
-      this.state = "idle";
-      this.currentPersona = null;
-      this.currentClaimId = null;
-      this.inflightInfo = null;
+      if (myRunId !== this.runId) return;
+      this.resultBanner.hide();
+      if (persona && this.currentClaimId) {
+        this.summaryModal.open(
+          {
+            scenarioNumber: SCENARIO_NUMBER[persona.id],
+            persona,
+            claimId: this.currentClaimId,
+            amount,
+            outcome,
+            steps: this.executedSteps,
+          },
+          () => this.finishScenario(),
+        );
+      } else {
+        this.finishScenario();
+      }
     }, 2500);
+  }
+
+  /** Final teardown invoked once the user closes the summary modal. */
+  private finishScenario(): void {
+    this.releaseFocus();
+    this.hooks.hideBanner();
+    this.hooks.setSceneToggleDisabled(false);
+    this.state = "idle";
+    this.currentPersona = null;
+    this.currentClaimId = null;
+    this.inflightInfo = null;
+    this.executedSteps = [];
+    this.gatedStagesSeen.clear();
+    this.autoPlay = false;
   }
 
   private releaseFocus(): void {
