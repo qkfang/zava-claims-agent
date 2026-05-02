@@ -1044,6 +1044,11 @@ export class ClaimSimulation {
     }
   }
 
+  /** Returns the id of the currently scripted-highlighted character, or null. */
+  getHighlightedCharacter(): string | null {
+    return this.highlightedId;
+  }
+
   /** Returns the office layout reference points (for scenarioRunner). */
   getLayout(): OfficeLayout {
     return this.layout;

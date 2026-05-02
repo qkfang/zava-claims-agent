@@ -164,6 +164,7 @@ export class ScenarioRunner {
         // Begin walking toward the office door.
         this.state = "neighbourhood-walk";
         this.nhTarget = this.zones.officeDoor.clone();
+        this.nhWalkRefocusTimer = 0;
         this.nhCustomer?.setWalking(true);
         if (this.currentPersona) {
           this.hooks.updateBannerNarration(
@@ -189,6 +190,8 @@ export class ScenarioRunner {
     // office and closing states are driven by simulation events
   }
 
+  private nhWalkRefocusTimer = 0;
+
   private advanceNhWalk(dtSec: number): void {
     if (!this.nhCustomer || !this.nhTarget) return;
     const speed = 3.2;
@@ -209,11 +212,13 @@ export class ScenarioRunner {
     root.position.z += nz * step;
     root.rotation.y = Math.atan2(nx, nz);
 
-    // Camera gently follows
-    if (Math.random() < 0.15) {
+    // Camera gently follows — retarget at ~1Hz so animation has time to play.
+    this.nhWalkRefocusTimer -= dtSec;
+    if (this.nhWalkRefocusTimer <= 0) {
+      this.nhWalkRefocusTimer = 1.0;
       this.nhCamera.focusNode(root, {
         radius: 18,
-        durationSec: 0.5,
+        durationSec: 1.0,
       });
     }
   }
