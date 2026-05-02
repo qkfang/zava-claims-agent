@@ -239,6 +239,7 @@ export class ClaimSimulation {
 
   private spawnTimer = 1.5;
   private autoSpawnPaused = false;
+  private paused = false;
   private metrics = { submitted: 0, processing: 0, approved: 0, rejected: 0 };
 
   /** Track every claim that has touched the office, by id. */
@@ -398,6 +399,7 @@ export class ClaimSimulation {
 
   /** Per-frame tick. */
   update(dtSec: number): void {
+    if (this.paused) return;
     // Auto-spawn customers periodically (paused during scripted scenarios).
     if (!this.autoSpawnPaused) {
       this.spawnTimer -= dtSec;
@@ -981,6 +983,13 @@ export class ClaimSimulation {
   /* Public API used by main.ts / scenarioRunner / profileCard         */
   /* ---------------------------------------------------------------- */
 
+  /** Look up a claim by id. */
+  getClaim(id: string): { id: string; type: string; amount: number; status: ClaimStatus } | null {
+    const c = this.claimsById.get(id);
+    if (!c) return null;
+    return { id: c.id, type: c.type, amount: c.amount, status: c.status };
+  }
+
   /** True if auto-spawning of random customers is currently paused. */
   isAutoSpawnPaused(): boolean {
     return this.autoSpawnPaused;
@@ -991,6 +1000,17 @@ export class ClaimSimulation {
   resumeAutoSpawn(): void {
     this.autoSpawnPaused = false;
     this.spawnTimer = 8 + Math.random() * 4;
+  }
+
+  /**
+   * Pause / resume the entire simulation tick (used by the step gate to
+   * freeze movement and processing while the user reads the popup).
+   */
+  setPaused(p: boolean): void {
+    this.paused = p;
+  }
+  isPaused(): boolean {
+    return this.paused;
   }
 
   /** Look up a staff member by their stable id. */

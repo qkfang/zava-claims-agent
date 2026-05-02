@@ -55,6 +55,10 @@ export class VoxelCharacter {
   private walking = false;
   private walkPhase = 0;
 
+  /** Thought-bulb meshes shown above the head when the staff is delegating to AI agents. */
+  private thoughtBulbs: Mesh[] = [];
+  private thoughtPhase = 0;
+
   constructor(
     scene: Scene,
     name: string,
@@ -660,8 +664,83 @@ export class VoxelCharacter {
     }
   }
 
+  /**
+   * Show a small cluster of "thought bulb" boxes floating above the head.
+   * Used when a staff character is delegating work to AI sub-agents.
+   * Pass `count = 0` (or call `hideThoughtBulbs`) to clear.
+   */
+  showThoughtBulbs(count: number): void {
+    this.hideThoughtBulbs();
+    const n = Math.max(0, Math.min(3, Math.floor(count)));
+    if (n === 0) return;
+    const scene = this.root.getScene();
+    // Positions roughly trail diagonally up & to the side of the head.
+    const offsets: Array<[number, number, number]> = [
+      [0.45, 2.25, 0.0],
+      [0.85, 2.55, -0.05],
+      [1.25, 2.85, 0.05],
+    ];
+    const bulbMatName = `__thoughtBulbMat`;
+    let bulbMat = scene.getMaterialByName(bulbMatName) as
+      | StandardMaterial
+      | null;
+    if (!bulbMat) {
+      bulbMat = new StandardMaterial(bulbMatName, scene);
+      bulbMat.diffuseColor = Color3.FromHexString("#ffd166");
+      bulbMat.emissiveColor = Color3.FromHexString("#ffb347");
+      bulbMat.specularColor = new Color3(0.1, 0.1, 0.05);
+    }
+    const baseMatName = `__thoughtBaseMat`;
+    let baseMat = scene.getMaterialByName(baseMatName) as
+      | StandardMaterial
+      | null;
+    if (!baseMat) {
+      baseMat = new StandardMaterial(baseMatName, scene);
+      baseMat.diffuseColor = Color3.FromHexString("#e8e8e8");
+      baseMat.specularColor = new Color3(0.1, 0.1, 0.1);
+    }
+    for (let i = 0; i < n; i++) {
+      // Lightbulb body
+      const bulb = MeshBuilder.CreateBox(
+        `tbulb_${this.id}_${i}`,
+        { width: 0.22, height: 0.26, depth: 0.22 },
+        scene,
+      );
+      bulb.material = bulbMat;
+      bulb.parent = this.root;
+      bulb.position = new Vector3(...offsets[i]);
+      bulb.isPickable = false;
+      // Small base
+      const base = MeshBuilder.CreateBox(
+        `tbulb_${this.id}_${i}_base`,
+        { width: 0.12, height: 0.06, depth: 0.12 },
+        scene,
+      );
+      base.material = baseMat;
+      base.parent = bulb;
+      base.position = new Vector3(0, -0.18, 0);
+      base.isPickable = false;
+      this.thoughtBulbs.push(bulb);
+    }
+    this.thoughtPhase = 0;
+  }
+
+  /** Remove any thought bulbs currently shown above the character. */
+  hideThoughtBulbs(): void {
+    for (const b of this.thoughtBulbs) b.dispose();
+    this.thoughtBulbs = [];
+  }
+
   /** Per-frame update — advances the walk animation if active. */
   update(dtSec: number): void {
+    if (this.thoughtBulbs.length > 0) {
+      this.thoughtPhase += dtSec * 4;
+      for (let i = 0; i < this.thoughtBulbs.length; i++) {
+        const b = this.thoughtBulbs[i];
+        b.position.y += Math.sin(this.thoughtPhase + i * 0.7) * dtSec * 0.18;
+        b.rotation.y += dtSec * 0.6;
+      }
+    }
     if (!this.walking) return;
     this.walkPhase += dtSec * 9;
     const swing = Math.sin(this.walkPhase) * 0.7;
