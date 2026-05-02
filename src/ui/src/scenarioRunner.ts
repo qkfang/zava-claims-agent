@@ -383,6 +383,7 @@ export class ScenarioRunner {
       staffColor: persona.color,
       narration,
       agents: cfg.agents,
+      appAgentId: cfg.appAgentId,
     };
   }
 

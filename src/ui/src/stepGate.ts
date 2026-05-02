@@ -38,15 +38,34 @@ export interface StageInfo {
   narration: string;
   /** AI sub-agents delegated for this step. */
   agents: { name: string; description: string }[];
+  /** Agent id used to deep-link the walkthrough page in the `src/app` site. */
+  appAgentId: string;
 }
 
-/** Stage configuration — title and AI sub-agents (from docs/characters.md). */
+/**
+ * Base URL for the companion `src/app` Blazor site that hosts the per-agent
+ * walkthrough pages (`/agents/{id}`). Configurable at build time via the
+ * `VITE_APP_BASE_URL` environment variable; defaults to the dev launch URL
+ * from `src/app/Properties/launchSettings.json`.
+ */
+const APP_BASE_URL: string =
+  ((import.meta as unknown as { env?: Record<string, string> }).env
+    ?.VITE_APP_BASE_URL ?? "http://localhost:5212").replace(/\/+$/, "");
+
+/** Stage configuration — title, AI sub-agents (from docs/characters.md), and
+ * the matching `src/app` agent id used to deep-link the walkthrough page. */
 export const STAGE_CONFIG: Record<
   StageKey,
-  { title: string; agents: { name: string; description: string }[] }
+  {
+    title: string;
+    /** Matches an Id in `src/app/Models/AgentCatalog.cs`. */
+    appAgentId: string;
+    agents: { name: string; description: string }[];
+  }
 > = {
   "intake-pickup": {
     title: "Claims Intake",
+    appAgentId: "claims-intake",
     agents: [
       {
         name: "Agent Iris #1 — Intake Triage Assistant",
@@ -62,6 +81,7 @@ export const STAGE_CONFIG: Record<
   },
   "assessor-pickup": {
     title: "Claims Assessment",
+    appAgentId: "claims-assessment",
     agents: [
       {
         name: "Agent Adam #1 — Coverage Analysis Assistant",
@@ -77,6 +97,7 @@ export const STAGE_CONFIG: Record<
   },
   "consult:Loss Adjuster": {
     title: "Loss Adjusting",
+    appAgentId: "loss-adjuster",
     agents: [
       {
         name: "Agent Lara #1 — Site Visit Assistant",
@@ -92,6 +113,7 @@ export const STAGE_CONFIG: Record<
   },
   "consult:Supplier Coordinator": {
     title: "Supplier Coordination",
+    appAgentId: "supplier-coordinator",
     agents: [
       {
         name: "Agent Sam #1 — Supplier Coordination Assistant",
@@ -102,6 +124,7 @@ export const STAGE_CONFIG: Record<
   },
   "consult:Fraud Investigator": {
     title: "Fraud Review",
+    appAgentId: "fraud-investigation",
     agents: [
       {
         name: "Agent Felix #1 — Anomaly Detection Assistant",
@@ -117,6 +140,7 @@ export const STAGE_CONFIG: Record<
   },
   "consult:Claims Team Leader": {
     title: "Team Leader Review",
+    appAgentId: "team-leader",
     agents: [
       {
         name: "Agent Theo #1 — Workload & Escalation Assistant",
@@ -132,6 +156,7 @@ export const STAGE_CONFIG: Record<
   },
   settle: {
     title: "Settlement",
+    appAgentId: "settlement",
     agents: [
       {
         name: "Agent Seth #1 — Settlement Calculation Assistant",
@@ -147,6 +172,7 @@ export const STAGE_CONFIG: Record<
   },
   "comms-notify": {
     title: "Customer Communications",
+    appAgentId: "customer-communications",
     agents: [
       {
         name: "Agent Cara #1 — Status Update Assistant",
@@ -208,6 +234,12 @@ export class StepGate {
         <p class="step-narration"></p>
         <div class="step-agents-label">AI sub-agents delegated to this step</div>
         <ul class="step-agents-list"></ul>
+        <a class="step-walkthrough"
+           href="#"
+           target="_blank"
+           rel="noopener noreferrer">
+          See how this team uses these agents <span aria-hidden="true">↗</span>
+        </a>
         <footer class="step-footer">
           <button type="button" class="step-autoplay">▶ Auto-play rest</button>
           <button type="button" class="step-continue">Continue</button>
@@ -248,6 +280,14 @@ export class StepGate {
       info.staffRole;
     (this.overlay.querySelector(".step-narration") as HTMLElement).textContent =
       info.narration;
+
+    const walkthrough = this.overlay.querySelector(
+      ".step-walkthrough",
+    ) as HTMLAnchorElement;
+    walkthrough.href = `${APP_BASE_URL}/agents/${encodeURIComponent(
+      info.appAgentId,
+    )}`;
+    walkthrough.title = `Open ${info.title} walkthrough in a new tab`;
 
     const list = this.overlay.querySelector(
       ".step-agents-list",

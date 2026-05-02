@@ -658,6 +658,23 @@ body[data-scene="neighbourhood"] .metrics {
 .step-footer {
   display: flex; justify-content: flex-end; gap: 10px;
 }
+.step-walkthrough {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 20px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-2);
+  text-decoration: none;
+  align-self: flex-start;
+  border-bottom: 1px dashed transparent;
+  width: fit-content;
+}
+.step-walkthrough:hover {
+  border-bottom-color: var(--accent-2);
+  filter: brightness(1.1);
+}
 .step-continue {
   background: var(--accent);
   border: 1px solid var(--accent);
