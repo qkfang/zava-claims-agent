@@ -49,9 +49,12 @@ export class VoxelCharacter {
   private readonly heldItemAnchor: TransformNode;
   /** Invisible click hitbox covering the full body. */
   private readonly hitbox: Mesh;
-  /** All visible body meshes — used by setHighlight to bump emissive. */
+  /** All visible body meshes — used to disable picking on body parts. */
   private readonly visibleMeshes: Mesh[] = [];
   private highlighted = false;
+  /** Glowing disc on the floor used to spotlight the active/focused character. */
+  private spotlightDisc: Mesh | null = null;
+  private spotlightPhase = 0;
   private walking = false;
   private walkPhase = 0;
 
@@ -652,17 +655,48 @@ export class VoxelCharacter {
   }
 
   /**
-   * Toggle a subtle outline highlight (used for hover state and to draw
-   * attention to the focused character during scripted scenarios).
+   * Highlight the focused character with a glowing spotlight disc on the
+   * floor at their feet (used for hover state and to draw attention to
+   * the focused character during scripted scenarios). Deliberately does
+   * NOT outline the character figure — the spotlight reads as a stage
+   * "follow spot" and keeps the voxel silhouette clean.
    */
   setHighlight(on: boolean, color?: Color3): void {
     if (this.highlighted === on) return;
     this.highlighted = on;
     const c = color ?? new Color3(1.0, 0.78, 0.28);
-    for (const m of this.visibleMeshes) {
-      m.renderOutline = on;
-      m.outlineColor = c;
-      m.outlineWidth = on ? 0.04 : 0;
+    if (on) {
+      const scene = this.root.getScene();
+      if (!this.spotlightDisc) {
+        const disc = MeshBuilder.CreateDisc(
+          `spot_${this.id}`,
+          { radius: 0.95, tessellation: 48 },
+          scene,
+        );
+        // Lay flat on the floor and parent to the character so it tracks
+        // the character's position as they walk around.
+        disc.rotation.x = Math.PI / 2;
+        disc.parent = this.root;
+        disc.position.y = 0.06;
+        disc.isPickable = false;
+        // Render the spotlight after opaque geometry but don't write to
+        // the depth buffer, so the glow blends nicely on top of the floor.
+        disc.renderingGroupId = 0;
+        const m = new StandardMaterial(`spotMat_${this.id}`, scene);
+        m.diffuseColor = new Color3(0, 0, 0);
+        m.emissiveColor = c;
+        m.specularColor = new Color3(0, 0, 0);
+        m.alpha = 0.55;
+        m.backFaceCulling = false;
+        m.disableLighting = true;
+        disc.material = m;
+        this.spotlightDisc = disc;
+      } else {
+        (this.spotlightDisc.material as StandardMaterial).emissiveColor = c;
+      }
+      this.spotlightDisc.isVisible = true;
+    } else if (this.spotlightDisc) {
+      this.spotlightDisc.isVisible = false;
     }
   }
 
@@ -737,6 +771,16 @@ export class VoxelCharacter {
 
   /** Per-frame update — advances the walk animation if active. */
   update(dtSec: number): void {
+    if (this.spotlightDisc && this.spotlightDisc.isVisible) {
+      // Gentle breathing pulse so the spotlight reads as alive.
+      this.spotlightPhase += dtSec * 2.2;
+      const pulse = 0.5 + 0.5 * Math.sin(this.spotlightPhase);
+      const mat = this.spotlightDisc.material as StandardMaterial;
+      mat.alpha = 0.4 + pulse * 0.25;
+      const scale = 1.0 + pulse * 0.08;
+      this.spotlightDisc.scaling.x = scale;
+      this.spotlightDisc.scaling.y = scale;
+    }
     if (this.thoughtBulbs.length > 0) {
       this.thoughtPhase += dtSec * 4;
       for (let i = 0; i < this.thoughtBulbs.length; i++) {
