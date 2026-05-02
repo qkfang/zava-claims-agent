@@ -186,3 +186,42 @@ aside h2 {
   font-size: 12px;
 }
 #spawn-btn:hover { filter: brightness(1.05); }
+
+/* Scene toggle (Office / Neighbourhood) */
+.scene-toggle {
+  display: inline-flex;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 2px;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+}
+.scene-toggle button {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.scene-toggle button:hover {
+  color: var(--text);
+}
+.scene-toggle button.active {
+  background: var(--accent);
+  color: #1c2230;
+  box-shadow: 0 2px 8px rgba(255, 179, 71, 0.35);
+}
+
+/* Hide office-only HUD panels when the neighbourhood scene is active */
+body[data-scene="neighbourhood"] #agents-panel,
+body[data-scene="neighbourhood"] #log-panel,
+body[data-scene="neighbourhood"] .metrics {
+  display: none;
+}
