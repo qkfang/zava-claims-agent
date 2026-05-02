@@ -1,5 +1,7 @@
 # Claims Neighbourhood Visual Theme
 
+![Claims neighbourhood with customers reporting auto, home, medical, business, and liability claims](res/img-neighhood.png)
+
 ## Overview
 
 The neighbourhood is the **starting point of the entire claims journey**. Before any AI agent or claims officer is involved, something happens in everyday life — a burst pipe, a fender-bender, a small fire, a lost suitcase — and a customer suddenly needs to make a claim.

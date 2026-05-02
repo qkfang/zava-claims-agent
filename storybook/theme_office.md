@@ -1,5 +1,7 @@
 # Claims Office Visual Theme
 
+![Voxel-style claims office diorama](res/img-office.png)
+
 ## Overview
 
 The visual theme for the demo is a **voxel-style insurance claims department**, presented as a miniature isometric diorama. The office should feel professional, organised, approachable, and busy but not chaotic.
