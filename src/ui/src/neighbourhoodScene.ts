@@ -11,7 +11,7 @@ import {
 
 /**
  * Build the voxel "Claims Neighbourhood" scene as described in
- * `storybook/theme_neighhood.md`.
+ * `docs/theme_neighhood.md`.
  *
  * The neighbourhood is the **starting point** of every claim. It contains
  * five incident zones, each tied to an insurance product:

@@ -14,7 +14,7 @@ The demo uses a **claims office** as the central visual and product metaphor.
 
 The office is shown as a modern, voxel-style, bird’s-eye-view workplace with clearly separated departments. Each department represents a real claims function, and each staff role can be expanded into an AI agent that supports or automates part of the claims journey.
 
-For the full visual theme, office layout, departments, and atmosphere guidance, refer to [storybook/theme_office.md](storybook/theme_office.md). For the surrounding neighbourhood theme, refer to [storybook/theme_neighhood.md](storybook/theme_neighhood.md).
+For the full visual theme, office layout, departments, and atmosphere guidance, refer to [docs/theme_office.md](docs/theme_office.md). For the surrounding neighbourhood theme, refer to [docs/theme_neighhood.md](docs/theme_neighhood.md).
 
 ---
 
@@ -42,7 +42,7 @@ The demo should broadly follow this flow:
 8. Customer Communications keeps the customer informed.
 9. Team Leader monitors escalations, workload, and quality.
 
-For the detailed AI agent capabilities for each role in this journey, refer to [storybook/foundry_agents.md](storybook/foundry_agents.md).
+For the detailed AI agent capabilities for each role in this journey, refer to [docs/foundry_agents.md](docs/foundry_agents.md).
 
 ---
 
@@ -50,9 +50,9 @@ For the detailed AI agent capabilities for each role in this journey, refer to [
 
 The demo includes a cast of staff characters (Claims Intake Officer, Claims Assessor, Loss Adjuster, Fraud Investigator, Supplier Coordinator, Settlement Officer, Customer Communications Specialist, and Claims Team Leader) and customer personas representing common claim scenarios across home, motor, business, travel, and life insurance.
 
-For the full character profiles, personalities, situations, and example dialogue, refer to [storybook/characters.md](storybook/characters.md).
+For the full character profiles, personalities, situations, and example dialogue, refer to [docs/characters.md](docs/characters.md).
 
-For the AI agent capabilities mapped to each staff role, refer to [storybook/foundry_agents.md](storybook/foundry_agents.md).
+For the AI agent capabilities mapped to each staff role, refer to [docs/foundry_agents.md](docs/foundry_agents.md).
 
 ---
 
@@ -91,21 +91,21 @@ When generating code, content, UI components, or documentation for this demo:
 - Keep customer-facing language empathetic and plain-English.
 - Avoid making the system appear to fully replace human judgement.
 - Show AI as supporting, triaging, drafting, summarising, checking, and recommending.
-- Keep visual elements aligned with the voxel/isometric office theme described in [storybook/theme_office.md](storybook/theme_office.md).
+- Keep visual elements aligned with the voxel/isometric office theme described in [docs/theme_office.md](docs/theme_office.md).
 - Use department names consistently across UI and documentation.
 - Make the demo feel like an enterprise claims operations product, not a consumer chatbot.
-- Reference the storybook files for character details, scenarios, and agent capabilities rather than duplicating that content.
+- Reference the docs files for character details, scenarios, and agent capabilities rather than duplicating that content.
 
 ---
 
 ## Reference Documents
 
-- [storybook/background.md](storybook/background.md) — Insurance and claims lifecycle background context.
-- [storybook/characters.md](storybook/characters.md) — Staff and customer character profiles, scenarios, and dialogue.
-- [storybook/process.md](storybook/process.md) — Claims process detail and AI agent role mapping.
-- [storybook/foundry_agents.md](storybook/foundry_agents.md) — AI agent capabilities for each claims role and the agent ecosystem.
-- [storybook/theme_office.md](storybook/theme_office.md) — Voxel office visual theme, departments, and visual direction.
-- [storybook/theme_neighhood.md](storybook/theme_neighhood.md) — Voxel neighbourhood theme surrounding the claims office.
+- [docs/background.md](docs/background.md) — Insurance and claims lifecycle background context.
+- [docs/characters.md](docs/characters.md) — Staff and customer character profiles, scenarios, and dialogue.
+- [docs/process.md](docs/process.md) — Claims process detail and AI agent role mapping.
+- [docs/foundry_agents.md](docs/foundry_agents.md) — AI agent capabilities for each claims role and the agent ecosystem.
+- [docs/theme_office.md](docs/theme_office.md) — Voxel office visual theme, departments, and visual direction.
+- [docs/theme_neighhood.md](docs/theme_neighhood.md) — Voxel neighbourhood theme surrounding the claims office.
 
 ---
 
@@ -129,4 +129,4 @@ This demo presents a voxel-style claims office where each department is represen
 
 The final experience should help viewers quickly understand how claims processing works and how a coordinated set of AI agents can support the full claims lifecycle.
 
-For all detailed character, process, and visual content, see the [storybook/](storybook/) folder.
+For all detailed character, process, and visual content, see the [docs/](docs/) folder.

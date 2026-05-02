@@ -2,9 +2,9 @@
 
 This project hosts the **.NET 10** Azure AI Foundry agents that power the
 Zava digital claims office demo. Each staff character described in
-[`storybook/characters.md`](../../storybook/characters.md) is implemented as
+[`docs/characters.md`](../../docs/characters.md) is implemented as
 a specialised Foundry declarative agent, following the role and tooling
-mapping in [`storybook/foundry_agents.md`](../../storybook/foundry_agents.md).
+mapping in [`docs/foundry_agents.md`](../../docs/foundry_agents.md).
 
 The C# pattern is modelled on
 [`qkfang/quant-agent` → `src/quantlib`](https://github.com/qkfang/quant-agent/tree/main/src/quantlib):
@@ -33,7 +33,7 @@ The C# pattern is modelled on
 
 Every agent represents a stage of the claim lifecycle and includes
 human-in-the-loop guidance consistent with the approval rules in
-`storybook/foundry_agents.md`.
+`docs/foundry_agents.md`.
 
 ## Configuration
 
@@ -67,7 +67,7 @@ Run with no arguments to print the full usage list.
 1. Create `Agents/<Name>Agent.cs` that extends `ClaimsAgent`.
 2. Define a unique `AgentId` (kebab-case, ending in `-agent`).
 3. Provide an `Instructions` string that follows the structure in
-   `storybook/foundry_agents.md` (Purpose, Inputs, Tools, Outputs,
+   `docs/foundry_agents.md` (Purpose, Inputs, Tools, Outputs,
    Human Approval).
 4. Add a CLI flag in `Program.cs` so the agent can be exercised from the
    command line.

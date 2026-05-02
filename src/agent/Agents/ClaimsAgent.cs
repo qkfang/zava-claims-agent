@@ -7,7 +7,7 @@ namespace ZavaClaims.Agents;
 /// <summary>
 /// Shared base for every staff-character agent in the claims office.
 ///
-/// Each agent represents one specialist role from <c>storybook/foundry_agents.md</c>
+/// Each agent represents one specialist role from <c>docs/foundry_agents.md</c>
 /// and is wired up with the same Foundry tools (Azure AI Search over the
 /// claims knowledge base and Bing grounding for external context). This is
 /// analogous to <c>QuantAgent</c> in

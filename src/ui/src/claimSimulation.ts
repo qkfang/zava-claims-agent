@@ -12,7 +12,7 @@ import { PALETTES, VoxelCharacter } from "./voxelCharacter";
 
 /**
  * Claims-industry staff roles, mirroring the cast in
- * `storybook/characters.md` and the departments in `res/img-office.png`.
+ * `docs/characters.md` and the departments in `res/img-office.png`.
  */
 export type AgentRole =
   | "Claims Intake Officer"
@@ -46,7 +46,7 @@ export interface Claim {
 
 /**
  * Customer claim scenarios — each one matches a customer persona from
- * `storybook/characters.md` so the simulation tells a recognisable story.
+ * `docs/characters.md` so the simulation tells a recognisable story.
  */
 const CUSTOMER_SCENARIOS: Array<{
   persona: string;

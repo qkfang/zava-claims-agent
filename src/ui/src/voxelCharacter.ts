@@ -211,7 +211,7 @@ export class VoxelCharacter {
 }
 
 export const PALETTES: Record<string, VoxelCharacterPalette> = {
-  // ----- Customers (mapped to the 5 personas in storybook/characters.md) -----
+  // ----- Customers (mapped to the 5 personas in docs/characters.md) -----
   // Michael Harris — Home Insurance Customer (stressed homeowner)
   customerHome:    { skin: "#f3c79b", hair: "#5a3a25", shirt: "#4f8fd6", pants: "#2d3344", shoes: "#1a1a1a" },
   // Aisha Khan — Motor Insurance Customer (busy commuter)
@@ -223,7 +223,7 @@ export const PALETTES: Record<string, VoxelCharacterPalette> = {
   // Robert Chen — Life Insurance Beneficiary (quiet, formal)
   customerLife:    { skin: "#e8c69a", hair: "#1f1a18", shirt: "#3a3a44", pants: "#1c1c22", shoes: "#1a1a1a", accent: "#22252e" },
 
-  // ----- Staff (mapped to storybook/characters.md staff cast) -----
+  // ----- Staff (mapped to docs/characters.md staff cast) -----
   // Sarah Mitchell — Claims Intake Officer (warm reception palette)
   intakeOfficer:    { skin: "#f3c79b", hair: "#3a2418", shirt: "#f4c463", pants: "#3a2a55", shoes: "#1a1a1a", accent: "#b8454a" },
   // Daniel Cho — Claims Assessor (analytical, navy/teal)
