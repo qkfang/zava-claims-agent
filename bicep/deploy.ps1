@@ -1,13 +1,4 @@
-$ErrorActionPreference = 'Stop'
 
-$resourceGroup = 'rg-zava-claims'
-$location = 'eastus2'
-$deploymentName = 'zava-claims-deploy'
+az group create --name 'rg-zava-claims' --location 'eastus2'
 
-az group create --name $resourceGroup --location $location | Out-Null
-
-az deployment group create `
-    --name $deploymentName `
-    --resource-group $resourceGroup `
-    --template-file './main.bicep' `
-    --parameters './main.bicepparam'
+az deployment group create --name 'zava-claims-deploy' --resource-group 'rg-zava-claims' --template-file './main.bicep' --parameters './main.bicepparam'

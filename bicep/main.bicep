@@ -7,15 +7,6 @@ param location string = 'eastus2'
 @description('Principal object IDs to grant access to deployed resources')
 param principals array = []
 
-@description('Codex/foundry model deployment name')
-param codexDeploymentName string = 'gpt-5-codex'
-
-@description('Codex model name in the OpenAI catalog')
-param codexModelName string = 'gpt-5-codex'
-
-@description('Codex model version')
-param codexModelVersion string = '2025-09-15'
-
 var commonTags = {
   workload: 'zava-claims-agent'
   demo: 'claims-office'
@@ -96,9 +87,6 @@ module foundry 'foundry.bicep' = {
     name: foundryName
     location: location
     tags: commonTags
-    codexDeploymentName: codexDeploymentName
-    codexModelName: codexModelName
-    codexModelVersion: codexModelVersion
   }
 }
 
