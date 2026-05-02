@@ -145,9 +145,14 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // Vertical road (north-south)
   makeRoad("nh_road_v", 5, 80, new Vector3(0, 0.05, 0));
 
-  // Dashed center lines along the horizontal road
+  // Dashed center lines along the horizontal road. We skip dashes that
+  // would land inside the central roundabout or on the asphalt of any
+  // crossing side street so dashes don't visually float on top of the
+  // side-road tarmac.
   for (let x = -38; x <= 38; x += 4) {
     if (Math.abs(x) < 4) continue; // skip intersection
+    if (x > -28 && x < -24) continue; // Cedar Way crossing
+    if (x > 31 && x < 35) continue; // Oak Drive crossing
     const dash = MeshBuilder.CreateBox(
       `nh_dash_h_${x}`,
       { width: 1.6, height: 0.02, depth: 0.18 },
@@ -159,6 +164,8 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   }
   for (let z = -38; z <= 38; z += 4) {
     if (Math.abs(z) < 4) continue;
+    if (z > -12 && z < -8) continue; // Birch Lane crossing
+    if (z > 18 && z < 22) continue; // Maple Crescent crossing
     const dash = MeshBuilder.CreateBox(
       `nh_dash_v_${z}`,
       { width: 0.18, height: 0.02, depth: 1.6 },
@@ -1272,52 +1279,50 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // Extra suburban houses lining the new streets — these use the full
   // makeSuburbanHouse recipe so the grid reads as a real neighbourhood
   // rather than scattered boxes.
-  // Maple Crescent (north side, facing south onto the street).
-  makeSuburbanHouse("nh_maple_a", 12, 24.5, {
+  // Maple Crescent (north side, facing south onto the street). The
+  // centre Z is chosen so foundation/eaves sit clear of the north kerb
+  // at z≈22.65 (kerb_maple_n centred at 22.2 with depth 0.9).
+  makeSuburbanHouse("nh_maple_a", 12, 25.6, {
     wall: "#e7d6c0", roof: "#7a4a3a", chimney: true, fence: true,
-    mailbox: true, sidewalkZ: 22.5, storeys: 1,
+    mailbox: true, sidewalkZ: 22.8, storeys: 1,
   });
-  makeSuburbanHouse("nh_maple_b", 22, 24.5, {
+  makeSuburbanHouse("nh_maple_b", 22, 25.6, {
     wall: "#cfe1f0", roof: "#3a5fb0", chimney: true, fence: true,
-    mailbox: true, sidewalkZ: 22.5, storeys: 2,
+    mailbox: true, sidewalkZ: 22.8, storeys: 2,
     fenceColor: "#e7d8c0",
   });
-  makeSuburbanHouse("nh_maple_c", 30, 24.5, {
+  makeSuburbanHouse("nh_maple_c", 30, 25.6, {
     wall: "#f0d6b0", roof: "#5a6a7c", chimney: true, fence: true,
-    mailbox: true, sidewalkZ: 22.5, storeys: 1,
+    mailbox: true, sidewalkZ: 22.8, storeys: 1,
   });
-  // Maple Crescent (south side, facing north) — built as low-detail
-  // back-of-house silhouettes since makeSuburbanHouse only faces -Z.
-  // We deliberately keep this band narrow (z=17.6) so it stays clear of
-  // the residential zone 1 buildings at z=14 and the trees behind them.
-  for (const [bx, bcolor, broof] of [
-    [16, "#e7c8a0", "#7a4a3a"],
-    [26, "#cfe1f0", "#3a5fb0"],
-  ] as Array<[number, string, string]>) {
-    makeBox(`nh_maple_back_found_${bx}`, 4.6, 0.4, 2.6, new Vector3(bx, 0.2, 17.6), "#9a8f7a");
-    makeBox(`nh_maple_back_walls_${bx}`, 4.2, 2.4, 2.2, new Vector3(bx, 1.6, 17.6), bcolor);
-    makeGableRoof(`nh_maple_back_roof_${bx}`, 4.0, 2.2, bx, 17.6, 2.8, broof, "#e7d8c0");
-    makeChimney(bx + 1.0, 17.9, 3.2, "#7a4a3a");
-  }
+  // (The previous "Maple back row" silhouettes used to sit on z=17.6 but
+  // that band overlaps both the south kerb of Maple Crescent and the
+  // back of the residential zone 1 houses at z=14, so the row has been
+  // removed in favour of clean grass between the two streets.)
 
-  // Birch Lane (north side, facing south).
-  makeSuburbanHouse("nh_birch_a", -22, -7.5, {
+  // Birch Lane (north side, facing south). Houses are now placed clear
+  // of the north kerb (kerb_birch_n covers z≈-7.35..-8.25) so the
+  // foundation and front step sit on grass / sidewalk rather than the
+  // road surface.
+  makeSuburbanHouse("nh_birch_a", -22, -5.0, {
     wall: "#e7d6c0", roof: "#5a4a3a", chimney: true, fence: true,
-    mailbox: true, sidewalkZ: -8.5, storeys: 1,
+    mailbox: true, sidewalkZ: -7.2, storeys: 1,
   });
-  makeSuburbanHouse("nh_birch_b", -2, -7.5, {
+  makeSuburbanHouse("nh_birch_b", -2, -5.0, {
     wall: "#f0d6b0", roof: "#7a4a3a", chimney: true, fence: true,
-    mailbox: true, sidewalkZ: -8.5, storeys: 1,
+    mailbox: true, sidewalkZ: -7.2, storeys: 1,
   });
 
   // Oak Drive (east side, facing west — built as a custom rotated frame).
-  // ox=37 places houses east of the road centred at x=33.
+  // ox is chosen so the foundation (width 4.6) starts east of the east
+  // kerb (kerb_oak_e covers x≈34.75..35.65) — the front step lands on
+  // the sidewalk rather than overlapping the kerb stripe.
   for (const [oz, owall, oroof] of [
     [16, "#cfe1f0", "#3a5fb0"],
     [6, "#f0e6d2", "#5a6a7c"],
     [-2, "#e7c8a0", "#7a4a3a"],
   ] as Array<[number, string, string]>) {
-    const ox = 37;
+    const ox = 38.2;
     makeBox(`nh_oak_found_${oz}`, 4.6, 0.4, 4.0, new Vector3(ox, 0.2, oz), "#9a8f7a");
     makeBox(`nh_oak_walls_${oz}`, 4.2, 2.6, 3.6, new Vector3(ox, 1.7, oz), owall);
     makeGableRoof(`nh_oak_roof_${oz}`, 4.0, 3.6, ox, oz, 3.0, oroof, "#f4f0e6");
@@ -2124,10 +2129,13 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   }> = [
     // West side, between Cedar Way and the main road.
     { cx: -22, cz: 6, wall: "#e7c8a0", roof: "#7a4a3a", sidewalkZ: 4.4 },
-    // West side, south of the main road, on Cedar Way.
-    { cx: -22, cz: -2, wall: "#f0d6b0", roof: "#5a6a7c", sidewalkZ: -3.6 },
-    // North-east, between Maple Crescent houses (a two-storey home).
-    { cx: 4, cz: 24.5, wall: "#cfe1f0", roof: "#3a5fb0", sidewalkZ: 22.5,
+    // West side, south of the main road. Centre Z is well clear of the
+    // main south kerb (z≈-3.4) so the foundation no longer sits in the
+    // road asphalt.
+    { cx: -22, cz: -5.5, wall: "#f0d6b0", roof: "#5a6a7c", sidewalkZ: -3.6 },
+    // North-east, on Maple Crescent (a two-storey home). Centre Z lifted
+    // so the foundation sits clear of the north kerb at z≈22.65.
+    { cx: 4, cz: 25.6, wall: "#cfe1f0", roof: "#3a5fb0", sidewalkZ: 22.8,
       storeys: 2, fenceColor: "#e7d8c0" },
   ];
   for (const f of fillers) {
