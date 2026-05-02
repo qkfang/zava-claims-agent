@@ -185,7 +185,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
 
   // Small voxel tree
   const makeTree = (x: number, z: number, scale = 1): void => {
-    const trunk = makeBox(
+    makeBox(
       `nh_tree_trunk_${x}_${z}`,
       0.4 * scale,
       1.2 * scale,
@@ -193,7 +193,6 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
       new Vector3(x, 0.6 * scale, z),
       "#7a4f2a",
     );
-    void trunk;
     makeBox(
       `nh_tree_leaves_${x}_${z}`,
       1.4 * scale,
@@ -213,7 +212,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     shirt: string,
     pants = "#3a4b6a",
   ): void => {
-    const head = makeBox(
+    makeBox(
       `nh_person_head_${x}_${z}`,
       0.45,
       0.45,
@@ -221,7 +220,6 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
       new Vector3(x, 1.45, z),
       "#f0c8a0",
     );
-    void head;
     makeBox(
       `nh_person_body_${x}_${z}`,
       0.5,
