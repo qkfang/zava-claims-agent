@@ -138,6 +138,10 @@ export class ScenarioRunner {
   cancel(): void {
     if (this.state === "idle") return;
     this.runId++;
+    if (this.closingHandle !== null) {
+      window.clearTimeout(this.closingHandle);
+      this.closingHandle = null;
+    }
     this.cleanupNeighbourhoodCustomer();
     this.releaseFocus();
     this.hooks.hideBanner();
@@ -280,6 +284,8 @@ export class ScenarioRunner {
     this.hooks.updateBannerNarration(info.narration);
   }
 
+  private closingHandle: number | null = null;
+
   private handleClosed(): void {
     if (this.state !== "office") return;
     this.state = "closing";
@@ -291,7 +297,9 @@ export class ScenarioRunner {
       `${this.currentPersona?.name ?? "Customer"} — claim closed.`,
     );
     // Wait briefly, then release focus and clear the banner.
-    setTimeout(() => {
+    if (this.closingHandle !== null) window.clearTimeout(this.closingHandle);
+    this.closingHandle = window.setTimeout(() => {
+      this.closingHandle = null;
       this.releaseFocus();
       this.hooks.hideBanner();
       this.hooks.setSceneToggleDisabled(false);

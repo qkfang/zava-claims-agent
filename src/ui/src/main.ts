@@ -284,8 +284,8 @@ function bootstrap(): void {
   // Spawn the first random customer immediately so the demo has something to show.
   setTimeout(() => sim.spawnCustomer(), 800);
 
-  // Per-frame tick — only run the simulation while the office is rendering;
-  // run the scenario runner regardless so the neighbourhood walk advances.
+  // Per-frame tick — driven from the render loop so we tick exactly once
+  // per frame regardless of which scene is rendered.
   let last = performance.now();
   const tick = (): void => {
     const now = performance.now();
@@ -296,19 +296,12 @@ function bootstrap(): void {
     }
     runner.update(dt);
   };
-  officeScene.onBeforeRenderObservable.add(tick);
-  neighbourhoodScene.onBeforeRenderObservable.add(() => {
-    // Only advance time once per frame regardless of scene; the scene that
-    // is rendered first owns the tick. Office runs tick already, so when
-    // we're in neighbourhood we still need to drive it.
-    if (activeScene === "neighbourhood") tick();
-  });
 
   engine.runRenderLoop(() => {
+    tick();
     if (activeScene === "office") {
       officeScene.render();
     } else {
-      // Reset the simulation timer so it doesn't accumulate dt while paused
       neighbourhoodScene.render();
     }
   });
