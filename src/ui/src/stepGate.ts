@@ -30,7 +30,7 @@ export interface StageInfo {
   totalSteps?: number;
   /** Friendly staff role label (e.g. "Claims Intake Officer"). */
   staffRole: string;
-  /** Staff persona name (e.g. "Sarah Mitchell"). */
+  /** Staff persona name (e.g. "Iris"). */
   staffName: string;
   /** Staff swatch color. */
   staffColor: string;
@@ -40,7 +40,7 @@ export interface StageInfo {
   agents: { name: string; description: string }[];
 }
 
-/** Stage configuration — title and AI sub-agents (from foundry_agents.md). */
+/** Stage configuration — title and AI sub-agents (from docs/characters.md). */
 export const STAGE_CONFIG: Record<
   StageKey,
   { title: string; agents: { name: string; description: string }[] }
@@ -48,64 +48,116 @@ export const STAGE_CONFIG: Record<
   "intake-pickup": {
     title: "Claims Intake",
     agents: [
-      { name: "Policy Lookup AI", description: "Pulls the customer policy and confirms cover is active." },
-      { name: "Document Checklist AI", description: "Builds a tailored evidence checklist for the claim type." },
-      { name: "Urgency & Vulnerability AI", description: "Flags urgent or vulnerable cases for fast-track handling." },
+      {
+        name: "Agent Iris #1 — Intake Triage Assistant",
+        description:
+          "Captures first notice of loss, extracts policy & incident details, and triages urgency for Iris.",
+      },
+      {
+        name: "Agent Iris #2 — Document Checklist Assistant",
+        description:
+          "Builds the right document checklist for the claim type and chases missing items.",
+      },
     ],
   },
   "assessor-pickup": {
     title: "Claims Assessment",
     agents: [
-      { name: "Coverage Rules AI", description: "Checks the policy wording for inclusions and exclusions." },
-      { name: "Evidence Review AI", description: "Summarises submitted evidence and spots gaps." },
-      { name: "Decision Drafting AI", description: "Drafts a plain-English coverage recommendation." },
+      {
+        name: "Agent Adam #1 — Coverage Analysis Assistant",
+        description:
+          "Reads the policy schedule and drafts a preliminary coverage opinion with citations.",
+      },
+      {
+        name: "Agent Adam #2 — Evidence Review Assistant",
+        description:
+          "Summarises photos, invoices and reports, and highlights gaps for Adam to follow up.",
+      },
     ],
   },
   "consult:Loss Adjuster": {
     title: "Loss Adjusting",
     agents: [
-      { name: "Damage Photo AI", description: "Reads inspection photos and tags affected items." },
-      { name: "Scope Drafting AI", description: "Drafts a structured damage scope and repair list." },
-      { name: "Cost Benchmark AI", description: "Sanity-checks repair costs against market benchmarks." },
+      {
+        name: "Agent Lara #1 — Site Visit Assistant",
+        description:
+          "Prepares pre-visit briefings and inspection checklists, then summarises on-site findings.",
+      },
+      {
+        name: "Agent Lara #2 — Valuation & Reporting Assistant",
+        description:
+          "Cross-references quotes and market rates, drafts a loss valuation and assessment report.",
+      },
     ],
   },
   "consult:Supplier Coordinator": {
     title: "Supplier Coordination",
     agents: [
-      { name: "Supplier Match AI", description: "Picks an approved repairer near the customer." },
-      { name: "Job Booking AI", description: "Books and confirms the appointment by SMS." },
-      { name: "Quote Reasonableness AI", description: "Validates supplier quotes against the agreed scope." },
+      {
+        name: "Agent Sam #1 — Supplier Coordination Assistant",
+        description:
+          "Recommends approved suppliers, drafts booking requests, and tracks ETAs and quotes.",
+      },
     ],
   },
   "consult:Fraud Investigator": {
     title: "Fraud Review",
     agents: [
-      { name: "Risk Scoring AI", description: "Scores fraud risk and explains every flag." },
-      { name: "Timeline Consistency AI", description: "Checks the story for timeline contradictions." },
-      { name: "Duplicate Receipt AI", description: "Detects duplicated or altered receipts." },
+      {
+        name: "Agent Felix #1 — Anomaly Detection Assistant",
+        description:
+          "Scans narratives, timelines and documents for inconsistencies and assigns a structured risk indicator.",
+      },
+      {
+        name: "Agent Felix #2 — Verification Assistant",
+        description:
+          "Cross-checks claim history, drafts third-party verification queries, and prepares an initial findings pack.",
+      },
     ],
   },
   "consult:Claims Team Leader": {
     title: "Team Leader Review",
     agents: [
-      { name: "Escalation Triage AI", description: "Surfaces complex or sensitive cases for oversight." },
-      { name: "Approval Authority AI", description: "Confirms the right delegated authority is signing off." },
+      {
+        name: "Agent Theo #1 — Workload & Escalation Assistant",
+        description:
+          "Monitors queue volumes, SLA risk, and ageing claims, and surfaces priority escalations.",
+      },
+      {
+        name: "Agent Theo #2 — Quality & Complaints Assistant",
+        description:
+          "Samples completed claims for quality review and flags regulatory or reputational risk.",
+      },
     ],
   },
   settle: {
     title: "Settlement",
     agents: [
-      { name: "Payment Calc AI", description: "Calculates payouts including excess and policy limits." },
-      { name: "Payee Validation AI", description: "Validates payee details before money moves." },
-      { name: "Multi-party Payments AI", description: "Splits payments across builder, supplier, and customer." },
+      {
+        name: "Agent Seth #1 — Settlement Calculation Assistant",
+        description:
+          "Aggregates assessment outcomes, costs and adjustments, and drafts the settlement statement.",
+      },
+      {
+        name: "Agent Seth #2 — Adjustment Validation Assistant",
+        description:
+          "Re-checks excess, sub-limits and depreciation, and flags figures outside expected ranges.",
+      },
     ],
   },
   "comms-notify": {
     title: "Customer Communications",
     agents: [
-      { name: "Empathetic Drafting AI", description: "Drafts a warm, plain-English update for the customer." },
-      { name: "Tone Check AI", description: "Adjusts tone for stress, grief, or urgency." },
-      { name: "Channel Choice AI", description: "Picks SMS, email, or call based on customer preference." },
+      {
+        name: "Agent Cara #1 — Status Update Assistant",
+        description:
+          "Drafts status updates and outcome letters tailored to the claim stage and customer.",
+      },
+      {
+        name: "Agent Cara #2 — Tone & Plain-English Assistant",
+        description:
+          "Reviews drafts for empathy, clarity and brand tone, rewriting jargon into plain English.",
+      },
     ],
   },
 };

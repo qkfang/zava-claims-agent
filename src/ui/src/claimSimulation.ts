@@ -528,7 +528,7 @@ export class ClaimSimulation {
       this.recordClaim(s, claim);
       this.logger.setAgentStatus(s.id, true, `Picking up ${claim.id}`);
       if (claim.script) {
-        this.fireFocusChange(claim, s.id, "intake-pickup", `Sarah picks up claim ${claim.id}`);
+        this.fireFocusChange(claim, s.id, "intake-pickup", `Iris picks up claim ${claim.id}`);
       }
       this.gotoAndThen(s, this.layout.inboxPoint, () => {
         // Take folder
@@ -545,7 +545,7 @@ export class ClaimSimulation {
         s.task = { kind: "assess", claim };
         this.logger.setAgentStatus(s.id, true, `Routing ${claim.id}`);
         if (claim.script) {
-          this.fireFocusChange(claim, s.id, "intake-route", `Sarah routes ${claim.id} to the Claims Assessor`);
+          this.fireFocusChange(claim, s.id, "intake-route", `Iris routes ${claim.id} to the Claims Assessor`);
         }
         const dropPoint = this.layout.assessorDeskPoint.clone();
         dropPoint.z -= 1.4; // approach side of desk
@@ -592,7 +592,7 @@ export class ClaimSimulation {
         claim.script ? "warn" : "info",
       );
       if (claim.script) {
-        this.fireFocusChange(claim, s.id, "assessor-pickup", `Daniel begins assessing ${claim.id}`);
+        this.fireFocusChange(claim, s.id, "assessor-pickup", `Adam begins assessing ${claim.id}`);
       }
       // Pick up folder from desk
       const pickupPoint = this.layout.assessorDeskPoint.clone();
@@ -620,7 +620,7 @@ export class ClaimSimulation {
         claim.script ? "warn" : "info",
       );
       if (claim.script) {
-        this.fireFocusChange(claim, s.id, "settle", `Hannah reviews ${claim.id} for settlement`);
+        this.fireFocusChange(claim, s.id, "settle", `Seth reviews ${claim.id} for settlement`);
       }
       const pickup = this.layout.settlementDeskPoint.clone();
       pickup.z -= 1.0;
@@ -644,7 +644,7 @@ export class ClaimSimulation {
       this.recordClaim(s, claim);
       this.logger.setAgentStatus(s.id, true, `Notifying customer for ${claim.id}`);
       if (claim.script) {
-        this.fireFocusChange(claim, s.id, "comms-notify", `Olivia notifies the customer for ${claim.id}`);
+        this.fireFocusChange(claim, s.id, "comms-notify", `Cara notifies the customer for ${claim.id}`);
       }
       // Pick from settlement desk.
       const pickup = this.layout.settlementDeskPoint.clone();
@@ -714,7 +714,7 @@ export class ClaimSimulation {
           "good",
         );
         if (claim.script) {
-          this.fireFocusChange(claim, s.id, "assessor-process", `Daniel cleared ${claim.id}`);
+          this.fireFocusChange(claim, s.id, "assessor-process", `Adam cleared ${claim.id}`);
         }
         // Scripted claim with extras — run the next consultation before settlement.
         if (claim.script && claim.script.extras.length > 0) {
@@ -864,7 +864,7 @@ export class ClaimSimulation {
             `Hand-off ${claim.id}`,
           );
           if (claim.script) {
-            this.fireFocusChange(claim, assessor.id, "assessor-handoff", `Daniel hands ${claim.id} to Settlement`);
+            this.fireFocusChange(claim, assessor.id, "assessor-handoff", `Adam hands ${claim.id} to Settlement`);
           }
           const pickup = this.layout.assessorDeskPoint.clone();
           pickup.z -= 1.0;
@@ -1274,9 +1274,9 @@ function buildScriptForScenario(p: CustomerPersona): ClaimScript {
     settlement: "approved",
     color: p.color,
     personaName: p.name,
-    assessorNarration: `Daniel reviews ${p.claim_type} for ${p.name}`,
-    settlementNarration: `Hannah reviews settlement for ${p.name}`,
-    commsNarration: `Olivia notifies ${p.name} of the outcome — claim closed`,
+    assessorNarration: `Adam reviews ${p.claim_type} for ${p.name}`,
+    settlementNarration: `Seth reviews settlement for ${p.name}`,
+    commsNarration: `Cara notifies ${p.name} of the outcome — claim closed`,
   };
 
   switch (p.id) {
@@ -1288,16 +1288,16 @@ function buildScriptForScenario(p: CustomerPersona): ClaimScript {
           {
             role: "Loss Adjuster",
             narration:
-              "Priya reviews inspection photos and estimates the repair scope.",
+              "Lara reviews inspection photos and estimates the repair scope.",
             duration: 3.0,
           },
           {
             role: "Supplier Coordinator",
-            narration: "James books an approved plumber and drying gear.",
+            narration: "Sam books an approved plumber and drying gear.",
             duration: 2.5,
           },
         ],
-        commsNarration: `Olivia confirms repair plan with ${p.name} — claim closed`,
+        commsNarration: `Cara confirms repair plan with ${p.name} — claim closed`,
       };
     case "motor":
       return {
@@ -1307,11 +1307,11 @@ function buildScriptForScenario(p: CustomerPersona): ClaimScript {
           {
             role: "Supplier Coordinator",
             narration:
-              "James assigns an approved repairer and books a rental car.",
+              "Sam assigns an approved repairer and books a rental car.",
             duration: 3.0,
           },
         ],
-        commsNarration: `Olivia messages ${p.name} with repairer + rental details — claim closed`,
+        commsNarration: `Cara messages ${p.name} with repairer + rental details — claim closed`,
       };
     case "business":
       return {
@@ -1320,22 +1320,22 @@ function buildScriptForScenario(p: CustomerPersona): ClaimScript {
         extras: [
           {
             role: "Loss Adjuster",
-            narration: "Priya schedules a site visit and estimates restoration costs.",
+            narration: "Lara schedules a site visit and estimates restoration costs.",
             duration: 3.0,
           },
           {
             role: "Supplier Coordinator",
             narration:
-              "James lines up smoke-restoration specialists and a temporary kitchen.",
+              "Sam lines up smoke-restoration specialists and a temporary kitchen.",
             duration: 2.5,
           },
           {
             role: "Claims Team Leader",
-            narration: "Mark reviews the high-value claim and signs off.",
+            narration: "Theo reviews the high-value claim and signs off.",
             duration: 2.5,
           },
         ],
-        commsNarration: `Olivia walks ${p.name} through the staged settlement plan — claim closed`,
+        commsNarration: `Cara walks ${p.name} through the staged settlement plan — claim closed`,
       };
     case "travel":
       return {
@@ -1344,12 +1344,12 @@ function buildScriptForScenario(p: CustomerPersona): ClaimScript {
         extras: [
           {
             role: "Fraud Investigator",
-            narration: "Elena runs a quick fraud check — clears the claim.",
+            narration: "Felix runs a quick fraud check — clears the claim.",
             duration: 2.5,
           },
         ],
         settlement: "partial",
-        commsNarration: `Olivia explains partial outcome to ${p.name} — claim closed`,
+        commsNarration: `Cara explains partial outcome to ${p.name} — claim closed`,
       };
     case "life":
       return {
@@ -1359,11 +1359,11 @@ function buildScriptForScenario(p: CustomerPersona): ClaimScript {
           {
             role: "Claims Team Leader",
             narration:
-              "Mark personally oversees the bereavement claim for compassionate handling.",
+              "Theo personally oversees the bereavement claim for compassionate handling.",
             duration: 2.5,
           },
         ],
-        commsNarration: `Olivia calls ${p.name} with empathy and clear next steps — claim closed`,
+        commsNarration: `Cara calls ${p.name} with empathy and clear next steps — claim closed`,
       };
   }
 }
