@@ -9,7 +9,7 @@ import {
   Vector3,
 } from "@babylonjs/core";
 import { OfficeLayout } from "./officeScene";
-import { PALETTES, VoxelCharacter } from "./voxelCharacter";
+import { PALETTES, VoxelCharacter, type VoxelCharacterPalette } from "./voxelCharacter";
 import {
   CUSTOMER_PERSONAS,
   STAFF_PERSONAS,
@@ -140,7 +140,7 @@ export interface SimLogger {
   setMetric(name: "submitted" | "processing" | "approved" | "rejected", value: number): void;
   log(message: string, kind?: "info" | "good" | "bad" | "warn"): void;
   setAgentStatus(id: string, busy: boolean, activity: string): void;
-  registerAgent(info: { id: string; name: string; role: AgentRole; color: string }): void;
+  registerAgent(info: { id: string; name: string; role: AgentRole; color: string; palette: VoxelCharacterPalette }): void;
 }
 
 /** Move a transform along XZ toward `target` at a given speed (m/s). */
@@ -314,6 +314,7 @@ export class ClaimSimulation {
         name: persona.name,
         role: persona.role,
         color: persona.color,
+        palette,
       });
       const initialStatus = persona.ambient[0] ?? "Awaiting next claim";
       this.logger.setAgentStatus(persona.id, false, initialStatus);
@@ -1094,6 +1095,7 @@ export class ClaimSimulation {
         name: staff.name,
         role: staff.role,
         color: staff.color,
+        palette: PALETTES[staff.persona.palette],
         personality: staff.persona.personality,
         typicalLine: staff.persona.typical_line,
         responsibilities: staff.persona.responsibilities,
@@ -1122,6 +1124,7 @@ export class ClaimSimulation {
         name: customer.persona,
         role: persona?.claim_type ?? customer.claim.type,
         color: persona?.color ?? "#6e7a8a",
+        palette: PALETTES[(persona?.palette ?? "customerHome") as keyof typeof PALETTES],
         personality: persona?.personality ?? "",
         typicalLine: persona?.typical_line ?? "",
         responsibilities: persona?.need ?? [],
@@ -1297,6 +1300,8 @@ export interface CharacterProfile {
   name: string;
   role: string;
   color: string;
+  /** Voxel palette so the profile card can render a matching character bust. */
+  palette: VoxelCharacterPalette;
   personality: string;
   typicalLine: string;
   responsibilities: string[];

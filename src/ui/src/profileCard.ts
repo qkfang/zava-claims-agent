@@ -1,4 +1,5 @@
 import type { ClaimSimulation, CharacterProfile } from "./claimSimulation";
+import { renderCharacterFigureSvg } from "./characterFigure";
 
 /**
  * Floating profile card shown when a character is clicked.
@@ -147,7 +148,7 @@ export class ProfileCard {
 
     this.el.innerHTML = `
       <header style="border-color:${headerColor}">
-        <div class="swatch" style="background:${headerColor}"></div>
+        <div class="figure">${renderCharacterFigureSvg(p.palette, headerColor)}</div>
         <div>
           <div class="profile-name">${escape(p.name)}</div>
           <div class="profile-role">${escape(titleLine)}</div>

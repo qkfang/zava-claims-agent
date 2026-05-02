@@ -704,11 +704,11 @@ export class VoxelCharacter {
   }
 
   /**
-   * Show one large "agent persona" bulb floating above the staff member's
-   * head per AI sub-agent currently delegated to the case. Each bulb is
-   * tinted with the staff member's palette (skin + hair) so the audience
-   * reads them as the same persona's AI clones, and carries a floating
-   * name label such as "Agent Iris #1 — Intake Triage Assistant".
+   * Show one flat "AI agent" icon floating above the staff member's head per
+   * AI sub-agent currently delegated to the case. Each icon is a flat
+   * billboard plane painted with the staff member's palette (skin/hair/shirt)
+   * so the audience reads them as the same persona's AI clones, and carries
+   * a floating name label such as "Agent Iris #1 — Intake Triage Assistant".
    *
    * Pass an empty array (or call `hideThoughtBulbs`) to clear.
    */
@@ -718,7 +718,7 @@ export class VoxelCharacter {
     if (n === 0) return;
     const scene = this.root.getScene();
 
-    // Lay the bulbs out in a horizontal arc just above the character's head
+    // Lay the icons out in a horizontal arc just above the character's head
     // so they read as a "trio of mini-personas" floating with the staff.
     const layout: Array<[number, number, number]> = [];
     if (n === 1) {
@@ -732,95 +732,27 @@ export class VoxelCharacter {
       layout.push([1.4, 2.85, 0.0]);
     }
 
-    const skinHex = this.palette.skin;
-    const hairHex = this.palette.hair;
-    const shirtHex = this.palette.shirt;
-    const eyeHex = this.palette.eye ?? "#22252e";
-
-    const matFor = (key: string, hex: string): StandardMaterial => {
-      const matName = `__bulbMat_${this.id}_${key}`;
-      let m = scene.getMaterialByName(matName) as StandardMaterial | null;
-      if (!m) {
-        m = new StandardMaterial(matName, scene);
-        m.diffuseColor = Color3.FromHexString(hex);
-        m.emissiveColor = Color3.FromHexString(hex).scale(0.35);
-        m.specularColor = new Color3(0.06, 0.06, 0.06);
-      }
-      return m;
-    };
-
     for (let i = 0; i < n; i++) {
-      // ---- Big head/body cube tinted with the staff persona's skin tone. ----
-      const head = MeshBuilder.CreateBox(
+      // Flat agent-icon plane (single billboard, drawn via DynamicTexture)
+      // tinted with the staff persona's palette so it reads as their AI clone.
+      const icon = makeAgentIconMesh(
+        scene,
         `tbulb_${this.id}_${i}`,
-        { width: 0.85, height: 0.85, depth: 0.85 },
-        scene,
+        this.palette,
       );
-      head.material = matFor("skin", skinHex);
-      head.parent = this.root;
-      head.position = new Vector3(...layout[i]);
-      head.isPickable = false;
-
-      // Hair cap — small slab on top.
-      const hair = MeshBuilder.CreateBox(
-        `tbulb_${this.id}_${i}_hair`,
-        { width: 0.92, height: 0.22, depth: 0.92 },
-        scene,
-      );
-      hair.material = matFor("hair", hairHex);
-      hair.parent = head;
-      hair.position = new Vector3(0, 0.5, 0);
-      hair.isPickable = false;
-      this.thoughtBulbExtras.push(hair);
-
-      // Two eye dots.
-      for (const ex of [-0.18, 0.18]) {
-        const eye = MeshBuilder.CreateBox(
-          `tbulb_${this.id}_${i}_eye_${ex}`,
-          { width: 0.12, height: 0.12, depth: 0.05 },
-          scene,
-        );
-        eye.material = matFor("eye", eyeHex);
-        eye.parent = head;
-        eye.position = new Vector3(ex, 0.05, 0.43);
-        eye.isPickable = false;
-        this.thoughtBulbExtras.push(eye);
-      }
-
-      // Small "AI" badge on the chin so it reads as an AI agent.
-      const badge = MeshBuilder.CreateBox(
-        `tbulb_${this.id}_${i}_badge`,
-        { width: 0.42, height: 0.18, depth: 0.06 },
-        scene,
-      );
-      badge.material = matFor("shirt", shirtHex);
-      badge.parent = head;
-      badge.position = new Vector3(0, -0.55, 0.43);
-      badge.isPickable = false;
-      this.thoughtBulbExtras.push(badge);
-
-      // Glow halo behind the head — a soft orange tint to read as "thinking".
-      const halo = MeshBuilder.CreateBox(
-        `tbulb_${this.id}_${i}_halo`,
-        { width: 1.05, height: 1.05, depth: 0.04 },
-        scene,
-      );
-      halo.material = matFor("halo", "#ffb347");
-      halo.parent = head;
-      halo.position = new Vector3(0, 0, -0.5);
-      halo.isPickable = false;
-      this.thoughtBulbExtras.push(halo);
+      icon.parent = this.root;
+      icon.position = new Vector3(...layout[i]);
+      icon.billboardMode = Mesh.BILLBOARDMODE_Y;
+      icon.isPickable = false;
 
       // Floating name label (DynamicTexture plane) — shows the agent's name.
       const label = makeAgentLabelMesh(scene, `tbulb_${this.id}_${i}_lbl`, agents[i].name);
-      label.parent = head;
+      label.parent = icon;
       label.position = new Vector3(0, 0.95, 0);
       label.isPickable = false;
-      // The plane is built in XY; rotate slightly so it tilts toward camera.
-      label.rotation = new Vector3(-Math.PI / 14, 0, 0);
       this.thoughtBulbExtras.push(label);
 
-      this.thoughtBulbs.push(head);
+      this.thoughtBulbs.push(icon);
       this.thoughtBaseY.push(layout[i][1]);
     }
     this.thoughtPhase = 0;
@@ -855,7 +787,6 @@ export class VoxelCharacter {
         // without any per-frame drift.
         b.position.y =
           this.thoughtBaseY[i] + Math.sin(this.thoughtPhase + i * 0.7) * 0.12;
-        b.rotation.y += dtSec * 0.6;
       }
     }
     if (!this.walking) return;
@@ -942,6 +873,123 @@ function makeAgentLabelMesh(scene: Scene, name: string, text: string): Mesh {
 
   // Plane sized to read clearly above the bulb head.
   const plane = MeshBuilder.CreatePlane(name, { width: 2.4, height: 0.6 }, scene);
+  plane.material = mat;
+  return plane;
+}
+
+/**
+ * Build a flat billboard plane painted with a stylised "AI agent" badge:
+ * a rounded card showing a simple voxel-style head (skin + hair) over the
+ * persona's shirt color, with a small "AI" tag. Tinted with the staff
+ * persona's palette so the audience reads the floating icon as that
+ * persona's AI clone — but rendered flat as a single facing-camera plane
+ * rather than a 3D head. Used by `showThoughtBulbs`.
+ */
+function makeAgentIconMesh(
+  scene: Scene,
+  name: string,
+  palette: VoxelCharacterPalette,
+): Mesh {
+  const size = 512;
+  const tex = new DynamicTexture(`tex_${name}`, { width: size, height: size }, scene, false);
+  tex.hasAlpha = true;
+  const ctx = tex.getContext() as unknown as CanvasRenderingContext2D;
+  ctx.clearRect(0, 0, size, size);
+
+  const skin = palette.skin;
+  const hair = palette.hair;
+  const shirt = palette.shirt;
+  const accent = palette.accent ?? "#ffb347";
+  const eye = palette.eye ?? "#22252e";
+
+  // Rounded card background tinted with the persona's shirt color.
+  const pad = 28;
+  const radius = 64;
+  const cardX = pad;
+  const cardY = pad;
+  const cardW = size - pad * 2;
+  const cardH = size - pad * 2;
+  const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  };
+  ctx.fillStyle = shirt;
+  roundRect(cardX, cardY, cardW, cardH, radius);
+  ctx.fill();
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = accent;
+  ctx.stroke();
+
+  // Voxel head (skin) — a square with hair slab on top — drawn flat.
+  const headSize = 220;
+  const headX = (size - headSize) / 2;
+  const headY = 130;
+  ctx.fillStyle = skin;
+  ctx.fillRect(headX, headY, headSize, headSize);
+
+  // Hair slab.
+  const hairH = 56;
+  ctx.fillStyle = hair;
+  ctx.fillRect(headX - 8, headY - hairH + 12, headSize + 16, hairH);
+
+  // Eyes — two small dark squares.
+  ctx.fillStyle = eye;
+  const eyeW = 28;
+  const eyeH = 28;
+  const eyeY = headY + 100;
+  ctx.fillRect(headX + 50, eyeY, eyeW, eyeH);
+  ctx.fillRect(headX + headSize - 50 - eyeW, eyeY, eyeW, eyeH);
+
+  // Optional glasses.
+  if (palette.glasses) {
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#1c2230";
+    ctx.strokeRect(headX + 44, eyeY - 6, eyeW + 12, eyeH + 12);
+    ctx.strokeRect(headX + headSize - 56 - eyeW, eyeY - 6, eyeW + 12, eyeH + 12);
+    ctx.beginPath();
+    ctx.moveTo(headX + 44 + eyeW + 12, eyeY + eyeH / 2);
+    ctx.lineTo(headX + headSize - 56 - eyeW, eyeY + eyeH / 2);
+    ctx.stroke();
+  }
+
+  // Small "AI" badge in a corner — reinforces "this is an AI agent".
+  const badgeR = 46;
+  const badgeCX = size - pad - badgeR - 14;
+  const badgeCY = pad + badgeR + 14;
+  ctx.beginPath();
+  ctx.arc(badgeCX, badgeCY, badgeR, 0, Math.PI * 2);
+  ctx.fillStyle = accent;
+  ctx.fill();
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "rgba(28, 34, 48, 0.85)";
+  ctx.stroke();
+  ctx.fillStyle = "#1c2230";
+  ctx.font = "bold 52px Segoe UI, system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("AI", badgeCX, badgeCY + 2);
+
+  tex.update();
+
+  const mat = new StandardMaterial(`mat_${name}`, scene);
+  mat.diffuseTexture = tex;
+  mat.emissiveTexture = tex;
+  mat.opacityTexture = tex;
+  mat.specularColor = new Color3(0, 0, 0);
+  mat.useAlphaFromDiffuseTexture = true;
+  mat.backFaceCulling = false;
+  mat.disableLighting = true;
+
+  const plane = MeshBuilder.CreatePlane(name, { width: 1.4, height: 1.4 }, scene);
   plane.material = mat;
   return plane;
 }

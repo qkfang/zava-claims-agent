@@ -1,4 +1,6 @@
 import { AgentRole, SimLogger } from "./claimSimulation";
+import type { VoxelCharacterPalette } from "./voxelCharacter";
+import { renderCharacterFigureSvg } from "./characterFigure";
 
 /**
  * Wires the in-DOM HUD (top-bar metrics, agent panel, activity log) to the
@@ -31,12 +33,13 @@ export class HudLogger implements SimLogger {
     this.metricEls[name].textContent = String(value);
   }
 
-  registerAgent(info: { id: string; name: string; role: AgentRole; color: string }): void {
+  registerAgent(info: { id: string; name: string; role: AgentRole; color: string; palette: VoxelCharacterPalette }): void {
     const li = document.createElement("li");
     li.className = "agent-card idle";
     li.dataset.id = info.id;
+    const figure = renderCharacterFigureSvg(info.palette, info.color);
     li.innerHTML = `
-      <div class="swatch" style="background:${info.color}"></div>
+      <div class="figure">${figure}</div>
       <div>
         <div class="name"></div>
         <div class="role"></div>
@@ -73,3 +76,4 @@ export class HudLogger implements SimLogger {
     }
   }
 }
+
