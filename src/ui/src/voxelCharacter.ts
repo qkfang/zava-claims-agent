@@ -679,9 +679,6 @@ export class VoxelCharacter {
         disc.parent = this.root;
         disc.position.y = 0.06;
         disc.isPickable = false;
-        // Render the spotlight after opaque geometry but don't write to
-        // the depth buffer, so the glow blends nicely on top of the floor.
-        disc.renderingGroupId = 0;
         const m = new StandardMaterial(`spotMat_${this.id}`, scene);
         m.diffuseColor = new Color3(0, 0, 0);
         m.emissiveColor = c;
