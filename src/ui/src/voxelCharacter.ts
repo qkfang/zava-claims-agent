@@ -27,13 +27,31 @@ export {
  * Exposes `setWalking()` to drive a tiny limb-swing animation and `root`
  * so callers can move the character around the scene.
  */
+/**
+ * Metadata stamped on a character's invisible hitbox so the scene-pick
+ * handler can identify which character was clicked, regardless of which
+ * body part the ray actually hit.
+ */
+export interface CharacterPickMetadata {
+  kind: "character";
+  /** Matches the `id` passed to the VoxelCharacter constructor. */
+  id: string;
+}
+
 export class VoxelCharacter {
   public readonly root: TransformNode;
+  /** Stable id stamped on the click hitbox (matches StaffPersona/Customer id). */
+  public readonly id: string;
   private readonly leftArm: Mesh;
   private readonly rightArm: Mesh;
   private readonly leftLeg: Mesh;
   private readonly rightLeg: Mesh;
   private readonly heldItemAnchor: TransformNode;
+  /** Invisible click hitbox covering the full body. */
+  private readonly hitbox: Mesh;
+  /** All visible body meshes — used by setHighlight to bump emissive. */
+  private readonly visibleMeshes: Mesh[] = [];
+  private highlighted = false;
   private walking = false;
   private walkPhase = 0;
 
@@ -44,6 +62,7 @@ export class VoxelCharacter {
   ) {
     const root = new TransformNode(`char_${name}`, scene);
     this.root = root;
+    this.id = name;
 
     const matCache = new Map<string, StandardMaterial>();
     const mat = (hex: string): StandardMaterial => {
@@ -329,6 +348,43 @@ export class VoxelCharacter {
     this.heldItemAnchor = new TransformNode(`hand_${name}`, scene);
     this.heldItemAnchor.parent = this.rightArm.parent as TransformNode;
     this.heldItemAnchor.position = new Vector3(0, -0.7, 0.18);
+
+    // ---------- Click hitbox (invisible, full-body) ----------
+    // A single tall box covering the character so picking is reliable
+    // regardless of which voxel sub-piece the ray hits. Tagged via metadata
+    // so the pointer handler can identify the character.
+    const hitbox = MeshBuilder.CreateBox(
+      `hit_${name}`,
+      { width: 1.1, height: 2.2, depth: 0.9 },
+      scene,
+    );
+    hitbox.parent = root;
+    hitbox.position = new Vector3(0, 1.0, 0);
+    hitbox.isPickable = true;
+    hitbox.visibility = 0; // invisible but still pickable
+    hitbox.metadata = { kind: "character", id: name } as CharacterPickMetadata;
+    this.hitbox = hitbox;
+
+    // Collect visible body meshes for highlight effect — every Mesh child of
+    // root that has a material. Skip the hitbox itself.
+    const collect = (node: TransformNode): void => {
+      const children = node.getChildren();
+      for (const child of children) {
+        if (child instanceof Mesh && child !== this.hitbox && child.material) {
+          this.visibleMeshes.push(child);
+        }
+        if (child instanceof TransformNode) {
+          collect(child);
+        }
+      }
+    };
+    collect(root);
+
+    // Make sure the visible body parts don't intercept picks (they'd hide
+    // the invisible hitbox otherwise on some Babylon versions).
+    for (const m of this.visibleMeshes) {
+      m.isPickable = false;
+    }
   }
 
   /** Builds hair / hat / hood / crown depending on `style`. */
@@ -582,6 +638,26 @@ export class VoxelCharacter {
   /** Anchor where a held item should be parented. */
   getHandAnchor(): TransformNode {
     return this.heldItemAnchor;
+  }
+
+  /** The full-body invisible click target. */
+  getHitbox(): Mesh {
+    return this.hitbox;
+  }
+
+  /**
+   * Toggle a subtle outline highlight (used for hover state and to draw
+   * attention to the focused character during scripted scenarios).
+   */
+  setHighlight(on: boolean, color?: Color3): void {
+    if (this.highlighted === on) return;
+    this.highlighted = on;
+    const c = color ?? new Color3(1.0, 0.78, 0.28);
+    for (const m of this.visibleMeshes) {
+      m.renderOutline = on;
+      m.outlineColor = c;
+      m.outlineWidth = on ? 0.04 : 0;
+    }
   }
 
   /** Per-frame update — advances the walk animation if active. */

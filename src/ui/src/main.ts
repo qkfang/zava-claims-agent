@@ -5,13 +5,19 @@ import {
   DirectionalLight,
   Engine,
   HemisphericLight,
+  PointerEventTypes,
   Scene,
   Vector3,
 } from "@babylonjs/core";
 import { ClaimSimulation } from "./claimSimulation";
+import { CameraDirector } from "./cameraDirector";
 import { HudLogger } from "./hud";
 import { buildNeighbourhood } from "./neighbourhoodScene";
 import { buildOffice } from "./officeScene";
+import { ProfileCard } from "./profileCard";
+import { ScenarioPicker } from "./scenarioPicker";
+import { ScenarioRunner } from "./scenarioRunner";
+import type { CharacterPickMetadata } from "./voxelCharacter";
 
 type SceneKey = "office" | "neighbourhood";
 
@@ -66,9 +72,6 @@ function bootstrap(): void {
   const sim = new ClaimSimulation(officeScene, layout, hud);
   hud.log("Office is open — simulation started", "good");
 
-  // Spawn the first customer immediately so the demo has something to show.
-  setTimeout(() => sim.spawnCustomer(), 800);
-
   // ---------------- Neighbourhood scene ----------------
   const neighbourhoodScene = new Scene(engine);
   neighbourhoodScene.clearColor = new Color4(
@@ -87,7 +90,7 @@ function bootstrap(): void {
     new Vector3(0, 0, 0),
     neighbourhoodScene,
   );
-  nhCamera.lowerRadiusLimit = 40;
+  nhCamera.lowerRadiusLimit = 16;
   nhCamera.upperRadiusLimit = 110;
   nhCamera.lowerBetaLimit = Math.PI / 6;
   nhCamera.upperBetaLimit = Math.PI / 2.6;
@@ -102,7 +105,11 @@ function bootstrap(): void {
   nhSun.intensity = 0.6;
   nhSun.diffuse = new Color3(1.0, 0.95, 0.85);
 
-  buildNeighbourhood(neighbourhoodScene);
+  const nhResult = buildNeighbourhood(neighbourhoodScene);
+
+  // ---------------- Camera directors ----------------
+  const officeCameraDirector = new CameraDirector(officeCamera);
+  const nhCameraDirector = new CameraDirector(nhCamera);
 
   // ---------------- Active scene management ----------------
   let activeScene: SceneKey = "office";
@@ -140,32 +147,161 @@ function bootstrap(): void {
     .querySelectorAll<HTMLButtonElement>(".scene-toggle button")
     .forEach((btn) => {
       btn.addEventListener("click", () => {
+        if (btn.disabled) return;
         const target = btn.dataset.scene as SceneKey | undefined;
         if (target) setActiveScene(target);
       });
     });
 
-  // Manual spawn button — only meaningful in office scene
+  // ---------------- Profile card ----------------
+  const profileCard = new ProfileCard(sim);
+
+  // Set up pointer-pick handlers on both scenes. A click on a character's
+  // tagged hitbox opens / refreshes the profile card. Hover toggles the
+  // canvas pointer cursor and highlights the character.
+  const wirePicking = (scene: Scene): void => {
+    let hoveredId: string | null = null;
+    scene.onPointerObservable.add((info) => {
+      if (info.type === PointerEventTypes.POINTERMOVE) {
+        const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
+        const meta = pickInfo?.pickedMesh?.metadata as
+          | CharacterPickMetadata
+          | undefined;
+        const id = meta?.kind === "character" ? meta.id : null;
+        if (id !== hoveredId) {
+          // Remove previous hover highlight, but never clear an
+          // intentionally-set scripted/script-focus highlight.
+          if (hoveredId && hoveredId !== sim.getHighlightedCharacter()) {
+            const prev = sim.getCharacterById(hoveredId);
+            prev?.setHighlight(false);
+          }
+          hoveredId = id;
+          if (id) {
+            const ch = sim.getCharacterById(id);
+            ch?.setHighlight(true);
+            canvas.classList.add("hover-character");
+          } else {
+            canvas.classList.remove("hover-character");
+          }
+        }
+      } else if (info.type === PointerEventTypes.POINTERPICK) {
+        const pickInfo = info.pickInfo ?? scene.pick(scene.pointerX, scene.pointerY);
+        const meta = pickInfo?.pickedMesh?.metadata as
+          | CharacterPickMetadata
+          | undefined;
+        if (meta?.kind === "character") {
+          profileCard.open(meta.id);
+        }
+      }
+    });
+  };
+  wirePicking(officeScene);
+  wirePicking(neighbourhoodScene);
+
+  // ---------------- "Now playing" banner ----------------
+  const banner = document.getElementById("now-playing") as HTMLDivElement;
+  const bannerTitle = banner.querySelector(".np-title") as HTMLDivElement;
+  const bannerNarration = banner.querySelector(".np-narration") as HTMLDivElement;
+  const bannerDot = banner.querySelector(".np-dot") as HTMLDivElement;
+  const bannerCloseBtn = banner.querySelector(".np-close") as HTMLButtonElement;
+
+  // ---------------- Scene fade overlay ----------------
+  // The fade is split into two halves so the caller can swap scenes
+  // while the overlay is fully black, hiding the camera/scene change.
+  const fadeEl = document.getElementById("scene-fade") as HTMLDivElement;
+  const fadeTransition = (): Promise<void> =>
+    new Promise((resolve) => {
+      fadeEl.classList.remove("hidden");
+      // force reflow so the transition runs
+      void fadeEl.offsetWidth;
+      fadeEl.classList.add("active");
+      window.setTimeout(() => {
+        // Fully black — let the caller swap scenes now.
+        resolve();
+        // Fade back out after a short hold.
+        window.setTimeout(() => {
+          fadeEl.classList.remove("active");
+          window.setTimeout(() => {
+            fadeEl.classList.add("hidden");
+          }, 340);
+        }, 80);
+      }, 320);
+    });
+
+  // ---------------- Scenario runner ----------------
+  const runner = new ScenarioRunner(
+    neighbourhoodScene,
+    officeScene,
+    nhCameraDirector,
+    officeCameraDirector,
+    nhResult.zones,
+    sim,
+    hud,
+    {
+      setActiveScene,
+      fadeTransition,
+      showBanner: (persona, narration) => {
+        bannerTitle.textContent = `Now playing — ${persona.name}`;
+        bannerNarration.textContent = narration;
+        bannerDot.style.background = persona.color;
+        banner.classList.remove("hidden");
+      },
+      updateBannerNarration: (narration) => {
+        bannerNarration.textContent = narration;
+      },
+      hideBanner: () => {
+        banner.classList.add("hidden");
+      },
+      setSceneToggleDisabled: (disabled) => {
+        document
+          .querySelectorAll<HTMLButtonElement>(".scene-toggle button")
+          .forEach((btn) => {
+            btn.disabled = disabled;
+            if (disabled) {
+              btn.title = "Scenario in progress";
+            } else {
+              btn.removeAttribute("title");
+            }
+          });
+      },
+    },
+  );
+
+  bannerCloseBtn.addEventListener("click", () => runner.cancel());
+
+  // ---------------- Scenario picker ----------------
+  const picker = new ScenarioPicker((id) => runner.start(id));
+
+  // Manual spawn button — now opens the scenario picker.
   document.getElementById("spawn-btn")?.addEventListener("click", () => {
-    if (activeScene !== "office") setActiveScene("office");
-    sim.spawnCustomer();
+    if (runner.isPlaying()) {
+      hud.log("A scripted scenario is already in progress", "warn");
+      return;
+    }
+    picker.open();
   });
 
-  // Per-frame tick — only run the simulation while the office is rendering
+  // Spawn the first random customer immediately so the demo has something to show.
+  setTimeout(() => sim.spawnCustomer(), 800);
+
+  // Per-frame tick — driven from the render loop so we tick exactly once
+  // per frame regardless of which scene is rendered.
   let last = performance.now();
-  officeScene.onBeforeRenderObservable.add(() => {
+  const tick = (): void => {
     const now = performance.now();
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
-    sim.update(dt);
-  });
+    if (activeScene === "office") {
+      sim.update(dt);
+    }
+    runner.update(dt);
+  };
 
   engine.runRenderLoop(() => {
+    tick();
     if (activeScene === "office") {
       officeScene.render();
     } else {
-      // Reset the simulation timer so it doesn't accumulate dt while paused
-      last = performance.now();
       neighbourhoodScene.render();
     }
   });

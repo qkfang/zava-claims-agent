@@ -8,6 +8,7 @@
   </head>
   <body>
     <canvas id="renderCanvas" touch-action="none"></canvas>
+    <div id="scene-fade" class="scene-fade hidden" aria-hidden="true"></div>
     <header id="topbar">
       <div class="brand">
         <span class="logo">Z</span>
@@ -28,6 +29,15 @@
       </div>
     </header>
 
+    <div id="now-playing" class="now-playing hidden" role="status" aria-live="polite">
+      <div class="np-dot"></div>
+      <div class="np-text">
+        <div class="np-title"></div>
+        <div class="np-narration"></div>
+      </div>
+      <button type="button" class="np-close" aria-label="Cancel scenario">×</button>
+    </div>
+
     <aside id="agents-panel">
       <h2>AI Agents</h2>
       <ul id="agents-list"></ul>
@@ -39,7 +49,7 @@
     </aside>
 
     <footer id="hint">
-      Drag to orbit · Scroll to zoom · Click <button id="spawn-btn">Submit a claim</button>
+      Drag to orbit · Scroll to zoom · Click on a character for their profile · <button id="spawn-btn">Submit a claim</button>
     </footer>
 
     <script type="module" src="/src/main.ts"></script>
