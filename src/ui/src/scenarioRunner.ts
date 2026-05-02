@@ -28,6 +28,7 @@ import {
   ScenarioSummaryModal,
   type ScenarioOutcome,
 } from "./scenarioSummary";
+import { ActivityPanel, stageToActivity } from "./activityPanel";
 
 /**
  * Hook the runner uses to drive the neighbourhood scene's per-scenario
@@ -88,6 +89,7 @@ export class ScenarioRunner {
   private readonly stepGate = new StepGate();
   private readonly resultBanner = new CustomerResultBanner();
   private readonly summaryModal = new ScenarioSummaryModal();
+  private readonly activityPanel = new ActivityPanel();
   /** True while running with auto-play (no per-step prompt). */
   private autoPlay = false;
   /** Ordered list of steps that have actually fired in this run. */
@@ -131,6 +133,7 @@ export class ScenarioRunner {
     this.gatedStagesSeen.clear();
     this.clearThoughtBulbs();
     this.resultBanner.hide();
+    document.body.classList.add("scenario-active");
     const myRunId = this.runId;
 
     this.hooks.setSceneToggleDisabled(true);
@@ -197,6 +200,8 @@ export class ScenarioRunner {
     this.sim.setPaused(false);
     this.stepGate.close();
     this.resultBanner.hide();
+    this.activityPanel.hide();
+    document.body.classList.remove("scenario-active");
     this.clearThoughtBulbs();
     this.cleanupNeighbourhoodCustomer();
     this.incidents.clearIncident();
@@ -353,8 +358,14 @@ export class ScenarioRunner {
         this.executedSteps.push(stageInfo);
         // Show the thought bulbs above the staff member.
         this.showThoughtBulbsForStage(info.characterId, stageInfo);
+        // Show the activity panel — focuses the UI on the active staff +
+        // their AI sub-agents while the case is being worked on.
+        this.activityPanel.show(stageToActivity(stageInfo));
         if (!this.autoPlay) this.openStepGate(stageInfo);
       }
+    } else {
+      // Same stage, narration changed — keep the panel in sync.
+      this.activityPanel.updateNarration(info.narration);
     }
   }
 
@@ -411,8 +422,12 @@ export class ScenarioRunner {
     this.clearThoughtBulbs();
     const ch = this.sim.getCharacterById(staffCharId);
     if (!ch) return;
-    ch.showThoughtBulbs(stageInfo.agents.length);
+    ch.showThoughtBulbs(stageInfo.agents.map((a) => ({ name: a.name })));
     this.bulbStaffCharId = staffCharId;
+    // Mark the corresponding agent card so the AI Agents panel can focus
+    // on the staff member currently working on the case.
+    const panel = document.getElementById("agents-panel");
+    if (panel) panel.dataset.activeStaffId = staffCharId;
   }
 
   private clearThoughtBulbs(): void {
@@ -421,6 +436,8 @@ export class ScenarioRunner {
       prev?.hideThoughtBulbs();
       this.bulbStaffCharId = null;
     }
+    const panel = document.getElementById("agents-panel");
+    if (panel) delete panel.dataset.activeStaffId;
   }
 
   /** Open the step-gate modal and pause the simulation until dismissed. */
@@ -454,6 +471,7 @@ export class ScenarioRunner {
     if (this.state !== "office") return;
     this.state = "closing";
     this.clearThoughtBulbs();
+    this.activityPanel.hide();
     const persona = this.currentPersona;
     this.hud.log(
       `${persona?.name ?? "Customer"} scenario complete`,
@@ -506,6 +524,8 @@ export class ScenarioRunner {
 
   /** Final teardown invoked once the user closes the summary modal. */
   private finishScenario(): void {
+    this.activityPanel.hide();
+    document.body.classList.remove("scenario-active");
     this.releaseFocus();
     this.hooks.hideBanner();
     this.hooks.setSceneToggleDisabled(false);

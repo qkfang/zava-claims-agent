@@ -1,0 +1,57 @@
+{
+  "id": "business",
+  "scenarioNumber": 3,
+  "customerId": "business",
+  "incidentZone": "business",
+  "approveAtAssessor": true,
+  "settlement": "approved",
+  "narrations": {
+    "assessor": "Adam reviews Business — café smoke damage for Tom",
+    "settlement": "Seth reviews settlement for Tom",
+    "comms": "Cara walks Tom through the staged settlement plan — claim closed"
+  },
+  "preAssessor": [],
+  "extras": [
+    {
+      "role": "Loss Adjuster",
+      "narration": "Lara schedules a site visit and estimates restoration costs.",
+      "duration": 3.0
+    },
+    {
+      "role": "Supplier Coordinator",
+      "narration": "Sam lines up smoke-restoration specialists and a temporary kitchen.",
+      "duration": 2.5
+    },
+    {
+      "role": "Claims Team Leader",
+      "narration": "Theo reviews the high-value claim and signs off.",
+      "duration": 2.5
+    }
+  ],
+  "beats": [
+    { "at": "customer", "action": "arrive-at-zone",     "narration": "Tom assesses the smoke damage to his café after the electrical fire.", "duration": 2.0 },
+    { "at": "customer", "action": "walk-to-office",     "narration": "Tom heads to the Zava Insurance Claims Office to lodge his claim." },
+    { "at": "customer", "action": "enter-office",       "narration": "Tom arrives at the office." },
+    { "at": "customer", "action": "lodge-at-reception", "narration": "Tom lodges his Business — café smoke damage claim." },
+    { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris captures the property and business-interruption details." },
+    { "at": "Claims Intake Officer", "action": "intake-route",  "narration": "Iris routes the claim to the Claims Assessor." },
+    { "at": "Claims Assessor", "action": "assessor-pickup", "narration": "Adam reviews the commercial cover and exclusions." },
+    { "at": "Claims Assessor", "action": "assessor-process","narration": "Adam confirms property and business-interruption cover.", "duration": 2.5 },
+    { "at": "Loss Adjuster",   "action": "loss-adjuster-review","narration": "Lara schedules a site visit to estimate restoration costs.", "duration": 3.0 },
+    { "at": "Supplier Coordinator","action": "supplier-coordinate","narration": "Sam lines up smoke-restoration specialists and a temporary kitchen.", "duration": 2.5 },
+    { "at": "Claims Team Leader","action": "team-leader-review","narration": "Theo reviews the high-value claim and signs off.", "duration": 2.5 },
+    { "at": "Claims Assessor", "action": "assessor-handoff","narration": "Adam hands the claim to Settlement." },
+    { "at": "Settlement Officer","action": "settle","narration": "Seth issues an interim payment plus business-interruption support.", "duration": 2.5, "outcome": "approved" },
+    { "at": "Customer Communications Specialist","action": "comms-notify","narration": "Cara walks Tom through the staged settlement plan.", "duration": 2.0 }
+  ],
+  "reset": {
+    "office": {
+      "snapStaffToDesks": true,
+      "clearQueues": true,
+      "removeUnscriptedCustomers": true
+    },
+    "neighbourhood": {
+      "incidentZone": "business"
+    }
+  }
+}

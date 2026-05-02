@@ -1,0 +1,45 @@
+{
+  "id": "motor",
+  "scenarioNumber": 2,
+  "customerId": "motor",
+  "incidentZone": "motor",
+  "approveAtAssessor": true,
+  "settlement": "approved",
+  "narrations": {
+    "assessor": "Adam reviews Motor — rear-end collision for Aisha",
+    "settlement": "Seth reviews settlement for Aisha",
+    "comms": "Cara messages Aisha with repairer + rental details — claim closed"
+  },
+  "preAssessor": [],
+  "extras": [
+    {
+      "role": "Supplier Coordinator",
+      "narration": "Sam assigns an approved repairer and books a rental car.",
+      "duration": 3.0
+    }
+  ],
+  "beats": [
+    { "at": "customer", "action": "arrive-at-zone",     "narration": "Aisha is rear-ended at an intersection and calls Zava Insurance.", "duration": 2.0 },
+    { "at": "customer", "action": "walk-to-office",     "narration": "Aisha drives to the Zava Insurance Claims Office to lodge her claim." },
+    { "at": "customer", "action": "enter-office",       "narration": "Aisha arrives at the office." },
+    { "at": "customer", "action": "lodge-at-reception", "narration": "Aisha lodges her Motor — rear-end collision claim." },
+    { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris captures the at-fault details and photos." },
+    { "at": "Claims Intake Officer", "action": "intake-route",  "narration": "Iris routes the claim to the Claims Assessor." },
+    { "at": "Claims Assessor", "action": "assessor-pickup", "narration": "Adam reviews the policy and coverage for the collision." },
+    { "at": "Claims Assessor", "action": "assessor-process","narration": "Adam clears coverage — proceed to repairer assignment.", "duration": 2.5 },
+    { "at": "Supplier Coordinator","action": "supplier-coordinate","narration": "Sam assigns an approved repairer and books a rental car.", "duration": 3.0 },
+    { "at": "Claims Assessor", "action": "assessor-handoff","narration": "Adam hands the claim to Settlement." },
+    { "at": "Settlement Officer","action": "settle","narration": "Seth authorises payment for the repairer directly.", "duration": 2.5, "outcome": "approved" },
+    { "at": "Customer Communications Specialist","action": "comms-notify","narration": "Cara messages Aisha with the repairer details and rental pickup.", "duration": 2.0 }
+  ],
+  "reset": {
+    "office": {
+      "snapStaffToDesks": true,
+      "clearQueues": true,
+      "removeUnscriptedCustomers": true
+    },
+    "neighbourhood": {
+      "incidentZone": "motor"
+    }
+  }
+}
