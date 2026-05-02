@@ -124,4 +124,9 @@ export const PALETTES: Record<string, VoxelCharacterPalette> = {
     skin: "#e8b48a", hair: "#5a4a35", shirt: "#cdb497", pants: "#2a2f3a",
     shoes: "#1a1a1a", accent: "#1c2230", hairStyle: "short", facial: "beard",
   },
+  // Jordan Pierce — Contents Claimant (apartment block, under fraud review)
+  customerContents: {
+    skin: "#c69770", hair: "#1a1a1a", shirt: "#7a6a8a", pants: "#2a2a32",
+    shoes: "#1a1a1a", accent: "#cfcfcf", hairStyle: "short", facial: "stubble",
+  },
 };
