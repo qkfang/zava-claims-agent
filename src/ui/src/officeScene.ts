@@ -11,21 +11,24 @@ import {
 /**
  * Anchor points used by the simulation. Coordinates are in scene units.
  *
- * Layout (bird's-eye, X right / Z forward) — full-floor footprint
- * (40 × 26 units, x∈[-20, 20], z∈[-11, 15]):
+ * Layout (bird's-eye, X right / Z forward) — doubled full-floor footprint
+ * (60 × 40 units, x∈[-30, 30], z∈[-15, 25]):
  *
- *   z = +15 ┌─────────────────────────────────────────────────────────┐
- *           │ Identity wall │ Filing cabinets │ Meeting Room │ Kitchen │  back wall
- *           │ Team Leader   │                 │              │ Café    │  back-mid
- *           ├──────┬─────────────────────────────────────────┬─────────┤
- *           │ Coll │ Claims Assessor │ Loss Adj. │ Fraud Inv │ Café    │  middle row
- *           │ ab   ├─────────────────────────────────────────┤         │
- *           │ Zone │ Supplier Coord. │ Settlement │ Cust Comm│         │  front row
- *           ├──────┴─────────────────────────────────────────┴─────────┤
- *   intake │ Intake │  Lobby + Welcome Counters (Quick / Help / Policy)│
- *           │        │                  Reception                      │
- *   z = -11 └─────────────────────────────────────────────────────────┘
- *           x = -20                                              x = +20
+ *   z = +25 ┌────────────────────────────────────────────────────────────────┐
+ *           │ IT / Cloud Infra Room │ Filing │ Meeting Room │ Kitchen / Break │
+ *           ├───────────────────────┴────────┴──────────────┴────────────────┤
+ *           │ Team Leader   │ Assessor │ Loss Adj. │ Fraud Inv │ Coffee Area │  back row
+ *           │ (exec office) │  Dept    │   Dept    │   Dept    │ (Café)      │
+ *           ├───────────────┼──────────┼───────────┼───────────┼─────────────┤
+ *           │ Intake Dept   │ Supplier │ Settlement│ Cust Comm │ Play Area   │  front row
+ *           │               │  Coord   │  Officer  │  Dept     │ (ping-pong) │
+ *           ├───────────────┴──────────┴───────────┴───────────┴─────────────┤
+ *           │  Welcome counters  +  Reception  +  Customer Waiting Area      │
+ *   z = -15 └────────────────────────────────────────────────────────────────┘
+ *           x = -30                                                     x = +30
+ *
+ * Each numbered department is its own zone, separated from neighbours by
+ * tall office-screen partitions and a coloured floor accent.
  */
 export interface OfficeLayout {
   /** World position where customers spawn outside the door. */
@@ -75,12 +78,12 @@ export function buildOffice(scene: Scene): OfficeLayout {
   };
 
   // ----- Floor & exterior ground -----
-  // Full-floor footprint: the office spans x∈[-20, 20], z∈[-11, 15] (40 × 26
-  // units). The exterior ground extends well beyond it so the diorama edges
-  // don't cut off when the camera pans.
+  // Doubled full-floor footprint: the office spans x∈[-30, 30], z∈[-15, 25]
+  // (60 × 40 units). The exterior ground extends well beyond it so the
+  // diorama edges don't cut off when the camera pans.
   const ground = MeshBuilder.CreateBox(
     "ground",
-    { width: 80, depth: 80, height: 0.4 },
+    { width: 110, depth: 110, height: 0.4 },
     scene,
   );
   ground.position.y = -0.2;
@@ -89,68 +92,78 @@ export function buildOffice(scene: Scene): OfficeLayout {
   // Main office floor — light tile
   const floor = MeshBuilder.CreateBox(
     "floor",
-    { width: 40, depth: 26, height: 0.2 },
+    { width: 60, depth: 40, height: 0.2 },
     scene,
   );
-  floor.position = new Vector3(0, 0.0, 2);
+  floor.position = new Vector3(0, 0.0, 5);
   floor.material = mat("floor", "#cfc6b4");
 
   // Tile grid lines (subtle stripes baked in via thin overlay boxes)
   const tileLine = mat("tileLine", "#a89e8a");
-  for (let i = -19; i <= 19; i += 2) {
+  for (let i = -29; i <= 29; i += 2) {
     const lineX = MeshBuilder.CreateBox(
       `tileX_${i}`,
-      { width: 0.04, height: 0.01, depth: 26 },
+      { width: 0.04, height: 0.01, depth: 40 },
       scene,
     );
-    lineX.position = new Vector3(i, 0.11, 2);
+    lineX.position = new Vector3(i, 0.11, 5);
     lineX.material = tileLine;
   }
-  for (let i = -10; i <= 14; i += 2) {
+  for (let i = -14; i <= 24; i += 2) {
     const lineZ = MeshBuilder.CreateBox(
       `tileZ_${i}`,
-      { width: 40, height: 0.01, depth: 0.04 },
+      { width: 60, height: 0.01, depth: 0.04 },
       scene,
     );
     lineZ.position = new Vector3(0, 0.11, i);
     lineZ.material = tileLine;
   }
 
-  // Lobby wood floor — wider "claims lobby" with welcome counters
+  // Lobby wood floor — wider "claims lobby" with welcome counters and
+  // customer waiting area
   const lobbyFloor = MeshBuilder.CreateBox(
     "lobbyFloor",
-    { width: 16, height: 0.06, depth: 6.5 },
+    { width: 38, height: 0.06, depth: 8.5 },
     scene,
   );
-  lobbyFloor.position = new Vector3(-6, 0.13, -7);
+  lobbyFloor.position = new Vector3(-5, 0.13, -10);
   lobbyFloor.material = mat("lobbyFloor", "#c79e6e");
 
   // Decorative break-room wood floor (back-right) so the kitchen feels distinct
   const kitchenFloor = MeshBuilder.CreateBox(
     "kitchenFloor",
-    { width: 8.5, height: 0.06, depth: 7.0 },
+    { width: 10, height: 0.06, depth: 8.0 },
     scene,
   );
-  kitchenFloor.position = new Vector3(17, 0.13, 10);
+  kitchenFloor.position = new Vector3(24, 0.13, 20);
   kitchenFloor.material = mat("kitchenFloor", "#d8b884");
 
-  // Café accent floor (right side, mid)
+  // Café / coffee-area accent floor (back-right column)
   const cafeFloor = MeshBuilder.CreateBox(
     "cafeFloor",
-    { width: 7, height: 0.06, depth: 5.5 },
+    { width: 8, height: 0.06, depth: 6.5 },
     scene,
   );
-  cafeFloor.position = new Vector3(17.5, 0.13, 0);
+  cafeFloor.position = new Vector3(26, 0.13, 9);
   cafeFloor.material = mat("cafeFloor", "#b88a64");
 
-  // Collaboration zone accent floor (left side, mid)
-  const collabFloor = MeshBuilder.CreateBox(
-    "collabFloor",
-    { width: 4.5, height: 0.06, depth: 6 },
+  // Play area accent floor (front-right column)
+  const playFloor = MeshBuilder.CreateBox(
+    "playFloor",
+    { width: 10, height: 0.06, depth: 6.0 },
     scene,
   );
-  collabFloor.position = new Vector3(-17.5, 0.13, 2);
-  collabFloor.material = mat("collabFloor", "#3a4a6e");
+  playFloor.position = new Vector3(24, 0.13, 0);
+  playFloor.material = mat("playFloor", "#2e5a4a");
+
+  // IT / cloud-infra room accent floor (back-far-left)
+  const itFloor = MeshBuilder.CreateBox(
+    "itFloor",
+    { width: 10, height: 0.06, depth: 8.0 },
+    scene,
+  );
+  itFloor.position = new Vector3(-24, 0.13, 20);
+  itFloor.material = mat("itFloor", "#1f2a3f");
 
   // ----- Walls -----
   const wallMat = mat("wall", "#efe0c8");
@@ -173,30 +186,31 @@ export function buildOffice(scene: Scene): OfficeLayout {
     return wall;
   };
 
-  // Outer walls — back, left, right (sized to the new full-floor footprint)
-  makeWall("backWall", 40, 4.6, 0.3, new Vector3(0, 2.3, 15.0));
-  makeWall("leftWall", 0.3, 4.6, 26, new Vector3(-20.0, 2.3, 2));
-  makeWall("rightWall", 0.3, 4.6, 26, new Vector3(20.0, 2.3, 2));
+  // Outer walls — back, left, right (sized to the doubled floor footprint)
+  makeWall("backWall", 60, 4.6, 0.3, new Vector3(0, 2.3, 25.0));
+  makeWall("leftWall", 0.3, 4.6, 40, new Vector3(-30.0, 2.3, 5));
+  makeWall("rightWall", 0.3, 4.6, 40, new Vector3(30.0, 2.3, 5));
   // Front low walls flanking the entrance gap (so we can see inside)
-  makeWall("frontLeft", 18, 1.4, 0.3, new Vector3(-11.0, 0.7, -11));
-  makeWall("frontRight", 18, 1.4, 0.3, new Vector3(11.0, 0.7, -11));
+  makeWall("frontLeft", 28, 1.4, 0.3, new Vector3(-16.0, 0.7, -15));
+  makeWall("frontRight", 28, 1.4, 0.3, new Vector3(16.0, 0.7, -15));
 
   // Bottom trim along outer walls
   const trimBack = MeshBuilder.CreateBox(
     "trimBack",
-    { width: 40, height: 0.3, depth: 0.4 },
+    { width: 60, height: 0.3, depth: 0.4 },
     scene,
   );
-  trimBack.position = new Vector3(0, 0.25, 14.85);
+  trimBack.position = new Vector3(0, 0.25, 24.85);
   trimBack.material = trimMat;
 
-  // ----- "CLAIMS DEPARTMENT" identity wall (back-left) -----
+  // ----- "CLAIMS DEPARTMENT" identity wall (back-mid, between team leader
+  // office and the filing cabinets) -----
   const identityPanel = MeshBuilder.CreateBox(
     "identityPanel",
-    { width: 7.5, height: 3.2, depth: 0.12 },
+    { width: 8.0, height: 3.2, depth: 0.12 },
     scene,
   );
-  identityPanel.position = new Vector3(-13, 2.3, 14.78);
+  identityPanel.position = new Vector3(-13, 2.3, 24.78);
   identityPanel.material = mat("identityPanel", "#2a3a5c");
 
   drawSignTexture(scene, identityPanel, 1024, 440, (ctx) => {
@@ -227,7 +241,7 @@ export function buildOffice(scene: Scene): OfficeLayout {
     { width: 0.12, height: 2.6, depth: 3.4 },
     scene,
   );
-  processPanel.position = new Vector3(19.78, 2.4, 6);
+  processPanel.position = new Vector3(29.78, 2.4, 14);
   processPanel.material = mat("processPanel", "#f4ecdb");
 
   drawSignTexture(scene, processPanel, 512, 400, (ctx) => {
@@ -252,7 +266,7 @@ export function buildOffice(scene: Scene): OfficeLayout {
     { width: 2.6, height: 0.7, depth: 0.08 },
     scene,
   );
-  welcomeSign.position = new Vector3(-12.5, 0.55, -5.4);
+  welcomeSign.position = new Vector3(-17.5, 0.55, -8.4);
   welcomeSign.material = mat("welcomeSign", "#3a5fb0");
   drawSignTexture(scene, welcomeSign, 512, 160, (ctx) => {
     ctx.fillStyle = "#3a5fb0";
@@ -268,7 +282,7 @@ export function buildOffice(scene: Scene): OfficeLayout {
     { width: 2.0, height: 1.2, depth: 0.08 },
     scene,
   );
-  helpSign.position = new Vector3(4.5, 1.0, -10.85);
+  helpSign.position = new Vector3(7.5, 1.0, -14.85);
   helpSign.material = mat("helpSign", "#f4ecdb");
   drawSignTexture(scene, helpSign, 320, 200, (ctx) => {
     ctx.fillStyle = "#f4ecdb";
@@ -282,21 +296,21 @@ export function buildOffice(scene: Scene): OfficeLayout {
   // ----- Back-wall windows -----
   const windowMat = mat("window", "#cfe7ff");
   const windowFrame = mat("windowFrame", "#f6e9d4");
-  for (let i = 0; i < 4; i++) {
-    const x = -3 + i * 4.2;
+  for (let i = 0; i < 6; i++) {
+    const x = 4 + i * 4.2;
     const frame = MeshBuilder.CreateBox(
       `winFrame_${i}`,
       { width: 3.2, height: 2.6, depth: 0.1 },
       scene,
     );
-    frame.position = new Vector3(x, 2.7, 14.84);
+    frame.position = new Vector3(x, 2.7, 24.84);
     frame.material = windowFrame;
     const glass = MeshBuilder.CreateBox(
       `winGlass_${i}`,
       { width: 2.8, height: 2.2, depth: 0.05 },
       scene,
     );
-    glass.position = new Vector3(x, 2.7, 14.79);
+    glass.position = new Vector3(x, 2.7, 24.79);
     glass.material = windowMat;
   }
 
@@ -307,7 +321,7 @@ export function buildOffice(scene: Scene): OfficeLayout {
     { width: 1.0, height: 2.4, depth: 0.15 },
     scene,
   );
-  leftDoor.position = new Vector3(-0.55, 1.2, -11);
+  leftDoor.position = new Vector3(-0.55, 1.2, -15);
   leftDoor.material = doorFrame;
   const rightDoor = leftDoor.clone("rightDoor");
   rightDoor.position.x = 0.55;
@@ -317,7 +331,7 @@ export function buildOffice(scene: Scene): OfficeLayout {
       { width: 0.8, height: 1.6, depth: 0.05 },
       scene,
     );
-    glass.position = new Vector3(d.position.x, 1.4, -10.93);
+    glass.position = new Vector3(d.position.x, 1.4, -14.93);
     glass.material = windowMat;
   }
   // Welcome mat
@@ -326,7 +340,7 @@ export function buildOffice(scene: Scene): OfficeLayout {
     { width: 2.4, height: 0.04, depth: 1.2 },
     scene,
   );
-  mat1.position = new Vector3(0, 0.13, -9.6);
+  mat1.position = new Vector3(0, 0.13, -13.6);
   mat1.material = mat("welcomeMat", "#3a3a44");
 
   // ----- Reception / Welcome lobby furniture (front-left) -----
@@ -338,14 +352,14 @@ export function buildOffice(scene: Scene): OfficeLayout {
     { width: 4.5, height: 1.0, depth: 1.4 },
     scene,
   );
-  recBase.position = new Vector3(-10.2, 0.5, -7.4);
+  recBase.position = new Vector3(-15.2, 0.5, -10.4);
   recBase.material = recDeskMat;
   const recTop = MeshBuilder.CreateBox(
     "recDeskTop",
     { width: 4.7, height: 0.15, depth: 1.6 },
     scene,
   );
-  recTop.position = new Vector3(-10.2, 1.07, -7.4);
+  recTop.position = new Vector3(-15.2, 1.07, -10.4);
   recTop.material = recDeskTop;
   // Inbox tray on reception desk
   const tray = MeshBuilder.CreateBox(
@@ -353,110 +367,152 @@ export function buildOffice(scene: Scene): OfficeLayout {
     { width: 0.8, height: 0.1, depth: 0.5 },
     scene,
   );
-  tray.position = new Vector3(-9.0, 1.18, -7.4);
+  tray.position = new Vector3(-14.0, 1.18, -10.4);
   tray.material = mat("tray", "#3a3a44");
   const trayLabel = MeshBuilder.CreateBox(
     "inboxLabel",
     { width: 0.4, height: 0.02, depth: 0.2 },
     scene,
   );
-  trayLabel.position = new Vector3(-9.0, 1.24, -7.25);
+  trayLabel.position = new Vector3(-14.0, 1.24, -10.25);
   trayLabel.material = mat("trayLabel", "#ffb347");
   // Reception monitor
-  buildMonitor(scene, mat, new Vector3(-11.0, 1.07, -7.7), 0);
+  buildMonitor(scene, mat, new Vector3(-16.0, 1.07, -10.7), 0);
 
-  // Coffee table + sofas in lobby
+  // Coffee table + sofas in lobby (Customer Waiting Area)
   const sofaMat = mat("sofa", "#3a5fb0");
   const sofa1Seat = MeshBuilder.CreateBox(
     "sofa1Seat",
     { width: 1.2, height: 0.5, depth: 1.2 },
     scene,
   );
-  sofa1Seat.position = new Vector3(-12, 0.4, -9);
+  sofa1Seat.position = new Vector3(-17, 0.4, -12);
   sofa1Seat.material = sofaMat;
   const sofa2Seat = sofa1Seat.clone("sofa2Seat");
-  sofa2Seat.position = new Vector3(-9.0, 0.4, -9);
+  sofa2Seat.position = new Vector3(-14.0, 0.4, -12);
   const cTableTop = MeshBuilder.CreateBox(
     "cTableTop",
     { width: 1.6, height: 0.1, depth: 0.8 },
     scene,
   );
-  cTableTop.position = new Vector3(-10.5, 0.45, -9.0);
+  cTableTop.position = new Vector3(-15.5, 0.45, -12.0);
   cTableTop.material = mat("cTable", "#a06a4c");
   const cTableLeg = MeshBuilder.CreateBox(
     "cTableLeg",
     { width: 1.4, height: 0.4, depth: 0.6 },
     scene,
   );
-  cTableLeg.position = new Vector3(-10.5, 0.2, -9.0);
+  cTableLeg.position = new Vector3(-15.5, 0.2, -12.0);
   cTableLeg.material = mat("cTableLeg", "#7d4f33");
 
+  // Additional waiting-area sofas across the front of the lobby
+  const sofa3Seat = sofa1Seat.clone("sofa3Seat");
+  sofa3Seat.position = new Vector3(2, 0.4, -12);
+  const sofa4Seat = sofa1Seat.clone("sofa4Seat");
+  sofa4Seat.position = new Vector3(5, 0.4, -12);
+  const cTable2Top = MeshBuilder.CreateBox(
+    "cTable2Top",
+    { width: 1.6, height: 0.1, depth: 0.8 },
+    scene,
+  );
+  cTable2Top.position = new Vector3(3.5, 0.45, -12.0);
+  cTable2Top.material = mat("cTable", "#a06a4c");
+  const cTable2Leg = MeshBuilder.CreateBox(
+    "cTable2Leg",
+    { width: 1.4, height: 0.4, depth: 0.6 },
+    scene,
+  );
+  cTable2Leg.position = new Vector3(3.5, 0.2, -12.0);
+  cTable2Leg.material = mat("cTableLeg", "#7d4f33");
+
+  // "CUSTOMER WAITING AREA" sign on the front-low wall (right side)
+  const waitingSign = MeshBuilder.CreateBox(
+    "waitingSign",
+    { width: 4.2, height: 0.9, depth: 0.08 },
+    scene,
+  );
+  waitingSign.position = new Vector3(11, 1.1, -14.85);
+  drawSignTexture(scene, waitingSign, 640, 140, (ctx) => {
+    ctx.fillStyle = "#3a5fb0";
+    ctx.fillRect(0, 0, 640, 140);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 56px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("CUSTOMER WAITING", 320, 56);
+    ctx.font = "bold 44px sans-serif";
+    ctx.fillText("AREA", 320, 108);
+  });
+
   // Lobby plants
-  buildPlant(scene, mat, new Vector3(-13.5, 0, -8.5));
-  buildPlant(scene, mat, new Vector3(-7.5, 0, -9.5));
+  buildPlant(scene, mat, new Vector3(-18.5, 0, -11.5));
+  buildPlant(scene, mat, new Vector3(-12.5, 0, -12.5));
+  buildPlant(scene, mat, new Vector3(0.5, 0, -12.5));
+  buildPlant(scene, mat, new Vector3(7.5, 0, -12.5));
 
   // Lobby decor — cushions on sofas, magazines on coffee table, a floor
   // lamp by the corner, a framed photo and a wall clock above reception.
-  buildCushion(scene, mat, "lobbyCushion1", new Vector3(-12.3, 0.7, -9.2), "#ffb347");
-  buildCushion(scene, mat, "lobbyCushion2", new Vector3(-11.7, 0.7, -8.8), "#e8504c");
-  buildCushion(scene, mat, "lobbyCushion3", new Vector3(-9.3, 0.7, -9.2), "#2e8a6e");
-  buildCushion(scene, mat, "lobbyCushion4", new Vector3(-8.7, 0.7, -8.8), "#b56fbf");
-  buildMagazines(scene, mat, "lobbyMags", new Vector3(-10.5, 0.51, -9.0));
-  buildFloorLamp(scene, mat, "lobbyFloorLamp", new Vector3(-13.7, 0, -9.6), "#ffb347");
-  buildWallClock(scene, mat, "recClock", new Vector3(-12.5, 2.6, 14.84));
-  buildFramedArt(scene, mat, "recArt1", new Vector3(-17.5, 2.0, 14.84), 1.6, 1.2, "#3a5fb0");
-  buildFramedArt(scene, mat, "recArt2", new Vector3(-15.5, 2.0, 14.84), 1.6, 1.2, "#2e8a6e");
+  buildCushion(scene, mat, "lobbyCushion1", new Vector3(-17.3, 0.7, -12.2), "#ffb347");
+  buildCushion(scene, mat, "lobbyCushion2", new Vector3(-16.7, 0.7, -11.8), "#e8504c");
+  buildCushion(scene, mat, "lobbyCushion3", new Vector3(-14.3, 0.7, -12.2), "#2e8a6e");
+  buildCushion(scene, mat, "lobbyCushion4", new Vector3(-13.7, 0.7, -11.8), "#b56fbf");
+  buildCushion(scene, mat, "lobbyCushion5", new Vector3(1.7, 0.7, -12.2), "#6ec1ff");
+  buildCushion(scene, mat, "lobbyCushion6", new Vector3(2.3, 0.7, -11.8), "#ffb347");
+  buildCushion(scene, mat, "lobbyCushion7", new Vector3(4.7, 0.7, -12.2), "#e8504c");
+  buildCushion(scene, mat, "lobbyCushion8", new Vector3(5.3, 0.7, -11.8), "#3a5fb0");
+  buildMagazines(scene, mat, "lobbyMags", new Vector3(-15.5, 0.51, -12.0));
+  buildMagazines(scene, mat, "lobbyMags2", new Vector3(3.5, 0.51, -12.0));
+  buildFloorLamp(scene, mat, "lobbyFloorLamp", new Vector3(-19.0, 0, -12.6), "#ffb347");
+  buildFloorLamp(scene, mat, "lobbyFloorLamp2", new Vector3(8.5, 0, -12.6), "#6ec1ff");
 
   // ----- Department grid -----
-  // We arrange 7 numbered cubicles in a 2-row grid plus a Team Leader
-  // open office and a Meeting Room across the back of the floor.
+  // 8 dedicated departments arranged across the doubled floor. Each role
+  // gets its own coloured zone, separated from neighbours by tall office
+  // screen partitions and a labelled overhead sign.
   //
-  // Front row (z ~ -2): Supplier Coordinator | Settlement Officer | Customer Comms
-  // Mid   row (z ~ +5): Claims Assessor      | Loss Adjuster      | Fraud Investigator
-  // Back area:           Team Leader (left)              Meeting Room (right)
-  // Reception/Intake stays on the front-left (already built above).
+  // Front row (z = 0): Intake | Supplier Coord | Settlement | Cust Comms
+  // Back  row (z = 10): Team Leader | Assessor | Loss Adjuster | Fraud Inv
+  // Right side: Play Area | Coffee Area | Kitchen | IT/Cloud Room
+  // Front (z < -7): Reception desk + Customer Waiting Area + Welcome counters
 
-  // ----- Cubicles (front and middle rows) -----
+  // ----- Department cubicles (front and back rows) -----
   type CubicleSpec = {
     label: string;
-    color: string;
+    accent: string;
     cx: number;
     cz: number;
-    facing: "front" | "back"; // which side the staff sit
     sign: string;
   };
   const cubicles: CubicleSpec[] = [
-    // Front row
-    { label: "supplier", color: "#6ec1ff", cx: -6, cz: -2, facing: "front", sign: "SUPPLIER COORDINATOR" },
-    { label: "settlement", color: "#6ec1ff", cx: 0, cz: -2, facing: "front", sign: "SETTLEMENT OFFICER" },
-    { label: "communications", color: "#6ec1ff", cx: 6, cz: -2, facing: "front", sign: "CUSTOMER COMMUNICATIONS" },
-    // Middle row (facing forward toward the customer flow)
-    { label: "assessor", color: "#6ec1ff", cx: -6, cz: 5, facing: "front", sign: "CLAIMS ASSESSOR" },
-    { label: "lossAdjuster", color: "#6ec1ff", cx: 0, cz: 5, facing: "front", sign: "LOSS ADJUSTER" },
-    { label: "fraud", color: "#6ec1ff", cx: 6, cz: 5, facing: "front", sign: "FRAUD INVESTIGATOR" },
+    // Front row (z = 0)
+    { label: "intake",         accent: "#3a5fb0", cx: -21, cz: 0, sign: "CLAIMS INTAKE OFFICER" },
+    { label: "supplier",       accent: "#2e8a6e", cx: -13, cz: 0, sign: "SUPPLIER COORDINATOR" },
+    { label: "settlement",     accent: "#a06a4c", cx:  -5, cz: 0, sign: "SETTLEMENT OFFICER" },
+    { label: "communications", accent: "#b56fbf", cx:   3, cz: 0, sign: "CUSTOMER COMMUNICATIONS" },
+    // Back row (z = 10) — Team Leader gets the executive corner office
+    { label: "assessor",     accent: "#6ec1ff", cx: -13, cz: 10, sign: "CLAIMS ASSESSOR" },
+    { label: "lossAdjuster", accent: "#ffb347", cx:  -5, cz: 10, sign: "LOSS ADJUSTER" },
+    { label: "fraud",        accent: "#e8504c", cx:   3, cz: 10, sign: "FRAUD INVESTIGATOR" },
   ];
   for (const c of cubicles) {
-    buildCubicle(scene, mat, c.label, c.cx, c.cz, c.sign);
+    buildDepartmentZone(scene, mat, c.label, c.cx, c.cz, c.sign, c.accent);
   }
 
-  // ----- Claims Intake cubicle (front-left next to reception lobby) -----
-  buildCubicle(scene, mat, "intake", -11.5, 0.5, "CLAIMS INTAKE OFFICER");
+  // ----- Team Leader executive office (back-far-left) -----
+  buildTeamLeaderOffice(scene, mat, new Vector3(-21, 0, 10));
 
-  // ----- Team Leader open office (back-left, behind the assessor row) -----
-  buildTeamLeaderOffice(scene, mat, new Vector3(-9.5, 0, 9.5));
+  // ----- Meeting Room (back glass room, mid) -----
+  buildMeetingRoom(scene, mat, new Vector3(11, 0, 19.5));
 
-  // ----- Meeting Room (back-right glass room) -----
-  buildMeetingRoom(scene, mat, new Vector3(7.5, 0, 9.5));
-
-  // ----- Filing cabinets / archive shelves (along the new back wall) -----
-  for (let col = 0; col < 4; col++) {
-    const x = -3.6 + col * 1.4;
+  // ----- Filing cabinets / archive shelves (along the back wall) -----
+  for (let col = 0; col < 6; col++) {
+    const x = -4.0 + col * 1.4;
     const cab = MeshBuilder.CreateBox(
       `cabinet_${col}`,
       { width: 1.2, height: 1.6, depth: 0.7 },
       scene,
     );
-    cab.position = new Vector3(x, 0.8, 13.7);
+    cab.position = new Vector3(x, 0.8, 23.7);
     cab.material = mat("cabinet", "#3b4d72");
     for (let s = 0; s < 3; s++) {
       const drawer = MeshBuilder.CreateBox(
@@ -464,90 +520,97 @@ export function buildOffice(scene: Scene): OfficeLayout {
         { width: 1.0, height: 0.4, depth: 0.05 },
         scene,
       );
-      drawer.position = new Vector3(x, 0.4 + s * 0.5, 13.34);
+      drawer.position = new Vector3(x, 0.4 + s * 0.5, 23.34);
       drawer.material = mat("drawerFront", "#26334d");
     }
   }
   // Plants on top of cabinets
-  for (let col = 0; col < 4; col += 2) {
-    buildPlant(scene, mat, new Vector3(-3.6 + col * 1.4, 1.6, 13.7));
+  for (let col = 0; col < 6; col += 2) {
+    buildPlant(scene, mat, new Vector3(-4.0 + col * 1.4, 1.6, 23.7));
   }
 
-  // ----- Water cooler near the identity wall (back-left corner) -----
+  // ----- Water cooler near the identity wall -----
   const cooler = MeshBuilder.CreateBox(
     "cooler",
     { width: 0.6, height: 1.4, depth: 0.6 },
     scene,
   );
-  cooler.position = new Vector3(-18.5, 0.7, 13);
+  cooler.position = new Vector3(-2.5, 0.7, 23);
   cooler.material = mat("cooler", "#bcd7ee");
   const coolerTop = MeshBuilder.CreateBox(
     "coolerTop",
     { width: 0.5, height: 0.5, depth: 0.5 },
     scene,
   );
-  coolerTop.position = new Vector3(-18.5, 1.65, 13);
+  coolerTop.position = new Vector3(-2.5, 1.65, 23);
   coolerTop.material = mat("coolerTop", "#7fb6e3");
 
-  // Printer station tucked into the right-side service alley
+  // Printer station tucked between the back rows
   const printer = MeshBuilder.CreateBox(
     "printer",
     { width: 1.0, height: 0.7, depth: 0.7 },
     scene,
   );
-  printer.position = new Vector3(13.0, 0.45, 5.5);
+  printer.position = new Vector3(8.5, 0.45, 10.0);
   printer.material = mat("printer", "#3a3a44");
   const printerTop = MeshBuilder.CreateBox(
     "printerTop",
     { width: 0.9, height: 0.1, depth: 0.6 },
     scene,
   );
-  printerTop.position = new Vector3(13.0, 0.85, 5.5);
+  printerTop.position = new Vector3(8.5, 0.85, 10.0);
   printerTop.material = mat("printerTop", "#22252e");
 
-  // ----- "Fun" sections in the newly opened floor space -----
-  // Welcome counters in the claims lobby (a row of customer-facing service
-  // counters between the entrance and the reception/intake desk).
-  buildLobbyCounter(scene, mat, "QUICK INTAKE", -2.5, -6.4, "#3a5fb0");
-  buildLobbyCounter(scene, mat, "CLAIMS HELP", 1.5, -6.4, "#2e8a6e");
-  buildLobbyCounter(scene, mat, "POLICY DESK", 5.5, -6.4, "#a06a4c");
+  // ----- Customer-facing welcome counters in the lobby -----
+  buildLobbyCounter(scene, mat, "QUICK INTAKE", -7.5, -9.0, "#3a5fb0");
+  buildLobbyCounter(scene, mat, "CLAIMS HELP",  -3.5, -9.0, "#2e8a6e");
+  buildLobbyCounter(scene, mat, "POLICY DESK",   0.5, -9.0, "#a06a4c");
 
+  // ----- Right-side zones -----
+  // Play area (front-right): ping-pong, arcade, beanbags
+  buildPlayArea(scene, mat, new Vector3(24, 0, 0));
+  // Coffee area (mid-right): bistro tables and pendant lamps
+  buildCafe(scene, mat, new Vector3(26, 0, 9));
   // Kitchen / break room (back-right)
-  buildKitchen(scene, mat, new Vector3(17, 0, 10));
+  buildKitchen(scene, mat, new Vector3(24, 0, 20));
+  // IT / Cloud Infra Room (back-far-left)
+  buildITRoom(scene, mat, new Vector3(-24, 0, 20));
 
-  // Café / coffee corner (right side, mid)
-  buildCafe(scene, mat, new Vector3(17.5, 0, 0));
-
-  // Collaboration / huddle zone (left side, mid)
-  buildCollabZone(scene, mat, new Vector3(-17.5, 0, 2));
+  // Wall decor on the (now larger) back wall — clock and framed art near
+  // the identity panel.
+  buildWallClock(scene, mat, "recClock", new Vector3(-2.5, 3.6, 24.84));
+  buildFramedArt(scene, mat, "recArt1", new Vector3(0.5, 3.0, 24.84), 1.6, 1.2, "#3a5fb0");
+  buildFramedArt(scene, mat, "recArt2", new Vector3(2.5, 3.0, 24.84), 1.6, 1.2, "#2e8a6e");
 
   // Decorative plants in walkways
-  buildPlant(scene, mat, new Vector3(-3.0, 0, -4.5));
-  buildPlant(scene, mat, new Vector3(3.0, 0, -4.5));
-  buildPlant(scene, mat, new Vector3(-3.0, 0, 1.8));
-  buildPlant(scene, mat, new Vector3(3.0, 0, 1.8));
-  buildPlant(scene, mat, new Vector3(13.0, 0, 0));
-  buildPlant(scene, mat, new Vector3(13.5, 0, 13));
-  buildPlant(scene, mat, new Vector3(-13.5, 0, 13));
-  buildPlant(scene, mat, new Vector3(18.5, 0, 13.5));
-  buildPlant(scene, mat, new Vector3(-18.5, 0, -8));
-  buildPlant(scene, mat, new Vector3(18.5, 0, -8));
+  buildPlant(scene, mat, new Vector3(-9.0, 0, -4.5));
+  buildPlant(scene, mat, new Vector3(-1.0, 0, -4.5));
+  buildPlant(scene, mat, new Vector3(7.0, 0, -4.5));
+  buildPlant(scene, mat, new Vector3(-9.0, 0, 5.0));
+  buildPlant(scene, mat, new Vector3(-1.0, 0, 5.0));
+  buildPlant(scene, mat, new Vector3(7.0, 0, 5.0));
+  buildPlant(scene, mat, new Vector3(17.0, 0, 4.5));
+  buildPlant(scene, mat, new Vector3(17.0, 0, 14.5));
+  buildPlant(scene, mat, new Vector3(-17.0, 0, 4.5));
+  buildPlant(scene, mat, new Vector3(-17.0, 0, 22.5));
+  buildPlant(scene, mat, new Vector3(28.5, 0, -4));
+  buildPlant(scene, mat, new Vector3(-28.5, 0, -4));
 
   return {
-    spawnPoint: new Vector3(0, 0, -14),
-    entrancePoint: new Vector3(0, 0, -9.5),
-    receptionPoint: new Vector3(-9.0, 0, -6.5),
-    exitPoint: new Vector3(0, 0, -14),
-    intakeDeskPoint: new Vector3(-11.5, 0, -0.4),
-    assessorDeskPoint: new Vector3(-6, 0, 4.4),
-    lossAdjusterDeskPoint: new Vector3(0, 0, 4.4),
-    fraudDeskPoint: new Vector3(6, 0, 4.4),
-    supplierDeskPoint: new Vector3(-6, 0, -2.6),
-    settlementDeskPoint: new Vector3(0, 0, -2.6),
-    communicationsDeskPoint: new Vector3(6, 0, -2.6),
-    teamLeaderDeskPoint: new Vector3(-9.5, 0, 9.0),
-    inboxPoint: new Vector3(-9.0, 1.25, -7.4),
-    archivePoint: new Vector3(8.0, 1.4, -1.0),
+    spawnPoint: new Vector3(0, 0, -18),
+    entrancePoint: new Vector3(0, 0, -13.5),
+    receptionPoint: new Vector3(-13.5, 0, -9.5),
+    exitPoint: new Vector3(0, 0, -18),
+    intakeDeskPoint: new Vector3(-21, 0, -0.6),
+    assessorDeskPoint: new Vector3(-13, 0, 9.4),
+    lossAdjusterDeskPoint: new Vector3(-5, 0, 9.4),
+    fraudDeskPoint: new Vector3(3, 0, 9.4),
+    supplierDeskPoint: new Vector3(-13, 0, -0.6),
+    settlementDeskPoint: new Vector3(-5, 0, -0.6),
+    communicationsDeskPoint: new Vector3(3, 0, -0.6),
+    teamLeaderDeskPoint: new Vector3(-21, 0, 9.5),
+    inboxPoint: new Vector3(-14.0, 1.25, -10.4),
+    archivePoint: new Vector3(5.0, 1.4, 1.0),
   };
 }
 
@@ -572,7 +635,36 @@ function drawSignTexture(
   mesh.material = m;
 }
 
-/** Build a single labelled cubicle: low partition walls, desk, monitor, chair, sign. */
+/**
+ * Build a single labelled department zone: a coloured floor accent, tall
+ * "office screen" partitions on three sides, a labelled overhead sign,
+ * and a desk with chair and props inside. Each role's accent colour
+ * differentiates their zone from neighbouring departments.
+ */
+function buildDepartmentZone(
+  scene: Scene,
+  mat: MaterialFactory,
+  label: string,
+  cx: number,
+  cz: number,
+  signText: string,
+  accentHex: string,
+): void {
+  // Floor accent under the department zone
+  const accent = MeshBuilder.CreateBox(
+    `dept_floor_${label}`,
+    { width: 6.6, height: 0.05, depth: 5.4 },
+    scene,
+  );
+  accent.position = new Vector3(cx, 0.13, cz + 0.5);
+  accent.material = mat(`dept_floorMat_${label}`, accentHex);
+
+  // Build the desk + screens via the cubicle helper
+  buildCubicle(scene, mat, label, cx, cz, signText, accentHex);
+}
+
+/** Build a single labelled cubicle: tall office-screen partitions, desk,
+ *  monitor, chair, and overhead sign. Used by buildDepartmentZone. */
 function buildCubicle(
   scene: Scene,
   mat: MaterialFactory,
@@ -580,36 +672,56 @@ function buildCubicle(
   cx: number,
   cz: number,
   signText: string,
+  accentHex = "#d8c7a7",
 ): void {
   const cubicleWallMat = mat(`cub_${label}`, "#d8c7a7");
+  const accentMat = mat(`cubAccent_${label}`, accentHex);
   const deskMat = mat(`desk_${label}`, "#bca78a");
   const chairMat = mat(`chair_${label}`, "#1c2230");
 
-  // Partition walls (low) — back, left, right
+  // Tall "office screen" partitions — back, left, right (1.8m tall)
   const back = MeshBuilder.CreateBox(
     `cubBack_${label}`,
-    { width: 4.0, height: 1.3, depth: 0.15 },
+    { width: 6.0, height: 1.8, depth: 0.15 },
     scene,
   );
-  back.position = new Vector3(cx, 0.65, cz + 1.4);
+  back.position = new Vector3(cx, 0.9, cz + 2.6);
   back.material = cubicleWallMat;
   const left = MeshBuilder.CreateBox(
     `cubLeft_${label}`,
-    { width: 0.15, height: 1.3, depth: 3.0 },
+    { width: 0.15, height: 1.8, depth: 5.0 },
     scene,
   );
-  left.position = new Vector3(cx - 1.95, 0.65, cz);
+  left.position = new Vector3(cx - 2.95, 0.9, cz + 0.1);
   left.material = cubicleWallMat;
   const right = left.clone(`cubRight_${label}`);
-  right.position.x = cx + 1.95;
+  right.position.x = cx + 2.95;
+
+  // Coloured stripe along the top of each screen for the dept accent
+  const topStripeBack = MeshBuilder.CreateBox(
+    `cubBackStripe_${label}`,
+    { width: 6.04, height: 0.18, depth: 0.18 },
+    scene,
+  );
+  topStripeBack.position = new Vector3(cx, 1.7, cz + 2.6);
+  topStripeBack.material = accentMat;
+  const topStripeLeft = MeshBuilder.CreateBox(
+    `cubLeftStripe_${label}`,
+    { width: 0.18, height: 0.18, depth: 5.04 },
+    scene,
+  );
+  topStripeLeft.position = new Vector3(cx - 2.95, 1.7, cz + 0.1);
+  topStripeLeft.material = accentMat;
+  const topStripeRight = topStripeLeft.clone(`cubRightStripe_${label}`);
+  topStripeRight.position.x = cx + 2.95;
 
   // Sign on the back partition
   const sign = MeshBuilder.CreateBox(
     `cubSign_${label}`,
-    { width: 3.6, height: 0.6, depth: 0.05 },
+    { width: 4.4, height: 0.7, depth: 0.05 },
     scene,
   );
-  sign.position = new Vector3(cx, 1.1, cz + 1.32);
+  sign.position = new Vector3(cx, 1.45, cz + 2.52);
   drawSignTexture(scene, sign, 768, 128, (ctx) => {
     ctx.fillStyle = "#3a5fb0";
     ctx.fillRect(0, 0, 768, 128);
@@ -623,30 +735,30 @@ function buildCubicle(
   // Desk against the back partition
   const desk = MeshBuilder.CreateBox(
     `desk_${label}`,
-    { width: 3.2, height: 0.12, depth: 1.2 },
+    { width: 3.4, height: 0.12, depth: 1.3 },
     scene,
   );
-  desk.position = new Vector3(cx, 0.85, cz + 0.6);
+  desk.position = new Vector3(cx, 0.85, cz + 1.4);
   desk.material = deskMat;
-  for (const lx of [-1.3, 1.3]) {
+  for (const lx of [-1.4, 1.4]) {
     const leg = MeshBuilder.CreateBox(
       `deskLeg_${label}_${lx}`,
       { width: 0.12, height: 0.85, depth: 1.0 },
       scene,
     );
-    leg.position = new Vector3(cx + lx, 0.42, cz + 0.6);
+    leg.position = new Vector3(cx + lx, 0.42, cz + 1.4);
     leg.material = deskMat;
   }
 
   // Monitor on desk
-  buildMonitor(scene, mat, new Vector3(cx - 0.6, 0.92, cz + 0.5), 0);
+  buildMonitor(scene, mat, new Vector3(cx - 0.6, 0.92, cz + 1.3), 0);
   // Phone
   const phone = MeshBuilder.CreateBox(
     `phone_${label}`,
     { width: 0.35, height: 0.12, depth: 0.25 },
     scene,
   );
-  phone.position = new Vector3(cx + 0.9, 0.97, cz + 0.7);
+  phone.position = new Vector3(cx + 0.9, 0.97, cz + 1.5);
   phone.material = mat(`phoneMat_${label}`, "#1a1f2c");
 
   // Document tray
@@ -655,7 +767,7 @@ function buildCubicle(
     { width: 0.6, height: 0.06, depth: 0.4 },
     scene,
   );
-  docTray.position = new Vector3(cx + 1.1, 0.95, cz + 0.3);
+  docTray.position = new Vector3(cx + 1.1, 0.95, cz + 1.1);
   docTray.material = mat(`docTrayMat_${label}`, "#f4ecdb");
 
   // Desk lamp, mug, and a small book stack — small voxel desktop props
@@ -668,21 +780,21 @@ function buildCubicle(
     scene,
     mat,
     `lamp_${label}`,
-    new Vector3(cx + 1.35, 0.91, cz + 0.95),
+    new Vector3(cx + 1.35, 0.91, cz + 1.75),
     lampColors[seed % lampColors.length],
   );
   buildMug(
     scene,
     mat,
     `mug_${label}`,
-    new Vector3(cx + 0.5, 0.92, cz + 0.85),
+    new Vector3(cx + 0.5, 0.92, cz + 1.65),
     mugColors[seed % mugColors.length],
   );
   buildBookStack(
     scene,
     mat,
     `books_${label}`,
-    new Vector3(cx - 1.3, 0.92, cz + 0.85),
+    new Vector3(cx - 1.3, 0.92, cz + 1.65),
   );
 
   // Chair (in front of desk)
@@ -691,14 +803,14 @@ function buildCubicle(
     { width: 0.65, height: 0.12, depth: 0.65 },
     scene,
   );
-  chairSeat.position = new Vector3(cx, 0.55, cz - 0.4);
+  chairSeat.position = new Vector3(cx, 0.55, cz + 0.4);
   chairSeat.material = chairMat;
   const chairBack = MeshBuilder.CreateBox(
     `chairBack_${label}`,
     { width: 0.65, height: 0.8, depth: 0.12 },
     scene,
   );
-  chairBack.position = new Vector3(cx, 1.0, cz - 0.7);
+  chairBack.position = new Vector3(cx, 1.0, cz + 0.1);
   chairBack.material = chairMat;
 }
 
@@ -1363,18 +1475,18 @@ function buildCafe(
   // Café sign on the right wall
   const sign = MeshBuilder.CreateBox(
     "cafeSign",
-    { width: 0.08, height: 0.6, depth: 2.4 },
+    { width: 0.08, height: 0.6, depth: 3.6 },
     scene,
   );
   sign.position = new Vector3(origin.x + 2.4, 2.5, origin.z);
-  drawSignTexture(scene, sign, 384, 96, (ctx) => {
+  drawSignTexture(scene, sign, 768, 96, (ctx) => {
     ctx.fillStyle = "#a06a4c";
-    ctx.fillRect(0, 0, 384, 96);
+    ctx.fillRect(0, 0, 768, 96);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 52px sans-serif";
+    ctx.font = "bold 48px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("CAFÉ", 192, 50);
+    ctx.fillText("COFFEE AREA", 384, 50);
   });
 
   // Tall corner plant
@@ -1386,110 +1498,278 @@ function buildCafe(
 }
 
 /**
- * Collaboration / huddle zone: two facing sofas, a low table, and a
- * whiteboard, on the left-side accent floor. Encourages quick stand-ups
- * between cubicle rows.
+ * Play Area: ping-pong table, arcade cabinet, beanbags, and a "PLAY ZONE"
+ * sign. Sits on the front-right accent floor — a relaxation space for staff.
  */
-function buildCollabZone(
+function buildPlayArea(
   scene: Scene,
   mat: MaterialFactory,
   origin: Vector3,
 ): void {
-  const sofaMat = mat("collabSofa", "#6ec1ff");
-  const tableTop = mat("collabTableTop", "#bca78a");
-  const tableLeg = mat("collabTableLeg", "#7d4f33");
+  // Ping-pong table (centre)
+  const pingTop = MeshBuilder.CreateBox(
+    "playPingTop",
+    { width: 2.7, height: 0.1, depth: 1.5 },
+    scene,
+  );
+  pingTop.position = new Vector3(origin.x - 1.5, 0.85, origin.z + 0.5);
+  pingTop.material = mat("playPingTopMat", "#2e5a4a");
+  // White stripe down the middle (length-wise)
+  const pingStripe = MeshBuilder.CreateBox(
+    "playPingStripe",
+    { width: 2.7, height: 0.02, depth: 0.05 },
+    scene,
+  );
+  pingStripe.position = new Vector3(origin.x - 1.5, 0.91, origin.z + 0.5);
+  pingStripe.material = mat("playPingStripeMat", "#ffffff");
+  // Net across the middle
+  const pingNet = MeshBuilder.CreateBox(
+    "playPingNet",
+    { width: 0.04, height: 0.18, depth: 1.5 },
+    scene,
+  );
+  pingNet.position = new Vector3(origin.x - 1.5, 0.99, origin.z + 0.5);
+  pingNet.material = mat("playPingNetMat", "#1a1f2c");
+  // Legs
+  for (const [dx, dz] of [
+    [-1.2, -0.6],
+    [-1.2, 0.6],
+    [1.2, -0.6],
+    [1.2, 0.6],
+  ] as const) {
+    const leg = MeshBuilder.CreateBox(
+      `playPingLeg_${dx}_${dz}`,
+      { width: 0.1, height: 0.85, depth: 0.1 },
+      scene,
+    );
+    leg.position = new Vector3(origin.x - 1.5 + dx, 0.42, origin.z + 0.5 + dz);
+    leg.material = mat("playPingLegMat", "#1a1f2c");
+  }
+  // Two paddles on the table
+  for (const px of [-1.0, 1.0]) {
+    const paddle = MeshBuilder.CreateBox(
+      `playPaddle_${px}`,
+      { width: 0.32, height: 0.04, depth: 0.22 },
+      scene,
+    );
+    paddle.position = new Vector3(origin.x - 1.5 + px, 0.92, origin.z + 0.5 + (px > 0 ? -0.4 : 0.4));
+    paddle.material = mat("playPaddleMat", "#e8504c");
+  }
 
-  // Two facing sofas
-  const sofaA = MeshBuilder.CreateBox(
-    "collabSofaA",
-    { width: 1.6, height: 0.55, depth: 0.9 },
+  // Arcade cabinet (back-right of the zone)
+  const arcadeBody = MeshBuilder.CreateBox(
+    "playArcade",
+    { width: 0.9, height: 1.9, depth: 0.8 },
     scene,
   );
-  sofaA.position = new Vector3(origin.x, 0.4, origin.z - 1.3);
-  sofaA.material = sofaMat;
-  const sofaABack = MeshBuilder.CreateBox(
-    "collabSofaABack",
-    { width: 1.6, height: 0.7, depth: 0.2 },
+  arcadeBody.position = new Vector3(origin.x + 2.5, 0.95, origin.z + 2.0);
+  arcadeBody.material = mat("playArcadeMat", "#1c2230");
+  const arcadeScreen = MeshBuilder.CreateBox(
+    "playArcadeScreen",
+    { width: 0.7, height: 0.55, depth: 0.05 },
     scene,
   );
-  sofaABack.position = new Vector3(origin.x, 0.85, origin.z - 1.7);
-  sofaABack.material = sofaMat;
-
-  const sofaB = MeshBuilder.CreateBox(
-    "collabSofaB",
-    { width: 1.6, height: 0.55, depth: 0.9 },
+  arcadeScreen.position = new Vector3(origin.x + 2.5, 1.45, origin.z + 1.6);
+  drawSignTexture(scene, arcadeScreen, 256, 200, (ctx) => {
+    ctx.fillStyle = "#1a1f2c";
+    ctx.fillRect(0, 0, 256, 200);
+    // pixel-art "INSERT COIN"
+    ctx.fillStyle = "#ffb347";
+    ctx.font = "bold 32px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("INSERT", 128, 80);
+    ctx.fillText("COIN", 128, 120);
+    ctx.fillStyle = "#e8504c";
+    ctx.fillRect(40, 150, 24, 24);
+    ctx.fillStyle = "#6ec1ff";
+    ctx.fillRect(72, 150, 24, 24);
+    ctx.fillStyle = "#2e8a6e";
+    ctx.fillRect(160, 150, 24, 24);
+    ctx.fillStyle = "#ffb347";
+    ctx.fillRect(192, 150, 24, 24);
+  });
+  const arcadeJoy = MeshBuilder.CreateBox(
+    "playArcadeJoy",
+    { width: 0.7, height: 0.18, depth: 0.5 },
     scene,
   );
-  sofaB.position = new Vector3(origin.x, 0.4, origin.z + 1.3);
-  sofaB.material = sofaMat;
-  const sofaBBack = MeshBuilder.CreateBox(
-    "collabSofaBBack",
-    { width: 1.6, height: 0.7, depth: 0.2 },
+  arcadeJoy.position = new Vector3(origin.x + 2.5, 1.0, origin.z + 1.6);
+  arcadeJoy.material = mat("playArcadeJoyMat", "#3a5fb0");
+  const arcadeMarquee = MeshBuilder.CreateBox(
+    "playArcadeMarquee",
+    { width: 0.95, height: 0.25, depth: 0.05 },
     scene,
   );
-  sofaBBack.position = new Vector3(origin.x, 0.85, origin.z + 1.7);
-  sofaBBack.material = sofaMat;
-
-  // Low table between them
-  const table = MeshBuilder.CreateBox(
-    "collabTable",
-    { width: 1.2, height: 0.1, depth: 0.7 },
-    scene,
-  );
-  table.position = new Vector3(origin.x, 0.45, origin.z);
-  table.material = tableTop;
-  const tableBase = MeshBuilder.CreateBox(
-    "collabTableBase",
-    { width: 1.0, height: 0.4, depth: 0.55 },
-    scene,
-  );
-  tableBase.position = new Vector3(origin.x, 0.2, origin.z);
-  tableBase.material = tableLeg;
-
-  // Whiteboard mounted on the left wall
-  const wbFrame = MeshBuilder.CreateBox(
-    "collabWBFrame",
-    { width: 0.08, height: 1.7, depth: 2.6 },
-    scene,
-  );
-  wbFrame.position = new Vector3(origin.x - 2.4, 1.6, origin.z);
-  wbFrame.material = mat("collabWBFrameMat", "#2a3a5c");
-  const wb = MeshBuilder.CreateBox(
-    "collabWB",
-    { width: 0.04, height: 1.5, depth: 2.4 },
-    scene,
-  );
-  wb.position = new Vector3(origin.x - 2.36, 1.6, origin.z);
-  wb.material = mat("collabWBMat", "#f4ecdb");
-
-  // Title sign above the whiteboard
-  const sign = MeshBuilder.CreateBox(
-    "collabSign",
-    { width: 0.08, height: 0.5, depth: 2.4 },
-    scene,
-  );
-  sign.position = new Vector3(origin.x - 2.4, 2.7, origin.z);
-  drawSignTexture(scene, sign, 384, 80, (ctx) => {
-    ctx.fillStyle = "#2a3a5c";
-    ctx.fillRect(0, 0, 384, 80);
+  arcadeMarquee.position = new Vector3(origin.x + 2.5, 1.85, origin.z + 1.58);
+  drawSignTexture(scene, arcadeMarquee, 256, 64, (ctx) => {
+    ctx.fillStyle = "#e8504c";
+    ctx.fillRect(0, 0, 256, 64);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 42px sans-serif";
+    ctx.font = "bold 36px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("HUDDLE ZONE", 192, 42);
+    ctx.fillText("ARCADE", 128, 32);
   });
 
-  // Voxel-pack accents: cushions on each sofa, a rug under the table, mugs
-  // and a notepad on the table, plus a tall floor lamp in the corner.
-  buildCushion(scene, mat, "collabCushA1", new Vector3(origin.x - 0.5, 0.78, origin.z - 1.3), "#ffb347");
-  buildCushion(scene, mat, "collabCushA2", new Vector3(origin.x + 0.5, 0.78, origin.z - 1.3), "#e8504c");
-  buildCushion(scene, mat, "collabCushB1", new Vector3(origin.x - 0.5, 0.78, origin.z + 1.3), "#2e8a6e");
-  buildCushion(scene, mat, "collabCushB2", new Vector3(origin.x + 0.5, 0.78, origin.z + 1.3), "#b56fbf");
-  buildRug(scene, mat, "collabRug", new Vector3(origin.x, 0.16, origin.z), 2.2, 3.4, "#f4ecdb");
-  buildMug(scene, mat, "collabMug1", new Vector3(origin.x - 0.3, 0.51, origin.z - 0.15), "#3a5fb0");
-  buildMug(scene, mat, "collabMug2", new Vector3(origin.x + 0.3, 0.51, origin.z + 0.15), "#e8504c");
-  buildBookStack(scene, mat, "collabBooks", new Vector3(origin.x, 0.51, origin.z));
-  buildFloorLamp(scene, mat, "collabFloorLamp", new Vector3(origin.x + 1.6, 0, origin.z - 2.6), "#cfe7ff");
+  // Beanbags (front of the zone)
+  for (const [bx, bz, hex] of [
+    [-2.5, -2.0, "#e8504c"],
+    [-1.0, -2.2, "#ffb347"],
+    [0.5, -2.0, "#6ec1ff"],
+  ] as const) {
+    const bag = MeshBuilder.CreateBox(
+      `playBean_${bx}_${bz}`,
+      { width: 0.95, height: 0.55, depth: 0.95 },
+      scene,
+    );
+    bag.position = new Vector3(origin.x + bx, 0.27, origin.z + bz);
+    bag.material = mat(`playBeanMat_${bx}_${bz}`, hex);
+  }
+
+  // "PLAY AREA" sign on the right wall
+  const sign = MeshBuilder.CreateBox(
+    "playSign",
+    { width: 0.08, height: 0.6, depth: 2.6 },
+    scene,
+  );
+  sign.position = new Vector3(origin.x + 4.9, 2.5, origin.z);
+  drawSignTexture(scene, sign, 384, 96, (ctx) => {
+    ctx.fillStyle = "#2e5a4a";
+    ctx.fillRect(0, 0, 384, 96);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 48px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("PLAY AREA", 192, 50);
+  });
+
+  // Pendant lamp over the table and a corner plant
+  buildPendantLamp(scene, mat, "playPendant", new Vector3(origin.x - 1.5, 3.4, origin.z + 0.5), "#ffb347");
+  buildPlant(scene, mat, new Vector3(origin.x + 4.0, 0, origin.z - 2.5));
+}
+
+/**
+ * IT / Cloud Infra Room: glass partition front, rows of server racks with
+ * blinking-light decals, a workbench, and a "CLOUD INFRA" sign. Sits on
+ * the back-far-left dark accent floor.
+ */
+function buildITRoom(
+  scene: Scene,
+  mat: MaterialFactory,
+  origin: Vector3,
+): void {
+  const glass = mat("itGlass", "#cfe7ff");
+  const frame = mat("itFrame", "#2a3a5c");
+
+  // Glass partition (front + right side, opens to the office)
+  const front = MeshBuilder.CreateBox(
+    "itFront",
+    { width: 9.6, height: 2.6, depth: 0.1 },
+    scene,
+  );
+  front.position = new Vector3(origin.x, 1.3, origin.z - 3.6);
+  front.material = glass;
+  const rightWall = MeshBuilder.CreateBox(
+    "itRight",
+    { width: 0.1, height: 2.6, depth: 7.4 },
+    scene,
+  );
+  rightWall.position = new Vector3(origin.x + 4.8, 1.3, origin.z);
+  rightWall.material = glass;
+
+  // Frames
+  const frontFrame = MeshBuilder.CreateBox(
+    "itFrontFrame",
+    { width: 9.6, height: 0.12, depth: 0.14 },
+    scene,
+  );
+  frontFrame.position = new Vector3(origin.x, 2.6, origin.z - 3.6);
+  frontFrame.material = frame;
+  const rightFrame = MeshBuilder.CreateBox(
+    "itRightFrame",
+    { width: 0.14, height: 0.12, depth: 7.4 },
+    scene,
+  );
+  rightFrame.position = new Vector3(origin.x + 4.8, 2.6, origin.z);
+  rightFrame.material = frame;
+
+  // Sign above
+  const sign = MeshBuilder.CreateBox(
+    "itSign",
+    { width: 4.2, height: 0.6, depth: 0.06 },
+    scene,
+  );
+  sign.position = new Vector3(origin.x, 3.15, origin.z - 3.6);
+  drawSignTexture(scene, sign, 640, 110, (ctx) => {
+    ctx.fillStyle = "#1f2a3f";
+    ctx.fillRect(0, 0, 640, 110);
+    ctx.fillStyle = "#6ec1ff";
+    ctx.font = "bold 56px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("IT / CLOUD INFRA", 320, 60);
+  });
+
+  // Server racks — two rows along the back of the room
+  const rackBodyMat = mat("itRack", "#1a1f2c");
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 4; col++) {
+      const rx = origin.x - 3.6 + col * 1.5;
+      const rz = origin.z + 1.0 + row * 1.6;
+      const rack = MeshBuilder.CreateBox(
+        `itRack_${row}_${col}`,
+        { width: 1.1, height: 2.0, depth: 0.9 },
+        scene,
+      );
+      rack.position = new Vector3(rx, 1.0, rz);
+      rack.material = rackBodyMat;
+      // Indicator-light face
+      const face = MeshBuilder.CreateBox(
+        `itRackFace_${row}_${col}`,
+        { width: 0.95, height: 1.7, depth: 0.05 },
+        scene,
+      );
+      face.position = new Vector3(rx, 1.05, rz - 0.46);
+      drawSignTexture(scene, face, 128, 256, (ctx) => {
+        ctx.fillStyle = "#0f141d";
+        ctx.fillRect(0, 0, 128, 256);
+        // Stack of "blade" rows with little LEDs
+        const ledColors = ["#2e8a6e", "#6ec1ff", "#ffb347", "#e8504c"];
+        for (let r = 0; r < 14; r++) {
+          ctx.fillStyle = "#22252e";
+          ctx.fillRect(8, 10 + r * 17, 112, 12);
+          for (let l = 0; l < 4; l++) {
+            ctx.fillStyle = ledColors[(row + col + r + l) % ledColors.length];
+            ctx.fillRect(16 + l * 14, 13 + r * 17, 6, 6);
+          }
+        }
+      });
+    }
+  }
+
+  // Workbench / IT desk along the right interior wall
+  const benchTop = MeshBuilder.CreateBox(
+    "itBench",
+    { width: 3.0, height: 0.12, depth: 1.0 },
+    scene,
+  );
+  benchTop.position = new Vector3(origin.x + 3.0, 0.85, origin.z - 1.6);
+  benchTop.material = mat("itBenchMat", "#bca78a");
+  const benchBase = MeshBuilder.CreateBox(
+    "itBenchBase",
+    { width: 2.8, height: 0.85, depth: 0.9 },
+    scene,
+  );
+  benchBase.position = new Vector3(origin.x + 3.0, 0.43, origin.z - 1.6);
+  benchBase.material = mat("itBenchBaseMat", "#7d4f33");
+  buildMonitor(scene, mat, new Vector3(origin.x + 2.4, 0.92, origin.z - 1.7), 0);
+  buildLaptop(scene, mat, "itLaptop", new Vector3(origin.x + 3.6, 0.92, origin.z - 1.5), false, "#3a5fb0");
+
+  // Cool floor lamp + ceiling pendants for atmospheric lighting
+  buildPendantLamp(scene, mat, "itPendantA", new Vector3(origin.x - 2.0, 4.2, origin.z + 1.5), "#6ec1ff");
+  buildPendantLamp(scene, mat, "itPendantB", new Vector3(origin.x + 1.0, 4.2, origin.z + 1.5), "#6ec1ff");
+  buildPendantLamp(scene, mat, "itPendantC", new Vector3(origin.x - 2.0, 4.2, origin.z - 1.5), "#6ec1ff");
+  buildPendantLamp(scene, mat, "itPendantD", new Vector3(origin.x + 1.0, 4.2, origin.z - 1.5), "#6ec1ff");
 }
 
 // ===== Voxel-pack-inspired prop helpers =====
