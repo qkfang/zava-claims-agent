@@ -800,3 +800,146 @@ body[data-scene="neighbourhood"] .metrics {
   cursor: pointer;
 }
 .summary-done:hover { filter: brightness(1.05); }
+
+/* ----- Currently working / active scenario activity panel ----- */
+.activity-panel {
+  position: fixed;
+  left: 16px;
+  bottom: 70px;
+  width: 340px;
+  z-index: 11;
+  background: var(--panel);
+  border: 1px solid rgba(255, 179, 71, 0.5);
+  border-radius: 14px;
+  padding: 14px 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.activity-panel.hidden { display: none; }
+.activity-panel h2 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.activity-staff {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.activity-staff-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  border: 3px solid var(--accent);
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.activity-staff-avatar svg {
+  display: block;
+  image-rendering: pixelated;
+}
+.activity-staff-name {
+  font-weight: 700;
+  font-size: 15px;
+}
+.activity-staff-role {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.activity-narration {
+  font-size: 12px;
+  color: var(--text);
+  margin: 6px 0 10px;
+  line-height: 1.45;
+}
+.activity-agents-label {
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.activity-agents {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.activity-agent {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: center;
+  background: rgba(255, 179, 71, 0.07);
+  border: 1px solid rgba(255, 179, 71, 0.25);
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+.activity-agent-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 209, 102, 0.6);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.activity-agent-avatar svg {
+  display: block;
+  image-rendering: pixelated;
+}
+.activity-agent-name {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text);
+}
+.activity-agent-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
+  margin-top: 1px;
+}
+
+/* Hide ambient HUD pieces during a scripted scenario so the focus is on
+   the active case + the activity panel. */
+body.scenario-active #log-panel {
+  opacity: 0.45;
+  filter: saturate(0.6);
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+
+/* In the AI Agents panel, dim every card except the staff member that is
+   currently holding the case (matched via data-active-staff-id). */
+#agents-panel[data-active-staff-id] .agent-card {
+  opacity: 0.32;
+  transition: opacity 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+#agents-panel[data-active-staff-id="intake-1"] .agent-card[data-id="intake-1"],
+#agents-panel[data-active-staff-id="assessor-1"] .agent-card[data-id="assessor-1"],
+#agents-panel[data-active-staff-id="loss-1"] .agent-card[data-id="loss-1"],
+#agents-panel[data-active-staff-id="fraud-1"] .agent-card[data-id="fraud-1"],
+#agents-panel[data-active-staff-id="supplier-1"] .agent-card[data-id="supplier-1"],
+#agents-panel[data-active-staff-id="settlement-1"] .agent-card[data-id="settlement-1"],
+#agents-panel[data-active-staff-id="comms-1"] .agent-card[data-id="comms-1"],
+#agents-panel[data-active-staff-id="lead-1"] .agent-card[data-id="lead-1"] {
+  opacity: 1;
+  border-color: var(--accent);
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(255, 179, 71, 0.18);
+}
+
+/* Hide the bottom-left activity panel and ambient HUD when in the
+   neighbourhood scene, so the office-only UI doesn't bleed through. */
+body[data-scene="neighbourhood"] .activity-panel {
+  display: none;
+}

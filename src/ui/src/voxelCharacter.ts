@@ -1,5 +1,6 @@
 import {
   Color3,
+  DynamicTexture,
   Mesh,
   MeshBuilder,
   Scene,
@@ -57,9 +58,13 @@ export class VoxelCharacter {
 
   /** Thought-bulb meshes shown above the head when the staff is delegating to AI agents. */
   private thoughtBulbs: Mesh[] = [];
+  /** Disposable label & decoration meshes attached to each bulb. */
+  private thoughtBulbExtras: Mesh[] = [];
   /** Base Y position of each thought bulb (used to apply the bob without drift). */
   private thoughtBaseY: number[] = [];
   private thoughtPhase = 0;
+  /** Palette stored so thought bulbs can be tinted to match the staff member. */
+  private readonly palette: VoxelCharacterPalette;
 
   constructor(
     scene: Scene,
@@ -69,6 +74,7 @@ export class VoxelCharacter {
     const root = new TransformNode(`char_${name}`, scene);
     this.root = root;
     this.id = name;
+    this.palette = palette;
 
     const matCache = new Map<string, StandardMaterial>();
     const mat = (hex: string): StandardMaterial => {
@@ -667,71 +673,134 @@ export class VoxelCharacter {
   }
 
   /**
-   * Show a small cluster of "thought bulb" boxes floating above the head.
-   * Used when a staff character is delegating work to AI sub-agents.
-   * Pass `count = 0` (or call `hideThoughtBulbs`) to clear.
+   * Show one large "agent persona" bulb floating above the staff member's
+   * head per AI sub-agent currently delegated to the case. Each bulb is
+   * tinted with the staff member's palette (skin + hair) so the audience
+   * reads them as the same persona's AI clones, and carries a floating
+   * name label such as "Agent Iris #1 — Intake Triage Assistant".
+   *
+   * Pass an empty array (or call `hideThoughtBulbs`) to clear.
    */
-  showThoughtBulbs(count: number): void {
+  showThoughtBulbs(agents: { name: string }[]): void {
     this.hideThoughtBulbs();
-    const n = Math.max(0, Math.min(3, Math.floor(count)));
+    const n = Math.max(0, Math.min(3, agents.length));
     if (n === 0) return;
     const scene = this.root.getScene();
-    // Positions roughly trail diagonally up & to the side of the head.
-    const offsets: Array<[number, number, number]> = [
-      [0.45, 2.25, 0.0],
-      [0.85, 2.55, -0.05],
-      [1.25, 2.85, 0.05],
-    ];
-    const bulbMatName = `__thoughtBulbMat`;
-    let bulbMat = scene.getMaterialByName(bulbMatName) as
-      | StandardMaterial
-      | null;
-    if (!bulbMat) {
-      bulbMat = new StandardMaterial(bulbMatName, scene);
-      bulbMat.diffuseColor = Color3.FromHexString("#ffd166");
-      bulbMat.emissiveColor = Color3.FromHexString("#ffb347");
-      bulbMat.specularColor = new Color3(0.1, 0.1, 0.05);
+
+    // Lay the bulbs out in a horizontal arc just above the character's head
+    // so they read as a "trio of mini-personas" floating with the staff.
+    const layout: Array<[number, number, number]> = [];
+    if (n === 1) {
+      layout.push([0.0, 3.0, 0.0]);
+    } else if (n === 2) {
+      layout.push([-0.85, 2.95, 0.0]);
+      layout.push([0.85, 2.95, 0.0]);
+    } else {
+      layout.push([-1.4, 2.85, 0.0]);
+      layout.push([0.0, 3.15, 0.0]);
+      layout.push([1.4, 2.85, 0.0]);
     }
-    const baseMatName = `__thoughtBaseMat`;
-    let baseMat = scene.getMaterialByName(baseMatName) as
-      | StandardMaterial
-      | null;
-    if (!baseMat) {
-      baseMat = new StandardMaterial(baseMatName, scene);
-      baseMat.diffuseColor = Color3.FromHexString("#e8e8e8");
-      baseMat.specularColor = new Color3(0.1, 0.1, 0.1);
-    }
+
+    const skinHex = this.palette.skin;
+    const hairHex = this.palette.hair;
+    const shirtHex = this.palette.shirt;
+    const eyeHex = this.palette.eye ?? "#22252e";
+
+    const matFor = (key: string, hex: string): StandardMaterial => {
+      const matName = `__bulbMat_${this.id}_${key}`;
+      let m = scene.getMaterialByName(matName) as StandardMaterial | null;
+      if (!m) {
+        m = new StandardMaterial(matName, scene);
+        m.diffuseColor = Color3.FromHexString(hex);
+        m.emissiveColor = Color3.FromHexString(hex).scale(0.35);
+        m.specularColor = new Color3(0.06, 0.06, 0.06);
+      }
+      return m;
+    };
+
     for (let i = 0; i < n; i++) {
-      // Lightbulb body
-      const bulb = MeshBuilder.CreateBox(
+      // ---- Big head/body cube tinted with the staff persona's skin tone. ----
+      const head = MeshBuilder.CreateBox(
         `tbulb_${this.id}_${i}`,
-        { width: 0.22, height: 0.26, depth: 0.22 },
+        { width: 0.85, height: 0.85, depth: 0.85 },
         scene,
       );
-      bulb.material = bulbMat;
-      bulb.parent = this.root;
-      bulb.position = new Vector3(...offsets[i]);
-      bulb.isPickable = false;
-      // Small base
-      const base = MeshBuilder.CreateBox(
-        `tbulb_${this.id}_${i}_base`,
-        { width: 0.12, height: 0.06, depth: 0.12 },
+      head.material = matFor("skin", skinHex);
+      head.parent = this.root;
+      head.position = new Vector3(...layout[i]);
+      head.isPickable = false;
+
+      // Hair cap — small slab on top.
+      const hair = MeshBuilder.CreateBox(
+        `tbulb_${this.id}_${i}_hair`,
+        { width: 0.92, height: 0.22, depth: 0.92 },
         scene,
       );
-      base.material = baseMat;
-      base.parent = bulb;
-      base.position = new Vector3(0, -0.18, 0);
-      base.isPickable = false;
-      this.thoughtBulbs.push(bulb);
-      this.thoughtBaseY.push(offsets[i][1]);
+      hair.material = matFor("hair", hairHex);
+      hair.parent = head;
+      hair.position = new Vector3(0, 0.5, 0);
+      hair.isPickable = false;
+      this.thoughtBulbExtras.push(hair);
+
+      // Two eye dots.
+      for (const ex of [-0.18, 0.18]) {
+        const eye = MeshBuilder.CreateBox(
+          `tbulb_${this.id}_${i}_eye_${ex}`,
+          { width: 0.12, height: 0.12, depth: 0.05 },
+          scene,
+        );
+        eye.material = matFor("eye", eyeHex);
+        eye.parent = head;
+        eye.position = new Vector3(ex, 0.05, 0.43);
+        eye.isPickable = false;
+        this.thoughtBulbExtras.push(eye);
+      }
+
+      // Small "AI" badge on the chin so it reads as an AI agent.
+      const badge = MeshBuilder.CreateBox(
+        `tbulb_${this.id}_${i}_badge`,
+        { width: 0.42, height: 0.18, depth: 0.06 },
+        scene,
+      );
+      badge.material = matFor("shirt", shirtHex);
+      badge.parent = head;
+      badge.position = new Vector3(0, -0.55, 0.43);
+      badge.isPickable = false;
+      this.thoughtBulbExtras.push(badge);
+
+      // Glow halo behind the head — a soft orange tint to read as "thinking".
+      const halo = MeshBuilder.CreateBox(
+        `tbulb_${this.id}_${i}_halo`,
+        { width: 1.05, height: 1.05, depth: 0.04 },
+        scene,
+      );
+      halo.material = matFor("halo", "#ffb347");
+      halo.parent = head;
+      halo.position = new Vector3(0, 0, -0.5);
+      halo.isPickable = false;
+      this.thoughtBulbExtras.push(halo);
+
+      // Floating name label (DynamicTexture plane) — shows the agent's name.
+      const label = makeAgentLabelMesh(scene, `tbulb_${this.id}_${i}_lbl`, agents[i].name);
+      label.parent = head;
+      label.position = new Vector3(0, 0.95, 0);
+      label.isPickable = false;
+      // The plane is built in XY; rotate slightly so it tilts toward camera.
+      label.rotation = new Vector3(-Math.PI / 14, 0, 0);
+      this.thoughtBulbExtras.push(label);
+
+      this.thoughtBulbs.push(head);
+      this.thoughtBaseY.push(layout[i][1]);
     }
     this.thoughtPhase = 0;
   }
 
   /** Remove any thought bulbs currently shown above the character. */
   hideThoughtBulbs(): void {
+    for (const b of this.thoughtBulbExtras) b.dispose();
     for (const b of this.thoughtBulbs) b.dispose();
     this.thoughtBulbs = [];
+    this.thoughtBulbExtras = [];
     this.thoughtBaseY = [];
   }
 
@@ -778,4 +847,60 @@ export class VoxelCharacter {
     reset(this.rightLeg);
     this.walkPhase = 0;
   }
+}
+
+/**
+ * Build a flat plane mesh whose material renders a small label such as
+ * "Agent Iris #1" via DynamicTexture. Used by `showThoughtBulbs` to put
+ * a floating name above each AI sub-agent persona bulb.
+ */
+function makeAgentLabelMesh(scene: Scene, name: string, text: string): Mesh {
+  const width = 1024;
+  const height = 256;
+  const tex = new DynamicTexture(`tex_${name}`, { width, height }, scene, false);
+  tex.hasAlpha = true;
+  const ctx = tex.getContext() as unknown as CanvasRenderingContext2D;
+  ctx.clearRect(0, 0, width, height);
+  // Pill background so the label reads clearly on any backdrop.
+  const radius = 60;
+  ctx.fillStyle = "rgba(28, 34, 48, 0.85)";
+  ctx.strokeStyle = "rgba(255, 179, 71, 0.95)";
+  ctx.lineWidth = 6;
+  const pad = 12;
+  ctx.beginPath();
+  ctx.moveTo(pad + radius, pad);
+  ctx.lineTo(width - pad - radius, pad);
+  ctx.arcTo(width - pad, pad, width - pad, pad + radius, radius);
+  ctx.lineTo(width - pad, height - pad - radius);
+  ctx.arcTo(width - pad, height - pad, width - pad - radius, height - pad, radius);
+  ctx.lineTo(pad + radius, height - pad);
+  ctx.arcTo(pad, height - pad, pad, height - pad - radius, radius);
+  ctx.lineTo(pad, pad + radius);
+  ctx.arcTo(pad, pad, pad + radius, pad, radius);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // Text
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 96px Segoe UI, system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  // Truncate very long strings so they fit.
+  const maxChars = 36;
+  const display = text.length > maxChars ? text.slice(0, maxChars - 1) + "…" : text;
+  ctx.fillText(display, width / 2, height / 2);
+  tex.update();
+
+  const mat = new StandardMaterial(`mat_${name}`, scene);
+  mat.diffuseTexture = tex;
+  mat.emissiveTexture = tex;
+  mat.opacityTexture = tex;
+  mat.specularColor = new Color3(0, 0, 0);
+  mat.useAlphaFromDiffuseTexture = true;
+  mat.backFaceCulling = false;
+
+  // Plane sized to read clearly above the bulb head.
+  const plane = MeshBuilder.CreatePlane(name, { width: 2.4, height: 0.6 }, scene);
+  plane.material = mat;
+  return plane;
 }
