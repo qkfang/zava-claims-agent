@@ -32,7 +32,29 @@ import { VoxelCharacter } from "./voxelCharacter";
  * provided `scene`. All pieces are parented to a single root TransformNode
  * (returned) so callers can dispose them as a unit if needed.
  */
-export function buildNeighbourhood(scene: Scene): TransformNode {
+/**
+ * Anchor points exported alongside the neighbourhood scene so the
+ * scenario runner can place the customer voxel character at the right
+ * incident zone, focus the camera there, and walk them along the path
+ * toward the office front door.
+ */
+export interface IncidentZones {
+  /** Position in front of the office door (where the route ends). */
+  officeDoor: Vector3;
+  /** Per-scenario incident anchor (where the customer spawns). */
+  home: Vector3;
+  motor: Vector3;
+  business: Vector3;
+  travel: Vector3;
+  life: Vector3;
+}
+
+export interface NeighbourhoodResult {
+  root: TransformNode;
+  zones: IncidentZones;
+}
+
+export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   const root = new TransformNode("neighbourhood", scene);
 
   const matCache = new Map<string, StandardMaterial>();
@@ -2122,7 +2144,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     makeTree(tx, tz, 0.85);
   }
 
-  // ----- Decorative customer trail: a few people on streets heading to office -----
+  // Decorative customer trail: a few people on streets heading to office -----
   const office = { x: -7, z: -4 };
   makePerson(0, -10, "intakeOfficer", office);
   makePerson(8, -2, "supplierCoord", office);
@@ -2134,5 +2156,19 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
   makePerson(-12, -19, "fraudInvestigator", office);
   makePerson(30, 6, "teamLeader", office);
 
-  return root;
+  const zones: IncidentZones = {
+    // Office front door is the end of the path that leaves the office.
+    officeDoor: new Vector3(office.x, 0, office.z),
+    // Each zone anchor is the spot where the customer voxel character
+    // begins their walk toward the office. These match the (zx, zz) used
+    // when placing the incident scenery (offset slightly so the spawn
+    // sits on the kerb rather than inside a house).
+    home: new Vector3(16 - 2, 0, 14 - 4),
+    motor: new Vector3(22 + 1.5, 0, 0 - 2),
+    business: new Vector3(-18 + 1, 0, -14 + 2),
+    travel: new Vector3(-20 + 5, 0, 18 - 4),
+    life: new Vector3(16 - 1, 0, -16 + 2),
+  };
+
+  return { root, zones };
 }
