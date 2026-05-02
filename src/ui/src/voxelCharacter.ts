@@ -7,24 +7,25 @@ import {
   TransformNode,
   Vector3,
 } from "@babylonjs/core";
+import type { VoxelCharacterPalette } from "./characterPalettes";
+
+// Re-export palette types/data so existing callers can keep importing
+// from `./voxelCharacter` if they want to.
+export {
+  PALETTES,
+  type VoxelCharacterPalette,
+  type HairStyle,
+  type FacialHair,
+  type LowerBody,
+} from "./characterPalettes";
 
 /**
- * Palette pieces that define the look of a voxel character. All values are
- * hex colors and are compiled into StandardMaterials lazily.
- */
-export interface VoxelCharacterPalette {
-  skin: string;
-  hair: string;
-  shirt: string;
-  pants: string;
-  shoes: string;
-  accent?: string;
-}
-
-/**
- * A blocky humanoid built from boxes — head, torso, two arms, two legs.
- * Exposes `walking` / `setWalking()` to play a tiny limb-swing animation
- * and `root` so callers can move the character around the scene.
+ * A blocky humanoid built from boxes — head, torso, two arms, two legs —
+ * with optional details (hair styles, glasses, beard, dress, etc.) so that
+ * each persona reads as a distinct individual in the voxel office.
+ *
+ * Exposes `setWalking()` to drive a tiny limb-swing animation and `root`
+ * so callers can move the character around the scene.
  */
 export class VoxelCharacter {
   public readonly root: TransformNode;
@@ -56,98 +57,157 @@ export class VoxelCharacter {
       return m;
     };
 
-    // Body proportions (units = meters, 1 unit ~ a "voxel block")
-    const head = MeshBuilder.CreateBox(`head_${name}`, { size: 0.55 }, scene);
+    const hairStyle = palette.hairStyle ?? "short";
+    const facial = palette.facial ?? "none";
+    const lower = palette.lowerBody ?? "pants";
+    const eyeHex = palette.eye ?? "#1a1410";
+
+    // Slightly darker shade of the skin tone, used for facial hair.
+    const darken = (hex: string, amt = 0.45): string => {
+      const c = Color3.FromHexString(hex);
+      const r = Math.max(0, Math.floor(c.r * 255 * (1 - amt)));
+      const g = Math.max(0, Math.floor(c.g * 255 * (1 - amt)));
+      const b = Math.max(0, Math.floor(c.b * 255 * (1 - amt)));
+      const toHex = (v: number) => v.toString(16).padStart(2, "0");
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    };
+
+    // ---------- Head & face ----------
+    const headSize = 0.6;
+    const headY = 1.55;
+    const head = MeshBuilder.CreateBox(`head_${name}`, { size: headSize }, scene);
     head.material = mat(palette.skin);
     head.parent = root;
-    head.position.y = 1.55;
+    head.position.y = headY;
 
-    const hair = MeshBuilder.CreateBox(
-      `hair_${name}`,
-      { width: 0.6, height: 0.18, depth: 0.6 },
+    // Eyes — two small dark blocks slightly inset on the front of the head.
+    const eyeMat = mat(eyeHex);
+    const eyeWhiteMat = mat("#ffffff");
+    const makeEye = (side: 1 | -1): void => {
+      const white = MeshBuilder.CreateBox(
+        `eyeW_${side}_${name}`,
+        { width: 0.12, height: 0.1, depth: 0.04 },
+        scene,
+      );
+      white.material = eyeWhiteMat;
+      white.parent = root;
+      white.position = new Vector3(side * 0.13, headY + 0.04, headSize / 2 + 0.001);
+
+      const pupil = MeshBuilder.CreateBox(
+        `eye_${side}_${name}`,
+        { width: 0.06, height: 0.06, depth: 0.04 },
+        scene,
+      );
+      pupil.material = eyeMat;
+      pupil.parent = root;
+      pupil.position = new Vector3(side * 0.13, headY + 0.04, headSize / 2 + 0.01);
+    };
+    makeEye(1);
+    makeEye(-1);
+
+    // Mouth — a thin dark line.
+    const mouth = MeshBuilder.CreateBox(
+      `mouth_${name}`,
+      { width: 0.18, height: 0.03, depth: 0.04 },
       scene,
     );
-    hair.material = mat(palette.hair);
-    hair.parent = root;
-    hair.position.y = 1.84;
+    mouth.material = mat(darken(palette.skin, 0.55));
+    mouth.parent = root;
+    mouth.position = new Vector3(0, headY - 0.14, headSize / 2 + 0.001);
 
+    // Glasses — bridge + two square lenses framing the eyes.
+    if (palette.glasses) {
+      const frameMat = mat("#1a1a1a");
+      const bridge = MeshBuilder.CreateBox(
+        `gbridge_${name}`,
+        { width: 0.1, height: 0.03, depth: 0.04 },
+        scene,
+      );
+      bridge.material = frameMat;
+      bridge.parent = root;
+      bridge.position = new Vector3(0, headY + 0.04, headSize / 2 + 0.02);
+
+      const makeLens = (side: 1 | -1): void => {
+        const lens = MeshBuilder.CreateBox(
+          `glens_${side}_${name}`,
+          { width: 0.18, height: 0.16, depth: 0.04 },
+          scene,
+        );
+        lens.material = frameMat;
+        lens.parent = root;
+        lens.position = new Vector3(
+          side * 0.15,
+          headY + 0.04,
+          headSize / 2 + 0.02,
+        );
+        // Inner pane — slightly inset to look like a lens.
+        const pane = MeshBuilder.CreateBox(
+          `gpane_${side}_${name}`,
+          { width: 0.13, height: 0.11, depth: 0.02 },
+          scene,
+        );
+        pane.material = mat("#9fc7e6");
+        pane.parent = lens;
+        pane.position.z = 0.012;
+      };
+      makeLens(1);
+      makeLens(-1);
+    }
+
+    // Facial hair.
+    if (facial !== "none") {
+      const beardMat = mat(darken(palette.hair, 0.05));
+      if (facial === "beard" || facial === "stubble") {
+        const beard = MeshBuilder.CreateBox(
+          `beard_${name}`,
+          {
+            width: 0.5,
+            height: facial === "stubble" ? 0.12 : 0.22,
+            depth: 0.5,
+          },
+          scene,
+        );
+        beard.material = beardMat;
+        beard.parent = root;
+        beard.position = new Vector3(0, headY - 0.18, 0);
+      }
+      if (facial === "moustache") {
+        const m1 = MeshBuilder.CreateBox(
+          `must_${name}`,
+          { width: 0.22, height: 0.04, depth: 0.04 },
+          scene,
+        );
+        m1.material = beardMat;
+        m1.parent = root;
+        m1.position = new Vector3(0, headY - 0.08, headSize / 2 + 0.001);
+      }
+    }
+
+    // ---------- Hair / headwear ----------
+    this.buildHair(scene, name, root, mat, palette, hairStyle, headY, headSize);
+
+    // ---------- Neck ----------
+    const neck = MeshBuilder.CreateBox(
+      `neck_${name}`,
+      { width: 0.22, height: 0.1, depth: 0.22 },
+      scene,
+    );
+    neck.material = mat(palette.skin);
+    neck.parent = root;
+    neck.position.y = 1.22;
+
+    // ---------- Torso ----------
     const torso = MeshBuilder.CreateBox(
       `torso_${name}`,
-      { width: 0.65, height: 0.7, depth: 0.4 },
+      { width: 0.7, height: 0.7, depth: 0.42 },
       scene,
     );
     torso.material = mat(palette.shirt);
     torso.parent = root;
     torso.position.y = 0.92;
 
-    const makeArm = (side: 1 | -1): Mesh => {
-      const pivot = new TransformNode(
-        `arm_pivot_${side}_${name}`,
-        scene,
-      );
-      pivot.parent = root;
-      pivot.position = new Vector3(side * 0.45, 1.22, 0);
-
-      const arm = MeshBuilder.CreateBox(
-        `arm_${side}_${name}`,
-        { width: 0.22, height: 0.65, depth: 0.22 },
-        scene,
-      );
-      arm.material = mat(palette.shirt);
-      arm.parent = pivot;
-      arm.position.y = -0.32;
-      // Smuggle pivot identity onto the mesh so we can rotate it.
-      (arm as Mesh & { pivotNode: TransformNode }).pivotNode = pivot;
-      return arm;
-    };
-
-    this.leftArm = makeArm(1);
-    this.rightArm = makeArm(-1);
-
-    const makeLeg = (side: 1 | -1): Mesh => {
-      const pivot = new TransformNode(
-        `leg_pivot_${side}_${name}`,
-        scene,
-      );
-      pivot.parent = root;
-      pivot.position = new Vector3(side * 0.18, 0.55, 0);
-
-      const leg = MeshBuilder.CreateBox(
-        `leg_${side}_${name}`,
-        { width: 0.26, height: 0.55, depth: 0.28 },
-        scene,
-      );
-      leg.material = mat(palette.pants);
-      leg.parent = pivot;
-      leg.position.y = -0.28;
-      (leg as Mesh & { pivotNode: TransformNode }).pivotNode = pivot;
-      return leg;
-    };
-
-    this.leftLeg = makeLeg(1);
-    this.rightLeg = makeLeg(-1);
-
-    const shoeL = MeshBuilder.CreateBox(
-      `shoeL_${name}`,
-      { width: 0.3, height: 0.12, depth: 0.36 },
-      scene,
-    );
-    shoeL.material = mat(palette.shoes);
-    shoeL.parent = this.leftLeg.parent as TransformNode;
-    shoeL.position.y = -0.6;
-    shoeL.position.z = 0.04;
-
-    const shoeR = MeshBuilder.CreateBox(
-      `shoeR_${name}`,
-      { width: 0.3, height: 0.12, depth: 0.36 },
-      scene,
-    );
-    shoeR.material = mat(palette.shoes);
-    shoeR.parent = this.rightLeg.parent as TransformNode;
-    shoeR.position.y = -0.6;
-    shoeR.position.z = 0.04;
-
-    if (palette.accent) {
+    // Optional accent tie / scarf hanging from the collar.
+    if (palette.accent && lower !== "dress") {
       const tie = MeshBuilder.CreateBox(
         `tie_${name}`,
         { width: 0.12, height: 0.4, depth: 0.05 },
@@ -158,10 +218,358 @@ export class VoxelCharacter {
       tie.position = new Vector3(0, 1.0, 0.22);
     }
 
-    // Anchor in the right hand for held items (claim folder, clipboard, etc).
+    // Optional shirt logo / pocket detail.
+    if (palette.shirtLogo && palette.accent) {
+      const logo = MeshBuilder.CreateBox(
+        `logo_${name}`,
+        { width: 0.14, height: 0.14, depth: 0.03 },
+        scene,
+      );
+      logo.material = mat(palette.accent);
+      logo.parent = root;
+      logo.position = new Vector3(0.18, 1.05, 0.22);
+    }
+
+    // ---------- Arms ----------
+    const makeArm = (side: 1 | -1): Mesh => {
+      const pivot = new TransformNode(`arm_pivot_${side}_${name}`, scene);
+      pivot.parent = root;
+      pivot.position = new Vector3(side * 0.48, 1.22, 0);
+
+      const arm = MeshBuilder.CreateBox(
+        `arm_${side}_${name}`,
+        { width: 0.22, height: 0.55, depth: 0.22 },
+        scene,
+      );
+      arm.material = mat(palette.shirt);
+      arm.parent = pivot;
+      arm.position.y = -0.27;
+
+      // Hand — small skin-tone block at the cuff.
+      const hand = MeshBuilder.CreateBox(
+        `hand_${side}_${name}`,
+        { width: 0.22, height: 0.14, depth: 0.22 },
+        scene,
+      );
+      hand.material = mat(palette.skin);
+      hand.parent = pivot;
+      hand.position.y = -0.62;
+
+      (arm as Mesh & { pivotNode: TransformNode }).pivotNode = pivot;
+      return arm;
+    };
+
+    this.leftArm = makeArm(1);
+    this.rightArm = makeArm(-1);
+
+    // ---------- Lower body ----------
+    if (lower === "dress") {
+      // Flared dress replaces both pants and torso bottom.
+      const dress = MeshBuilder.CreateBox(
+        `dress_${name}`,
+        { width: 0.95, height: 0.55, depth: 0.55 },
+        scene,
+      );
+      dress.material = mat(palette.pants);
+      dress.parent = root;
+      dress.position.y = 0.45;
+    } else if (lower === "skirt") {
+      const skirt = MeshBuilder.CreateBox(
+        `skirt_${name}`,
+        { width: 0.85, height: 0.32, depth: 0.5 },
+        scene,
+      );
+      skirt.material = mat(palette.pants);
+      skirt.parent = root;
+      skirt.position.y = 0.6;
+    }
+
+    // Legs — shorter when wearing a skirt or dress so they peek out below.
+    const legHeight = lower === "dress" ? 0.32 : lower === "skirt" ? 0.45 : 0.55;
+    const legY = lower === "dress" ? 0.32 : lower === "skirt" ? 0.45 : 0.55;
+    // For a dress, color the visible lower-leg in skin tone (tights would be palette.pants).
+    const legColor =
+      lower === "dress" ? palette.skin : palette.pants;
+
+    const makeLeg = (side: 1 | -1): Mesh => {
+      const pivot = new TransformNode(`leg_pivot_${side}_${name}`, scene);
+      pivot.parent = root;
+      pivot.position = new Vector3(side * 0.18, legY, 0);
+
+      const leg = MeshBuilder.CreateBox(
+        `leg_${side}_${name}`,
+        { width: 0.26, height: legHeight, depth: 0.28 },
+        scene,
+      );
+      leg.material = mat(legColor);
+      leg.parent = pivot;
+      leg.position.y = -legHeight / 2;
+      (leg as Mesh & { pivotNode: TransformNode }).pivotNode = pivot;
+      return leg;
+    };
+
+    this.leftLeg = makeLeg(1);
+    this.rightLeg = makeLeg(-1);
+
+    const makeShoe = (parent: Mesh, n: string): void => {
+      const shoe = MeshBuilder.CreateBox(
+        `shoe_${n}_${name}`,
+        { width: 0.3, height: 0.12, depth: 0.36 },
+        scene,
+      );
+      shoe.material = mat(palette.shoes);
+      shoe.parent = parent.parent as TransformNode;
+      shoe.position.y = -legHeight - 0.06;
+      shoe.position.z = 0.04;
+    };
+    makeShoe(this.leftLeg, "L");
+    makeShoe(this.rightLeg, "R");
+
+    // ---------- Held-item anchor (in the right hand) ----------
     this.heldItemAnchor = new TransformNode(`hand_${name}`, scene);
     this.heldItemAnchor.parent = this.rightArm.parent as TransformNode;
     this.heldItemAnchor.position = new Vector3(0, -0.7, 0.18);
+  }
+
+  /** Builds hair / hat / hood / crown depending on `style`. */
+  private buildHair(
+    scene: Scene,
+    name: string,
+    root: TransformNode,
+    mat: (hex: string) => StandardMaterial,
+    palette: VoxelCharacterPalette,
+    style: NonNullable<VoxelCharacterPalette["hairStyle"]>,
+    headY: number,
+    headSize: number,
+  ): void {
+    const hairMat = mat(palette.hair);
+    const headTopY = headY + headSize / 2;
+
+    const addCap = (
+      capName: string,
+      width: number,
+      height: number,
+      depth: number,
+      yOffset: number,
+      material: StandardMaterial = hairMat,
+    ): Mesh => {
+      const m = MeshBuilder.CreateBox(
+        `${capName}_${name}`,
+        { width, height, depth },
+        scene,
+      );
+      m.material = material;
+      m.parent = root;
+      m.position.y = headTopY + yOffset - height / 2;
+      return m;
+    };
+
+    switch (style) {
+      case "bald":
+        // Nothing on top.
+        break;
+
+      case "short": {
+        addCap("hair", 0.66, 0.18, 0.66, 0.08);
+        // Side-burn slabs.
+        const sideL = MeshBuilder.CreateBox(
+          `hairSL_${name}`,
+          { width: 0.05, height: 0.25, depth: 0.6 },
+          scene,
+        );
+        sideL.material = hairMat;
+        sideL.parent = root;
+        sideL.position = new Vector3(-headSize / 2 - 0.02, headY + 0.05, 0);
+        const sideR = sideL.clone(`hairSR_${name}`);
+        sideR.position.x = headSize / 2 + 0.02;
+        break;
+      }
+
+      case "long": {
+        addCap("hair", 0.66, 0.2, 0.66, 0.1);
+        // Long flowing back.
+        const back = MeshBuilder.CreateBox(
+          `hairBack_${name}`,
+          { width: 0.6, height: 0.55, depth: 0.12 },
+          scene,
+        );
+        back.material = hairMat;
+        back.parent = root;
+        back.position = new Vector3(0, headY - 0.1, -headSize / 2 - 0.04);
+        // Front fringe.
+        const fringe = MeshBuilder.CreateBox(
+          `hairF_${name}`,
+          { width: 0.66, height: 0.12, depth: 0.08 },
+          scene,
+        );
+        fringe.material = hairMat;
+        fringe.parent = root;
+        fringe.position = new Vector3(0, headY + 0.18, headSize / 2 + 0.01);
+        break;
+      }
+
+      case "afro": {
+        const a = MeshBuilder.CreateBox(
+          `afro_${name}`,
+          { width: 0.85, height: 0.45, depth: 0.85 },
+          scene,
+        );
+        a.material = hairMat;
+        a.parent = root;
+        a.position.y = headTopY + 0.12;
+        break;
+      }
+
+      case "ponytail": {
+        addCap("hair", 0.66, 0.2, 0.66, 0.1);
+        const tail = MeshBuilder.CreateBox(
+          `tail_${name}`,
+          { width: 0.18, height: 0.5, depth: 0.18 },
+          scene,
+        );
+        tail.material = hairMat;
+        tail.parent = root;
+        tail.position = new Vector3(
+          0,
+          headY - 0.05,
+          -headSize / 2 - 0.12,
+        );
+        // Front fringe.
+        const fringe = MeshBuilder.CreateBox(
+          `pfringe_${name}`,
+          { width: 0.66, height: 0.1, depth: 0.08 },
+          scene,
+        );
+        fringe.material = hairMat;
+        fringe.parent = root;
+        fringe.position = new Vector3(0, headY + 0.2, headSize / 2 + 0.01);
+        break;
+      }
+
+      case "bun": {
+        addCap("hair", 0.66, 0.18, 0.66, 0.08);
+        const bun = MeshBuilder.CreateBox(
+          `bun_${name}`,
+          { width: 0.28, height: 0.28, depth: 0.28 },
+          scene,
+        );
+        bun.material = hairMat;
+        bun.parent = root;
+        bun.position = new Vector3(0, headTopY + 0.18, -0.08);
+        break;
+      }
+
+      case "beanie": {
+        addCap("beanie", 0.7, 0.28, 0.7, 0.16);
+        // Brim band in accent color if available.
+        const band = MeshBuilder.CreateBox(
+          `beanieBand_${name}`,
+          { width: 0.72, height: 0.08, depth: 0.72 },
+          scene,
+        );
+        band.material = mat(palette.accent ?? "#ffffff");
+        band.parent = root;
+        band.position.y = headTopY + 0.04;
+        break;
+      }
+
+      case "cap": {
+        // Crown of the cap.
+        const crownMat = mat(palette.accent ?? palette.hair);
+        addCap("capCrown", 0.7, 0.22, 0.7, 0.13, crownMat);
+        // Visor extending forward.
+        const visor = MeshBuilder.CreateBox(
+          `capVisor_${name}`,
+          { width: 0.7, height: 0.05, depth: 0.3 },
+          scene,
+        );
+        visor.material = crownMat;
+        visor.parent = root;
+        visor.position = new Vector3(0, headTopY + 0.04, 0.4);
+        // Tiny tuft of hair peeking out at sides.
+        const tuftL = MeshBuilder.CreateBox(
+          `capTuftL_${name}`,
+          { width: 0.05, height: 0.18, depth: 0.55 },
+          scene,
+        );
+        tuftL.material = hairMat;
+        tuftL.parent = root;
+        tuftL.position = new Vector3(-headSize / 2 - 0.02, headY + 0.1, 0);
+        const tuftR = tuftL.clone(`capTuftR_${name}`);
+        tuftR.position.x = headSize / 2 + 0.02;
+        break;
+      }
+
+      case "hat": {
+        // Fedora / wide-brim hat.
+        const hatMat = mat(palette.accent ?? palette.hair);
+        const brim = MeshBuilder.CreateBox(
+          `hatBrim_${name}`,
+          { width: 0.95, height: 0.05, depth: 0.95 },
+          scene,
+        );
+        brim.material = hatMat;
+        brim.parent = root;
+        brim.position.y = headTopY + 0.04;
+        const top = MeshBuilder.CreateBox(
+          `hatTop_${name}`,
+          { width: 0.62, height: 0.3, depth: 0.62 },
+          scene,
+        );
+        top.material = hatMat;
+        top.parent = root;
+        top.position.y = headTopY + 0.22;
+        break;
+      }
+
+      case "hood": {
+        // Hood extends a bit beyond the head and dips down the back.
+        const hoodMat = mat(palette.shirt);
+        const hood = MeshBuilder.CreateBox(
+          `hood_${name}`,
+          { width: 0.78, height: 0.7, depth: 0.78 },
+          scene,
+        );
+        hood.material = hoodMat;
+        hood.parent = root;
+        hood.position.y = headY + 0.08;
+        // Hollow out the front a touch by overlaying a face plate (skin).
+        const faceHole = MeshBuilder.CreateBox(
+          `hoodFace_${name}`,
+          { width: 0.6, height: 0.5, depth: 0.05 },
+          scene,
+        );
+        faceHole.material = mat(palette.skin);
+        faceHole.parent = root;
+        faceHole.position = new Vector3(0, headY + 0.02, headSize / 2 + 0.02);
+        break;
+      }
+
+      case "crown": {
+        addCap("hair", 0.66, 0.16, 0.66, 0.06);
+        const crownMat = mat(palette.accent ?? "#f4c463");
+        const band = MeshBuilder.CreateBox(
+          `crownBand_${name}`,
+          { width: 0.7, height: 0.08, depth: 0.7 },
+          scene,
+        );
+        band.material = crownMat;
+        band.parent = root;
+        band.position.y = headTopY + 0.18;
+        // Three little spikes on top.
+        for (let i = -1; i <= 1; i++) {
+          const spike = MeshBuilder.CreateBox(
+            `crownSpike_${i}_${name}`,
+            { width: 0.1, height: 0.18, depth: 0.1 },
+            scene,
+          );
+          spike.material = crownMat;
+          spike.parent = root;
+          spike.position = new Vector3(i * 0.22, headTopY + 0.32, 0);
+        }
+        break;
+      }
+    }
   }
 
   setWalking(walking: boolean): void {
@@ -209,35 +617,3 @@ export class VoxelCharacter {
     this.walkPhase = 0;
   }
 }
-
-export const PALETTES: Record<string, VoxelCharacterPalette> = {
-  // ----- Customers (mapped to the 5 personas in docs/characters.md) -----
-  // Michael Harris — Home Insurance Customer (stressed homeowner)
-  customerHome:    { skin: "#f3c79b", hair: "#5a3a25", shirt: "#4f8fd6", pants: "#2d3344", shoes: "#1a1a1a" },
-  // Aisha Khan — Motor Insurance Customer (busy commuter)
-  customerMotor:   { skin: "#e8b48a", hair: "#2d2418", shirt: "#d36b5b", pants: "#3a2f24", shoes: "#1a1a1a" },
-  // Tom Bradley — Small Business Owner (café owner)
-  customerBusiness: { skin: "#f5d2b3", hair: "#9a5a2a", shirt: "#7ab97a", pants: "#2a3344", shoes: "#1a1a1a" },
-  // Grace Williams — Travel Insurance Customer (frustrated traveller)
-  customerTravel:  { skin: "#d9a37e", hair: "#1a1a1a", shirt: "#c188d4", pants: "#3a3a44", shoes: "#1a1a1a" },
-  // Robert Chen — Life Insurance Beneficiary (quiet, formal)
-  customerLife:    { skin: "#e8c69a", hair: "#1f1a18", shirt: "#3a3a44", pants: "#1c1c22", shoes: "#1a1a1a", accent: "#22252e" },
-
-  // ----- Staff (mapped to docs/characters.md staff cast) -----
-  // Sarah Mitchell — Claims Intake Officer (warm reception palette)
-  intakeOfficer:    { skin: "#f3c79b", hair: "#3a2418", shirt: "#f4c463", pants: "#3a2a55", shoes: "#1a1a1a", accent: "#b8454a" },
-  // Daniel Cho — Claims Assessor (analytical, navy/teal)
-  claimsAssessor:   { skin: "#e8b48a", hair: "#1a1a1a", shirt: "#5fb8a8", pants: "#2d3344", shoes: "#1a1a1a", accent: "#1c2230" },
-  // Priya Nair — Loss Adjuster (field-oriented, earthy green)
-  lossAdjuster:     { skin: "#d9a37e", hair: "#2d1a10", shirt: "#7a9c5a", pants: "#3a2f24", shoes: "#1a1a1a", accent: "#3a2a20" },
-  // Elena Garcia — Fraud Investigator (sharp purple suit)
-  fraudInvestigator:{ skin: "#e8b48a", hair: "#1a1a1a", shirt: "#7a4f9c", pants: "#1c2230", shoes: "#1a1a1a", accent: "#2a3a5c" },
-  // James O'Connor — Supplier Coordinator (warm orange polo)
-  supplierCoord:    { skin: "#f3c79b", hair: "#cfa050", shirt: "#e07a3a", pants: "#3a3a44", shoes: "#1a1a1a" },
-  // Hannah Lee — Settlement Officer (corporate blue button-down)
-  settlementOfficer:{ skin: "#f5d2b3", hair: "#3a2418", shirt: "#3a5fb0", pants: "#1c2230", shoes: "#1a1a1a", accent: "#ffb347" },
-  // Olivia Martin — Customer Communications Specialist (friendly magenta)
-  commsSpecialist:  { skin: "#e8c69a", hair: "#5a3a25", shirt: "#c14a7a", pants: "#3a3a44", shoes: "#1a1a1a" },
-  // Mark Reynolds — Claims Team Leader (grey suit, confident)
-  teamLeader:       { skin: "#e8b48a", hair: "#5a4a35", shirt: "#cdb497", pants: "#2a2f3a", shoes: "#1a1a1a", accent: "#1c2230" },
-};
