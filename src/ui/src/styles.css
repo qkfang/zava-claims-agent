@@ -239,6 +239,44 @@ aside h2 {
 }
 #spawn-btn:hover { filter: brightness(1.05); }
 
+/* Simulation speed control (x1 / x2 / x5) — sits next to the Submit a claim
+ * button in the footer hint. Matches the rounded-pill scene-toggle style so
+ * it feels like a built-in HUD control. */
+.sim-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 3px 6px 3px 10px;
+}
+.sim-speed-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sim-speed button {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.sim-speed button:hover { color: #fff; }
+.sim-speed button.active {
+  background: var(--accent);
+  color: #1c2230;
+}
+
 /* Scene toggle (Office / Neighbourhood) */
 .scene-toggle {
   display: inline-flex;
