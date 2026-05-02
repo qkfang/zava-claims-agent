@@ -1236,11 +1236,13 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   makeKerb("nh_kerb_maple_s", 28, 0.9, new Vector3(20, 0.07, 17.8));
 
   // Birch Lane — east-west street serving the southern apartment / civic
-  // area. Sits between the central road and the apartment block.
-  makeRoad("nh_road_birch", 36, 3.5, new Vector3(-10, 0.05, -10));
-  sideRoadDash("nh_dash_birch", "x", -10, -28, 6);
-  makeKerb("nh_kerb_birch_n", 36, 0.9, new Vector3(-10, 0.07, -7.8));
-  makeKerb("nh_kerb_birch_s", 36, 0.9, new Vector3(-10, 0.07, -12.2));
+  // area. Sits between the central road and the apartment block. Extended
+  // east (to x≈22) so it reaches the new south-east connector and the
+  // relocated nh_birch_b house no longer sits on the central N-S asphalt.
+  makeRoad("nh_road_birch", 50, 3.5, new Vector3(-3, 0.05, -10));
+  sideRoadDash("nh_dash_birch", "x", -10, -26, 20);
+  makeKerb("nh_kerb_birch_n", 50, 0.9, new Vector3(-3, 0.07, -7.8));
+  makeKerb("nh_kerb_birch_s", 50, 0.9, new Vector3(-3, 0.07, -12.2));
 
   // Oak Drive — north-south street on the east side, connecting Maple
   // Crescent to the main road. Placed at x=33 so it sits clear of the
@@ -1276,6 +1278,34 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   makeStreetSign(36.5, 6.0, "OAK DRIVE", "#c44a3a");
   makeStreetSign(-29.5, 6.0, "CEDAR WAY", "#7a4f9c");
 
+  // Willow Avenue — new south-side east-west connector at z=-22. Threads
+  // between the south-west mid-rise cluster, the apartment block, and
+  // the Builder's Yard so those outlying lots are no longer dead-ended.
+  makeRoad("nh_road_willow", 48, 3.5, new Vector3(8, 0.05, -22));
+  sideRoadDash("nh_dash_willow", "x", -22, -14, 30);
+  makeKerb("nh_kerb_willow_n", 48, 0.9, new Vector3(8, 0.07, -19.8));
+  makeKerb("nh_kerb_willow_s", 48, 0.9, new Vector3(8, 0.07, -24.2));
+  makeStreetSign(-15.0, -19.0, "WILLOW AVENUE", "#5a8a4a");
+
+  // Elm Court — short north-south spur at x=22 linking the east end of
+  // Birch Lane (z=-10) to Willow Avenue (z=-22). Routes traffic from
+  // the main grid down to the Builder's Yard end of town.
+  makeRoad("nh_road_elm", 3.5, 14, new Vector3(22, 0.05, -16));
+  sideRoadDash("nh_dash_elm", "z", 22, -22, -10);
+  makeKerb("nh_kerb_elm_e", 0.9, 14, new Vector3(24.2, 0.07, -16));
+  makeKerb("nh_kerb_elm_w", 0.9, 14, new Vector3(19.8, 0.07, -16));
+  makeStreetSign(25.0, -10.5, "ELM COURT", "#7a4a3a");
+
+  // Pine Court — short north-south spur at x=-10 linking Birch Lane
+  // (z=-10) down to the apartment block / Willow Avenue (z=-22) so the
+  // contents-claim apartment is a proper street address rather than
+  // sitting on grass.
+  makeRoad("nh_road_pine", 3.5, 12, new Vector3(-10, 0.05, -16));
+  sideRoadDash("nh_dash_pine", "z", -10, -22, -10);
+  makeKerb("nh_kerb_pine_e", 0.9, 12, new Vector3(-7.8, 0.07, -16));
+  makeKerb("nh_kerb_pine_w", 0.9, 12, new Vector3(-12.2, 0.07, -16));
+  makeStreetSign(-13.0, -10.5, "PINE COURT", "#3a5fb0");
+
   // Extra suburban houses lining the new streets — these use the full
   // makeSuburbanHouse recipe so the grid reads as a real neighbourhood
   // rather than scattered boxes.
@@ -1308,7 +1338,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     wall: "#e7d6c0", roof: "#5a4a3a", chimney: true, fence: true,
     mailbox: true, sidewalkZ: -7.2, storeys: 1,
   });
-  makeSuburbanHouse("nh_birch_b", -2, -5.0, {
+  makeSuburbanHouse("nh_birch_b", 12, -5.0, {
     wall: "#f0d6b0", roof: "#7a4a3a", chimney: true, fence: true,
     mailbox: true, sidewalkZ: -7.2, storeys: 1,
   });
@@ -1341,7 +1371,10 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // faces the central crossroads.
   const officeRoot = new TransformNode("nh_office_root", scene);
   officeRoot.parent = root;
-  officeRoot.position = new Vector3(-7, 0, 8);
+  // Shifted slightly west (was -7) so the right-hand wall clears the
+  // central north-south asphalt (which spans x=-2.5..2.5). Keeps the
+  // front door facing the roundabout for the customer walk-in path.
+  officeRoot.position = new Vector3(-10, 0, 8);
 
   const officeBase = MeshBuilder.CreateBox(
     "nh_office_base",
@@ -1425,12 +1458,12 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     { width: 1.6, height: 0.05, depth: 6 },
     scene,
   );
-  path.position = new Vector3(-7, 0.08, 4.5);
+  path.position = new Vector3(-10, 0.08, 4.5);
   path.material = mat("path", "#d8c9a2");
   attach(path);
 
   // Office label
-  makeLabel(-7, 13, "Zava Insurance Claims Office", "#2a3a5c");
+  makeLabel(-10, 13, "Zava Insurance Claims Office", "#2a3a5c");
 
   // ----- Captures: scenery meshes referenced by incident animations -----
   // These are populated as each zone is built below, then handed to the
@@ -2064,11 +2097,17 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     );
   };
 
-  // Place the downtown strip in the south-west outer area, off the main road
-  makeMidRise(-32, -16, 5, "#cfd6dc", "#3a5fb0", 5.0, 4.2);
+  // Place the downtown strip in the south-west outer area, off the main road.
+  // The two tallest blocks have been relocated to the far back-left and far
+  // back-right corners so they read as "downtown skyline" silhouettes
+  // instead of standing in front of (and visually blocking) the lower
+  // suburban buildings nearer the camera.
   makeMidRise(-26, -18, 4, "#e7c8a0", "#a23a2c", 4.6, 4.0);
   makeMidRise(-20, -22, 3, "#cfe1f0", "#1c2230", 5.4, 4.4);
-  makeMidRise(-34, -10, 6, "#dcdcdc", "#2a3a5c", 4.4, 4.0);
+  // Far back-right corner skyline tower
+  makeMidRise(36, 30, 5, "#cfd6dc", "#3a5fb0", 5.0, 4.2);
+  // Far back-left corner skyline tower
+  makeMidRise(-36, 30, 6, "#dcdcdc", "#2a3a5c", 4.4, 4.0);
   // A tiny park bench in front of the downtown strip
   makeBox("nh_dt_bench", 1.6, 0.15, 0.4, new Vector3(-28, 0.45, -12), "#7a4f2a");
   makeBox("nh_dt_bench_back", 1.6, 0.5, 0.1, new Vector3(-28, 0.7, -12.18), "#7a4f2a");
@@ -2100,6 +2139,141 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeCone(yx - 5, yz + 4);
     // Yard label
     makeLabel(yx, yz - 5.5, "Builder's Yard", "#e07a2c");
+  }
+
+  // ----- Greenspaces: parks, playground, and a small river -----
+  // Fills out the empty grass so the neighbourhood feels lived-in rather
+  // than vacant between zones. Each piece is purely decorative.
+  const makeParkPad = (cx: number, cz: number, w: number, d: number): void => {
+    const pad = MeshBuilder.CreateBox(
+      `nh_park_pad_${cx}_${cz}`,
+      { width: w, height: 0.06, depth: d },
+      scene,
+    );
+    pad.position = new Vector3(cx, 0.04, cz);
+    pad.material = mat("parkPad", "#7faf5c");
+    attach(pad);
+  };
+  const makeBench = (cx: number, cz: number): void => {
+    makeBox(`nh_bench_seat_${cx}_${cz}`, 1.6, 0.15, 0.4, new Vector3(cx, 0.45, cz), "#7a4f2a");
+    makeBox(`nh_bench_back_${cx}_${cz}`, 1.6, 0.5, 0.1, new Vector3(cx, 0.7, cz - 0.18), "#7a4f2a");
+  };
+  const makePondPatch = (cx: number, cz: number, w: number, d: number): void => {
+    const pond = MeshBuilder.CreateBox(
+      `nh_pond_${cx}_${cz}`,
+      { width: w, height: 0.05, depth: d },
+      scene,
+    );
+    pond.position = new Vector3(cx, 0.05, cz);
+    pond.material = mat("pondWater", "#5fa8d6");
+    attach(pond);
+  };
+  const makeSwingSet = (cx: number, cz: number): void => {
+    makeBox(`nh_swing_postL_${cx}_${cz}`, 0.18, 1.6, 0.18, new Vector3(cx - 0.9, 0.8, cz), "#7a4a3a");
+    makeBox(`nh_swing_postR_${cx}_${cz}`, 0.18, 1.6, 0.18, new Vector3(cx + 0.9, 0.8, cz), "#7a4a3a");
+    makeBox(`nh_swing_top_${cx}_${cz}`, 2.0, 0.16, 0.18, new Vector3(cx, 1.55, cz), "#7a4a3a");
+    makeBox(`nh_swing_seatA_${cx}_${cz}`, 0.5, 0.1, 0.25, new Vector3(cx - 0.45, 0.55, cz), "#c44a3a");
+    makeBox(`nh_swing_seatB_${cx}_${cz}`, 0.5, 0.1, 0.25, new Vector3(cx + 0.45, 0.55, cz), "#3a8fd6");
+  };
+  const makeSlide = (cx: number, cz: number): void => {
+    // Ladder + platform + slope
+    makeBox(`nh_slide_lad_${cx}_${cz}`, 0.5, 1.4, 0.2, new Vector3(cx - 0.9, 0.7, cz), "#cfc8b4");
+    makeBox(`nh_slide_pad_${cx}_${cz}`, 1.2, 0.18, 1.0, new Vector3(cx - 0.4, 1.45, cz), "#ffd166");
+    const slope = MeshBuilder.CreateBox(
+      `nh_slide_slope_${cx}_${cz}`,
+      { width: 0.7, height: 0.12, depth: 1.8 },
+      scene,
+    );
+    slope.position = new Vector3(cx + 0.6, 0.95, cz);
+    slope.rotation.x = -0.55;
+    slope.material = mat("slideSlope", "#3a8fd6");
+    attach(slope);
+  };
+  const makeSandbox = (cx: number, cz: number): void => {
+    makeBox(`nh_sand_${cx}_${cz}`, 2.4, 0.08, 2.4, new Vector3(cx, 0.06, cz), "#e8d8a0");
+    makeBox(`nh_sand_rimN_${cx}_${cz}`, 2.6, 0.18, 0.18, new Vector3(cx, 0.13, cz - 1.2), "#7a4a3a");
+    makeBox(`nh_sand_rimS_${cx}_${cz}`, 2.6, 0.18, 0.18, new Vector3(cx, 0.13, cz + 1.2), "#7a4a3a");
+    makeBox(`nh_sand_rimE_${cx}_${cz}`, 0.18, 0.18, 2.6, new Vector3(cx + 1.2, 0.13, cz), "#7a4a3a");
+    makeBox(`nh_sand_rimW_${cx}_${cz}`, 0.18, 0.18, 2.6, new Vector3(cx - 1.2, 0.13, cz), "#7a4a3a");
+  };
+
+  // North-east corner park — fills the empty grass behind the residential zone
+  {
+    const px = 32;
+    const pz = 32;
+    makeParkPad(px, pz, 12, 10);
+    makePondPatch(px - 2, pz + 1, 4.0, 2.6);
+    makeTree(px + 3, pz - 2, 0.95);
+    makeTree(px + 4.5, pz + 3, 0.85);
+    makeTree(px - 4, pz - 3, 0.9);
+    makeBench(px + 1.5, pz - 3.6);
+    makeLabel(px, pz + 6, "Lakeside Park", "#3a8fd6");
+  }
+
+  // South-central playground — between Pine Court and Elm Court on Willow Ave
+  {
+    const px = 6;
+    const pz = -28;
+    makeParkPad(px, pz, 12, 7);
+    makeSwingSet(px - 3.5, pz);
+    makeSlide(px + 0.5, pz);
+    makeSandbox(px + 4, pz);
+    makeBench(px - 1, pz + 2.6);
+    makeTree(px - 5.5, pz + 2.5, 0.8);
+    makeTree(px + 5.5, pz - 2.5, 0.8);
+    makeLabel(px, pz - 4.5, "Willow Playground", "#5a8a4a");
+  }
+
+  // North-back river — winding strip along the back of the map between the
+  // travel hub and the Maple Crescent skyline. Pure scenery; no road
+  // crossings (it sits behind the houses).
+  {
+    const riverY = 0.05;
+    const segments: Array<[number, number, number, number]> = [
+      // [cx, cz, width, depth]
+      [-6, 33, 14, 1.8],
+      [4, 34, 8, 1.8],
+      [12, 33, 10, 1.8],
+      [20, 32, 8, 1.8],
+      [27, 33, 6, 1.8],
+    ];
+    for (const [cx, cz, w, d] of segments) {
+      const seg = MeshBuilder.CreateBox(
+        `nh_river_${cx}_${cz}`,
+        { width: w, height: 0.05, depth: d },
+        scene,
+      );
+      seg.position = new Vector3(cx, riverY, cz);
+      seg.material = mat("riverWater", "#4a9bd0");
+      attach(seg);
+      // Sandy bank on the north edge
+      const bank = MeshBuilder.CreateBox(
+        `nh_river_bank_${cx}_${cz}`,
+        { width: w + 0.4, height: 0.07, depth: 0.5 },
+        scene,
+      );
+      bank.position = new Vector3(cx, 0.06, cz + d / 2 + 0.2);
+      bank.material = mat("riverBank", "#d8c896");
+      attach(bank);
+    }
+    // A tiny voxel footbridge over the river
+    makeBox("nh_bridge_deck", 1.6, 0.15, 3.0, new Vector3(8, 0.25, 33), "#a07a4a");
+    makeBox("nh_bridge_railL", 1.6, 0.4, 0.1, new Vector3(8, 0.55, 31.6), "#7a4f2a");
+    makeBox("nh_bridge_railR", 1.6, 0.4, 0.1, new Vector3(8, 0.55, 34.4), "#7a4f2a");
+    makeLabel(0, 31, "Zava Riverwalk", "#3a5fb0");
+  }
+
+  // Small western pocket park — fills empty grass between the relocated
+  // mid-rises and Cedar Way.
+  {
+    const px = -32;
+    const pz = -2;
+    makeParkPad(px, pz, 8, 8);
+    makeTree(px - 2, pz - 2, 0.9);
+    makeTree(px + 2, pz + 2, 0.9);
+    makeTree(px + 2.5, pz - 2.5, 0.85);
+    makeBench(px, pz);
+    makeLabel(px, pz + 5, "Cedar Pocket Park", "#5a8a4a");
   }
 
   // ----- Roadworks -----
