@@ -8,6 +8,8 @@ import {
   TransformNode,
   Vector3,
 } from "@babylonjs/core";
+import { PALETTES } from "./characterPalettes";
+import { VoxelCharacter } from "./voxelCharacter";
 
 /**
  * Build the voxel "Claims Neighbourhood" scene as described in
@@ -166,21 +168,548 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     return m;
   };
 
-  const makeRoof = (
+  // (Legacy `makeRoof` removed — all roofs now use `makeGableRoof` /
+  // `makeSuburbanHouse`, which produce a chunky stepped pitched roof
+  // instead of a 45°-rotated diamond box that read as "fake".)
+
+  // A proper stepped voxel gable roof — chunkier and more "real suburb"
+  // looking than a 45°-rotated diamond box. The ridge runs along the Z
+  // (front-to-back) axis, narrowing in X each step. Used for standalone
+  // roofs (the named houses); makeSuburbanHouse inlines the same recipe.
+  const makeGableRoof = (
     name: string,
     w: number,
-    h: number,
     d: number,
-    pos: Vector3,
+    cx: number,
+    cz: number,
+    baseY: number,
     color: string,
-  ): Mesh => {
-    // A simple pitched roof made from a rotated box for a pleasing voxel look.
-    const m = MeshBuilder.CreateBox(name, { width: w, height: h, depth: d }, scene);
-    m.position = pos;
-    m.rotation.z = Math.PI / 4;
-    m.material = mat(name, color);
-    attach(m);
-    return m;
+    eaveColor = "#c8b896",
+  ): void => {
+    const steps = 4;
+    const stepH = 0.32;
+    const eaveOverhang = 0.4;
+    const roofMat = mat(`${name}_roof`, color);
+    const eaveMat = mat(`${name}_eave`, eaveColor);
+    const eave = MeshBuilder.CreateBox(
+      `${name}_eaveSlab`,
+      { width: w + eaveOverhang, height: 0.15, depth: d + eaveOverhang },
+      scene,
+    );
+    eave.position = new Vector3(cx, baseY + 0.075, cz);
+    eave.material = eaveMat;
+    attach(eave);
+    for (let i = 0; i < steps; i++) {
+      const t = i / steps;
+      const layerW = w * (1 - t * 0.78);
+      const layerD = d + eaveOverhang * (1 - t);
+      const layer = MeshBuilder.CreateBox(
+        `${name}_layer_${i}`,
+        { width: layerW, height: stepH, depth: layerD },
+        scene,
+      );
+      layer.position = new Vector3(cx, baseY + 0.15 + stepH * (i + 0.5), cz);
+      layer.material = roofMat;
+      attach(layer);
+    }
+    const ridge = MeshBuilder.CreateBox(
+      `${name}_ridge`,
+      { width: 0.4, height: 0.18, depth: d + eaveOverhang * 0.3 },
+      scene,
+    );
+    ridge.position = new Vector3(cx, baseY + 0.15 + stepH * steps + 0.09, cz);
+    ridge.material = mat(`${name}_ridgeMat`, "#3a2a20");
+    attach(ridge);
+  };
+
+  // Voxel chimney — a small brick stack on top of a roof.
+  const makeChimney = (
+    cx: number,
+    cz: number,
+    baseY: number,
+    color = "#a23a2c",
+  ): void => {
+    const stack = MeshBuilder.CreateBox(
+      `nh_chim_${cx}_${cz}`,
+      { width: 0.55, height: 1.4, depth: 0.55 },
+      scene,
+    );
+    stack.position = new Vector3(cx, baseY + 0.7, cz);
+    stack.material = mat(`chim_${color}`, color);
+    attach(stack);
+    const cap = MeshBuilder.CreateBox(
+      `nh_chim_cap_${cx}_${cz}`,
+      { width: 0.7, height: 0.12, depth: 0.7 },
+      scene,
+    );
+    cap.position = new Vector3(cx, baseY + 1.46, cz);
+    cap.material = mat("chim_cap", "#3a3a3a");
+    attach(cap);
+  };
+
+  // A windowpane with mullions — a small flat panel of glass divided by
+  // thin frame strips. Faces along -Z by default; rotate the host as needed.
+  const makeMullionedWindow = (
+    name: string,
+    cx: number,
+    cy: number,
+    cz: number,
+    w: number,
+    h: number,
+    facing: "south" | "north" | "east" | "west" = "south",
+  ): void => {
+    const depthOffset = 0.06;
+    const sign = facing === "south" || facing === "east" ? -1 : 1;
+    const isXFace = facing === "south" || facing === "north";
+    const pane = MeshBuilder.CreateBox(
+      `${name}_pane`,
+      isXFace
+        ? { width: w, height: h, depth: 0.05 }
+        : { width: 0.05, height: h, depth: w },
+      scene,
+    );
+    pane.position = new Vector3(
+      cx + (isXFace ? 0 : sign * depthOffset),
+      cy,
+      cz + (isXFace ? sign * depthOffset : 0),
+    );
+    pane.material = mat("nh_glass", "#cfe7ff");
+    attach(pane);
+
+    const frameMat = mat("nh_winFrame", "#f4f0e6");
+    // Outer frame (top, bottom, left, right).
+    const frameThickness = 0.08;
+    const frames: Array<[number, number, number, number]> = [
+      // [w, h, dx, dy]
+      [w + 0.16, frameThickness, 0, h / 2 + frameThickness / 2],
+      [w + 0.16, frameThickness, 0, -h / 2 - frameThickness / 2],
+      [frameThickness, h + 0.16, -w / 2 - frameThickness / 2, 0],
+      [frameThickness, h + 0.16, w / 2 + frameThickness / 2, 0],
+      // mullions: vertical & horizontal cross
+      [frameThickness * 0.7, h, 0, 0],
+      [w, frameThickness * 0.7, 0, 0],
+    ];
+    for (let i = 0; i < frames.length; i++) {
+      const [fw, fh, dx, dy] = frames[i];
+      const f = MeshBuilder.CreateBox(
+        `${name}_f_${i}`,
+        isXFace
+          ? { width: fw, height: fh, depth: 0.07 }
+          : { width: 0.07, height: fh, depth: fw },
+        scene,
+      );
+      f.position = new Vector3(
+        cx + (isXFace ? dx : sign * (depthOffset + 0.005)),
+        cy + dy,
+        cz + (isXFace ? sign * (depthOffset + 0.005) : dx),
+      );
+      f.material = frameMat;
+      attach(f);
+    }
+  };
+
+  // A short run of picket fence in front of a house, between (x1, z) and
+  // (x2, z) along the X axis, with optional rotation.
+  const makePicketFence = (
+    x1: number,
+    x2: number,
+    z: number,
+    rotY = 0,
+    color = "#f4f0e6",
+  ): void => {
+    const length = Math.abs(x2 - x1);
+    const cx = (x1 + x2) / 2;
+    // Rail
+    const rail = MeshBuilder.CreateBox(
+      `nh_fence_rail_${cx}_${z}`,
+      { width: length, height: 0.08, depth: 0.06 },
+      scene,
+    );
+    rail.position = new Vector3(cx, 0.55, z);
+    rail.rotation.y = rotY;
+    rail.material = mat("fenceRail", color);
+    attach(rail);
+    // Pickets
+    const pickets = Math.max(2, Math.floor(length / 0.45));
+    for (let i = 0; i < pickets; i++) {
+      const t = pickets === 1 ? 0.5 : i / (pickets - 1);
+      const px = x1 + (x2 - x1) * t;
+      const cosR = Math.cos(rotY);
+      const sinR = Math.sin(rotY);
+      const wx = cx + (px - cx) * cosR;
+      const wz = z + (px - cx) * sinR;
+      const picket = MeshBuilder.CreateBox(
+        `nh_fence_p_${cx}_${z}_${i}`,
+        { width: 0.12, height: 0.7, depth: 0.08 },
+        scene,
+      );
+      picket.position = new Vector3(wx, 0.45, wz);
+      picket.rotation.y = rotY;
+      picket.material = mat("fencePicket", color);
+      attach(picket);
+    }
+  };
+
+  // A flagstone front path leading from a sidewalk point to a doorstep.
+  const makeFrontPath = (
+    name: string,
+    fromX: number,
+    fromZ: number,
+    toX: number,
+    toZ: number,
+  ): void => {
+    const dx = toX - fromX;
+    const dz = toZ - fromZ;
+    const dist = Math.hypot(dx, dz);
+    const tiles = Math.max(2, Math.floor(dist / 0.7));
+    const stoneMat = mat("path_stone", "#d8c9a2");
+    for (let i = 0; i < tiles; i++) {
+      const t = (i + 0.5) / tiles;
+      const px = fromX + dx * t;
+      const pz = fromZ + dz * t;
+      const tile = MeshBuilder.CreateBox(
+        `${name}_${i}`,
+        { width: 0.55, height: 0.06, depth: 0.55 },
+        scene,
+      );
+      tile.position = new Vector3(px, 0.085, pz);
+      tile.material = stoneMat;
+      attach(tile);
+    }
+  };
+
+  // A simple voxel mailbox by the kerb.
+  const makeMailbox = (x: number, z: number): void => {
+    makeBox(`nh_mb_post_${x}_${z}`, 0.1, 0.9, 0.1, new Vector3(x, 0.45, z), "#5a3a22");
+    makeBox(`nh_mb_box_${x}_${z}`, 0.45, 0.3, 0.6, new Vector3(x, 1.0, z), "#3a5fb0");
+    makeBox(`nh_mb_flag_${x}_${z}`, 0.05, 0.18, 0.05, new Vector3(x + 0.25, 1.1, z), "#c44a3a");
+  };
+
+  // A pale concrete kerb / sidewalk strip alongside a road. Useful to
+  // visually separate the asphalt from the verge.
+  const makeKerb = (
+    name: string,
+    width: number,
+    depth: number,
+    pos: Vector3,
+  ): void => {
+    const k = MeshBuilder.CreateBox(
+      name,
+      { width, height: 0.12, depth },
+      scene,
+    );
+    k.position = pos;
+    k.material = mat("kerb", "#cfc8b4");
+    attach(k);
+  };
+
+  // A zebra-stripe pedestrian crossing across a road.
+  const makeCrosswalk = (
+    name: string,
+    cx: number,
+    cz: number,
+    orient: "ew" | "ns",
+    span = 4.6,
+  ): void => {
+    const stripeMat = mat("crosswalkStripe", "#f4f0e6");
+    const stripeCount = 5;
+    for (let i = 0; i < stripeCount; i++) {
+      const t = (i - (stripeCount - 1) / 2) / stripeCount;
+      const offset = t * 1.6;
+      const stripe = MeshBuilder.CreateBox(
+        `${name}_s_${i}`,
+        orient === "ew"
+          ? { width: 0.4, height: 0.03, depth: span }
+          : { width: span, height: 0.03, depth: 0.4 },
+        scene,
+      );
+      stripe.position =
+        orient === "ew"
+          ? new Vector3(cx + offset, 0.095, cz)
+          : new Vector3(cx, 0.095, cz + offset);
+      stripe.material = stripeMat;
+      attach(stripe);
+    }
+  };
+
+  // A small wooden street sign at the corner of an intersection.
+  const makeStreetSign = (
+    x: number,
+    z: number,
+    text: string,
+    color = "#3a5fb0",
+  ): void => {
+    const pole = MeshBuilder.CreateBox(
+      `nh_st_pole_${x}_${z}`,
+      { width: 0.12, height: 2.4, depth: 0.12 },
+      scene,
+    );
+    pole.position = new Vector3(x, 1.2, z);
+    pole.material = mat("streetSignPole", "#5a5d65");
+    attach(pole);
+    const blade = MeshBuilder.CreateBox(
+      `nh_st_blade_${x}_${z}`,
+      { width: 2.2, height: 0.45, depth: 0.08 },
+      scene,
+    );
+    blade.position = new Vector3(x, 2.3, z);
+    attach(blade);
+    const tex = new DynamicTexture(
+      `nh_st_tex_${x}_${z}`,
+      { width: 512, height: 96 },
+      scene,
+      false,
+    );
+    const c = tex.getContext() as CanvasRenderingContext2D;
+    c.fillStyle = color;
+    c.fillRect(0, 0, 512, 96);
+    c.fillStyle = "#ffffff";
+    c.font = "bold 48px sans-serif";
+    c.textBaseline = "middle";
+    c.textAlign = "center";
+    c.fillText(text, 256, 50);
+    tex.update();
+    const m = new StandardMaterial(`nh_st_mat_${x}_${z}`, scene);
+    m.diffuseTexture = tex;
+    m.emissiveColor = new Color3(0.5, 0.5, 0.5);
+    m.specularColor = new Color3(0, 0, 0);
+    blade.material = m;
+  };
+
+  // Build a richer voxel suburban house. The footprint sits centered on
+  // (cx, cz). The front of the house faces -Z (south), so the door, path,
+  // and mailbox all appear on that side.
+  type SuburbanHouseOpts = {
+    width?: number;
+    depth?: number;
+    storeys?: 1 | 2;
+    wall: string;
+    roof: string;
+    trim?: string;
+    door?: string;
+    chimney?: boolean;
+    fence?: boolean;
+    fenceColor?: string;
+    mailbox?: boolean;
+    /** Sidewalk Z line — the front path runs from the door out to here. */
+    sidewalkZ?: number;
+  };
+  const makeSuburbanHouse = (
+    name: string,
+    cx: number,
+    cz: number,
+    opts: SuburbanHouseOpts,
+  ): void => {
+    const width = opts.width ?? 5.2;
+    const depth = opts.depth ?? 4.0;
+    const storeys = opts.storeys ?? 1;
+    const wallH = storeys === 2 ? 4.4 : 2.6;
+    const trim = opts.trim ?? "#f4f0e6";
+    const door = opts.door ?? "#5a3a22";
+
+    // Foundation slab (a touch wider than the walls).
+    makeBox(
+      `${name}_found`,
+      width + 0.4,
+      0.4,
+      depth + 0.4,
+      new Vector3(cx, 0.2, cz),
+      "#9a8f7a",
+    );
+
+    // Walls.
+    makeBox(
+      `${name}_walls`,
+      width,
+      wallH,
+      depth,
+      new Vector3(cx, 0.4 + wallH / 2, cz),
+      opts.wall,
+    );
+
+    // Trim band beneath the eaves.
+    makeBox(
+      `${name}_trim`,
+      width + 0.2,
+      0.18,
+      depth + 0.2,
+      new Vector3(cx, 0.4 + wallH - 0.09, cz),
+      trim,
+    );
+
+    // Roof (real gable, not a diamond) — inlined to avoid relying on
+    // a separate root node for the named house.
+    const steps = 4;
+    const stepH = 0.32;
+    const roofMat = mat(`${name}_roofMat`, opts.roof);
+    const eaveMat = mat(`${name}_eaveMat`, trim);
+    const roofBaseY = 0.4 + wallH;
+    // Eave slab.
+    {
+      const eave = MeshBuilder.CreateBox(
+        `${name}_eave`,
+        { width: width + 0.6, height: 0.15, depth: depth + 0.6 },
+        scene,
+      );
+      eave.position = new Vector3(cx, roofBaseY + 0.075, cz);
+      eave.material = eaveMat;
+      attach(eave);
+    }
+    for (let i = 0; i < steps; i++) {
+      const t = i / steps;
+      const layerW = width * (1 - t * 0.8);
+      const layerD = depth + 0.4 * (1 - t);
+      const layer = MeshBuilder.CreateBox(
+        `${name}_rl_${i}`,
+        { width: layerW, height: stepH, depth: layerD },
+        scene,
+      );
+      layer.position = new Vector3(cx, roofBaseY + 0.15 + stepH * (i + 0.5), cz);
+      layer.material = roofMat;
+      attach(layer);
+    }
+    // Ridge cap.
+    const ridge = MeshBuilder.CreateBox(
+      `${name}_ridge`,
+      { width: 0.36, height: 0.16, depth: depth + 0.2 },
+      scene,
+    );
+    ridge.position = new Vector3(
+      cx,
+      roofBaseY + 0.15 + stepH * steps + 0.08,
+      cz,
+    );
+    ridge.material = mat(`${name}_ridgeMat`, "#3a2a20");
+    attach(ridge);
+
+    // Door + step.
+    makeBox(
+      `${name}_door`,
+      0.95,
+      1.7,
+      0.16,
+      new Vector3(cx, 0.4 + 0.85, cz - depth / 2 - 0.05),
+      door,
+    );
+    makeBox(
+      `${name}_doorstep`,
+      1.4,
+      0.16,
+      0.5,
+      new Vector3(cx, 0.5, cz - depth / 2 - 0.3),
+      "#cfc8b4",
+    );
+
+    // Mullioned windows on the front face (one each side of the door, and
+    // a row on the upper storey for two-storey houses).
+    makeMullionedWindow(
+      `${name}_winL`,
+      cx - width * 0.3,
+      0.4 + wallH * 0.55,
+      cz - depth / 2,
+      1.0,
+      0.85,
+      "south",
+    );
+    makeMullionedWindow(
+      `${name}_winR`,
+      cx + width * 0.3,
+      0.4 + wallH * 0.55,
+      cz - depth / 2,
+      1.0,
+      0.85,
+      "south",
+    );
+    if (storeys === 2) {
+      makeMullionedWindow(
+        `${name}_winUL`,
+        cx - width * 0.3,
+        0.4 + wallH * 0.85,
+        cz - depth / 2,
+        0.9,
+        0.7,
+        "south",
+      );
+      makeMullionedWindow(
+        `${name}_winUR`,
+        cx + width * 0.3,
+        0.4 + wallH * 0.85,
+        cz - depth / 2,
+        0.9,
+        0.7,
+        "south",
+      );
+      makeMullionedWindow(
+        `${name}_winUC`,
+        cx,
+        0.4 + wallH * 0.85,
+        cz - depth / 2,
+        0.9,
+        0.7,
+        "south",
+      );
+    }
+    // Side windows.
+    makeMullionedWindow(
+      `${name}_winSideE`,
+      cx + width / 2,
+      0.4 + wallH * 0.55,
+      cz,
+      0.85,
+      0.85,
+      "east",
+    );
+    makeMullionedWindow(
+      `${name}_winSideW`,
+      cx - width / 2,
+      0.4 + wallH * 0.55,
+      cz,
+      0.85,
+      0.85,
+      "west",
+    );
+
+    // Chimney (offset toward the back-right of the roof).
+    if (opts.chimney) {
+      makeChimney(
+        cx + width * 0.28,
+        cz + depth * 0.15,
+        roofBaseY + 0.4,
+      );
+    }
+
+    // Front path from door out to the kerb / sidewalk.
+    if (opts.sidewalkZ !== undefined) {
+      makeFrontPath(
+        `${name}_path`,
+        cx,
+        cz - depth / 2 - 0.3,
+        cx,
+        opts.sidewalkZ,
+      );
+      if (opts.mailbox) {
+        makeMailbox(cx + 1.2, opts.sidewalkZ + 0.3);
+      }
+    }
+
+    // Picket fence along the front of the lot.
+    if (opts.fence) {
+      const fz = (opts.sidewalkZ ?? cz - depth / 2 - 1.5) + 0.5;
+      makePicketFence(
+        cx - width / 2 - 0.6,
+        cx - 0.9,
+        fz,
+        0,
+        opts.fenceColor,
+      );
+      makePicketFence(
+        cx + 0.9,
+        cx + width / 2 + 0.6,
+        fz,
+        0,
+        opts.fenceColor,
+      );
+    }
   };
 
   // Small voxel tree
@@ -204,38 +733,25 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
   };
 
   // Small voxel person — used so the streets feel alive. We don't animate
-  // them; the office scene has the live agent simulation. Here they're just
-  // tiny decorative figures heading towards the office.
+  // them; the office scene has the live agent simulation. Here they're
+  // built with the **same** `VoxelCharacter` class the office uses, so a
+  // customer in the neighbourhood looks identical to the same persona
+  // when they arrive at the office reception. `paletteKey` selects one
+  // of the entries in `PALETTES` (e.g. "customerHome", "intakeOfficer").
   const makePerson = (
     x: number,
     z: number,
-    shirt: string,
-    pants = "#3a4b6a",
+    paletteKey: keyof typeof PALETTES = "customerHome",
+    faceTowards?: { x: number; z: number },
   ): void => {
-    makeBox(
-      `nh_person_head_${x}_${z}`,
-      0.45,
-      0.45,
-      0.45,
-      new Vector3(x, 1.45, z),
-      "#f0c8a0",
-    );
-    makeBox(
-      `nh_person_body_${x}_${z}`,
-      0.5,
-      0.7,
-      0.35,
-      new Vector3(x, 0.95, z),
-      shirt,
-    );
-    makeBox(
-      `nh_person_legs_${x}_${z}`,
-      0.5,
-      0.55,
-      0.35,
-      new Vector3(x, 0.3, z),
-      pants,
-    );
+    const palette = PALETTES[paletteKey];
+    const id = `${paletteKey}_${x.toFixed(1)}_${z.toFixed(1)}`;
+    const c = new VoxelCharacter(scene, `nh_${id}`, palette);
+    c.root.parent = root;
+    c.root.position = new Vector3(x, 0, z);
+    if (faceTowards) {
+      c.root.rotation.y = Math.atan2(faceTowards.x - x, faceTowards.z - z);
+    }
   };
 
   // Incident marker — a floating "!" bubble above an incident.
@@ -638,6 +1154,146 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     makeBox(`nh_skip_rubble_${x}_${z}`, 2.2, 0.25, 1.1, new Vector3(x, 0.85, z), "#a23a2c");
   };
 
+  // ----- Side streets, sidewalks, and crossings -----
+  // Adding more streets so the neighbourhood reads as a real suburb with
+  // a connected road grid, not just a single cross-shape. Each side
+  // street has its own kerbs (sidewalks), centre dashes, and a named
+  // street sign at the corner.
+  const sideRoadDash = (
+    name: string,
+    along: "x" | "z",
+    fixed: number,
+    from: number,
+    to: number,
+  ): void => {
+    for (let v = from; v <= to; v += 3.2) {
+      const dash = MeshBuilder.CreateBox(
+        `${name}_${v}`,
+        along === "x"
+          ? { width: 1.2, height: 0.02, depth: 0.16 }
+          : { width: 0.16, height: 0.02, depth: 1.2 },
+        scene,
+      );
+      dash.position =
+        along === "x"
+          ? new Vector3(v, 0.085, fixed)
+          : new Vector3(fixed, 0.085, v);
+      dash.material = roadLine;
+      attach(dash);
+    }
+  };
+
+  // Maple Crescent — east-west residential street running through the
+  // northern half, in front of the home-claims zone.
+  makeRoad("nh_road_maple", 28, 3.5, new Vector3(20, 0.05, 20));
+  sideRoadDash("nh_dash_maple", "x", 20, 8, 32);
+  // Side kerbs (sidewalks) along Maple Crescent.
+  makeKerb("nh_kerb_maple_n", 28, 0.9, new Vector3(20, 0.07, 22.2));
+  makeKerb("nh_kerb_maple_s", 28, 0.9, new Vector3(20, 0.07, 17.8));
+
+  // Birch Lane — east-west street serving the southern apartment / civic
+  // area. Sits between the central road and the apartment block.
+  makeRoad("nh_road_birch", 36, 3.5, new Vector3(-10, 0.05, -10));
+  sideRoadDash("nh_dash_birch", "x", -10, -28, 6);
+  makeKerb("nh_kerb_birch_n", 36, 0.9, new Vector3(-10, 0.07, -7.8));
+  makeKerb("nh_kerb_birch_s", 36, 0.9, new Vector3(-10, 0.07, -12.2));
+
+  // Oak Drive — north-south street on the east side, connecting Maple
+  // Crescent to the main road. Placed at x=33 so it sits clear of the
+  // Northside Smash Repairs garage at x≈26-29.
+  makeRoad("nh_road_oak", 3.5, 28, new Vector3(33, 0.05, 8));
+  sideRoadDash("nh_dash_oak", "z", 33, -6, 22);
+  makeKerb("nh_kerb_oak_e", 0.9, 28, new Vector3(35.2, 0.07, 8));
+  makeKerb("nh_kerb_oak_w", 0.9, 28, new Vector3(30.8, 0.07, 8));
+
+  // Cedar Way — short north-south street west of the office, linking the
+  // travel hub area to the main road.
+  makeRoad("nh_road_cedar", 3.5, 22, new Vector3(-26, 0.05, 8));
+  sideRoadDash("nh_dash_cedar", "z", -26, -2, 18);
+  makeKerb("nh_kerb_cedar_e", 0.9, 22, new Vector3(-23.8, 0.07, 8));
+  makeKerb("nh_kerb_cedar_w", 0.9, 22, new Vector3(-28.2, 0.07, 8));
+
+  // Sidewalks along the main east-west and north-south roads. They sit
+  // just outside the asphalt (which is 5 wide centred on 0).
+  makeKerb("nh_kerb_main_n", 80, 0.9, new Vector3(0, 0.07, 2.95));
+  makeKerb("nh_kerb_main_s", 80, 0.9, new Vector3(0, 0.07, -2.95));
+  makeKerb("nh_kerb_main_e", 0.9, 80, new Vector3(2.95, 0.07, 0));
+  makeKerb("nh_kerb_main_w", 0.9, 80, new Vector3(-2.95, 0.07, 0));
+
+  // Zebra crossings around the central roundabout — four approaches.
+  makeCrosswalk("nh_xw_n", 0, 4.6, "ew", 4.0);
+  makeCrosswalk("nh_xw_s", 0, -4.6, "ew", 4.0);
+  makeCrosswalk("nh_xw_e", 4.6, 0, "ns", 4.0);
+  makeCrosswalk("nh_xw_w", -4.6, 0, "ns", 4.0);
+
+  // Street name signs at the corners of the new streets.
+  makeStreetSign(7.0, 22.5, "MAPLE CRESCENT", "#3a8fd6");
+  makeStreetSign(7.0, -12.5, "BIRCH LANE", "#5a8a4a");
+  makeStreetSign(36.5, 6.0, "OAK DRIVE", "#c44a3a");
+  makeStreetSign(-29.5, 6.0, "CEDAR WAY", "#7a4f9c");
+
+  // Extra suburban houses lining the new streets — these use the full
+  // makeSuburbanHouse recipe so the grid reads as a real neighbourhood
+  // rather than scattered boxes.
+  // Maple Crescent (north side, facing south onto the street).
+  makeSuburbanHouse("nh_maple_a", 12, 24.5, {
+    wall: "#e7d6c0", roof: "#7a4a3a", chimney: true, fence: true,
+    mailbox: true, sidewalkZ: 22.5, storeys: 1,
+  });
+  makeSuburbanHouse("nh_maple_b", 22, 24.5, {
+    wall: "#cfe1f0", roof: "#3a5fb0", chimney: true, fence: true,
+    mailbox: true, sidewalkZ: 22.5, storeys: 2,
+    fenceColor: "#e7d8c0",
+  });
+  makeSuburbanHouse("nh_maple_c", 30, 24.5, {
+    wall: "#f0d6b0", roof: "#5a6a7c", chimney: true, fence: true,
+    mailbox: true, sidewalkZ: 22.5, storeys: 1,
+  });
+  // Maple Crescent (south side, facing north) — built as low-detail
+  // back-of-house silhouettes since makeSuburbanHouse only faces -Z.
+  // We deliberately keep this band narrow (z=17.6) so it stays clear of
+  // the residential zone 1 buildings at z=14 and the trees behind them.
+  for (const [bx, bcolor, broof] of [
+    [16, "#e7c8a0", "#7a4a3a"],
+    [26, "#cfe1f0", "#3a5fb0"],
+  ] as Array<[number, string, string]>) {
+    makeBox(`nh_maple_back_found_${bx}`, 4.6, 0.4, 2.6, new Vector3(bx, 0.2, 17.6), "#9a8f7a");
+    makeBox(`nh_maple_back_walls_${bx}`, 4.2, 2.4, 2.2, new Vector3(bx, 1.6, 17.6), bcolor);
+    makeGableRoof(`nh_maple_back_roof_${bx}`, 4.0, 2.2, bx, 17.6, 2.8, broof, "#e7d8c0");
+    makeChimney(bx + 1.0, 17.9, 3.2, "#7a4a3a");
+  }
+
+  // Birch Lane (north side, facing south).
+  makeSuburbanHouse("nh_birch_a", -22, -7.5, {
+    wall: "#e7d6c0", roof: "#5a4a3a", chimney: true, fence: true,
+    mailbox: true, sidewalkZ: -8.5, storeys: 1,
+  });
+  makeSuburbanHouse("nh_birch_b", -2, -7.5, {
+    wall: "#f0d6b0", roof: "#7a4a3a", chimney: true, fence: true,
+    mailbox: true, sidewalkZ: -8.5, storeys: 1,
+  });
+
+  // Oak Drive (east side, facing west — built as a custom rotated frame).
+  // ox=37 places houses east of the road centred at x=33.
+  for (const [oz, owall, oroof] of [
+    [16, "#cfe1f0", "#3a5fb0"],
+    [6, "#f0e6d2", "#5a6a7c"],
+    [-2, "#e7c8a0", "#7a4a3a"],
+  ] as Array<[number, string, string]>) {
+    const ox = 37;
+    makeBox(`nh_oak_found_${oz}`, 4.6, 0.4, 4.0, new Vector3(ox, 0.2, oz), "#9a8f7a");
+    makeBox(`nh_oak_walls_${oz}`, 4.2, 2.6, 3.6, new Vector3(ox, 1.7, oz), owall);
+    makeGableRoof(`nh_oak_roof_${oz}`, 4.0, 3.6, ox, oz, 3.0, oroof, "#f4f0e6");
+    makeChimney(ox - 1.0, oz - 0.5, 3.4, "#7a4a3a");
+    // Door + windows face west toward the street.
+    makeBox(`nh_oak_door_${oz}`, 0.16, 1.7, 0.95, new Vector3(ox - 2.15, 0.85, oz), "#5a3a22");
+    makeBox(`nh_oak_step_${oz}`, 0.5, 0.16, 1.4, new Vector3(ox - 2.4, 0.5, oz), "#cfc8b4");
+    makeMullionedWindow(`nh_oak_winN_${oz}`, ox - 2.1, 1.7, oz - 1.2, 0.85, 0.85, "west");
+    makeMullionedWindow(`nh_oak_winS_${oz}`, ox - 2.1, 1.7, oz + 1.2, 0.85, 0.85, "west");
+    makeFrontPath(`nh_oak_path_${oz}`, ox - 2.6, oz, 35.5, oz);
+    makeMailbox(35.6, oz - 1.6);
+  }
+
   // ----- Zava Claims Office (central anchor) -----
   // The office sits just north-west of the roundabout so the front door
   // faces the central crossroads.
@@ -740,14 +1396,32 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     const zx = 16;
     const zz = 14;
 
-    // House 1 (the burst-pipe house)
-    makeBox("nh_home_h1_base", 5, 2.6, 4, new Vector3(zx, 1.3, zz), "#e7c8a0");
-    makeRoof("nh_home_h1_roof", 4.8, 2.4, 4.2, new Vector3(zx, 3.1, zz), "#b04a3a");
-    makeBox("nh_home_h1_door", 0.9, 1.6, 0.15, new Vector3(zx, 0.8, zz - 2.05), "#5a3a22");
-    makeBox("nh_home_h1_win1", 1.0, 0.8, 0.1, new Vector3(zx - 1.5, 1.6, zz - 2.05), "#cfe7ff");
-    makeBox("nh_home_h1_win2", 1.0, 0.8, 0.1, new Vector3(zx + 1.5, 1.6, zz - 2.05), "#cfe7ff");
+    // House 1 (the burst-pipe house) — replaces the diamond-roof box with
+    // a full suburban look: foundation, mullioned windows, chimney,
+    // pitched gable roof, picket fence, front path.
+    makeBox("nh_home_h1_found", 5.4, 0.4, 4.4, new Vector3(zx, 0.2, zz), "#9a8f7a");
+    makeBox("nh_home_h1_base", 5, 2.6, 4, new Vector3(zx, 1.7, zz), "#e7c8a0");
+    makeBox(
+      "nh_home_h1_trim",
+      5.2,
+      0.18,
+      4.2,
+      new Vector3(zx, 2.91, zz),
+      "#f4f0e6",
+    );
+    makeGableRoof("nh_home_h1_roof", 4.8, 4, zx, zz, 3.0, "#b04a3a", "#f4f0e6");
+    makeChimney(zx + 1.4, zz + 0.6, 3.4, "#a23a2c");
+    makeBox("nh_home_h1_door", 0.95, 1.7, 0.16, new Vector3(zx, 0.85, zz - 2.05), "#5a3a22");
+    makeBox("nh_home_h1_step", 1.4, 0.16, 0.5, new Vector3(zx, 0.5, zz - 2.3), "#cfc8b4");
+    makeMullionedWindow("nh_home_h1_winL", zx - 1.55, 1.7, zz - 2.0, 1.0, 0.85, "south");
+    makeMullionedWindow("nh_home_h1_winR", zx + 1.55, 1.7, zz - 2.0, 1.0, 0.85, "south");
+    makeMullionedWindow("nh_home_h1_winE", zx + 2.5, 1.7, zz, 0.9, 0.85, "east");
     // Garden / driveway
     makeBox("nh_home_h1_drive", 2.4, 0.05, 3, new Vector3(zx, 0.06, zz - 4), "#b8b0a0");
+    makeFrontPath("nh_home_h1_path", zx, zz - 2.6, zx, zz - 5.4);
+    makePicketFence(zx - 3.0, zx - 1.2, zz - 5.6);
+    makePicketFence(zx + 1.2, zx + 3.0, zz - 5.6);
+    makeMailbox(zx + 2.6, zz - 5.3);
     // Plumber van out front
     makeBox("nh_van_body", 2.6, 1.2, 1.4, new Vector3(zx + 3.6, 0.7, zz - 4.5), "#3a8fd6");
     makeBox("nh_van_roof", 2.4, 0.6, 1.3, new Vector3(zx + 3.2, 1.55, zz - 4.5), "#3a8fd6");
@@ -755,10 +1429,26 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     // Water puddle
     makeBox("nh_puddle", 1.6, 0.05, 1.0, new Vector3(zx - 0.5, 0.07, zz - 3.5), "#6cb8e8");
 
-    // Neighbouring house
-    makeBox("nh_home_h2_base", 4.2, 2.4, 3.6, new Vector3(zx + 8, 1.2, zz), "#f0d6b0");
-    makeRoof("nh_home_h2_roof", 4.0, 2.2, 3.8, new Vector3(zx + 8, 2.9, zz), "#7a4a3a");
-    makeBox("nh_home_h2_door", 0.8, 1.5, 0.15, new Vector3(zx + 8, 0.75, zz - 1.85), "#5a3a22");
+    // Neighbouring house — also gets a real gable roof + chimney.
+    makeBox("nh_home_h2_found", 4.6, 0.4, 4.0, new Vector3(zx + 8, 0.2, zz), "#9a8f7a");
+    makeBox("nh_home_h2_base", 4.2, 2.4, 3.6, new Vector3(zx + 8, 1.6, zz), "#f0d6b0");
+    makeBox(
+      "nh_home_h2_trim",
+      4.4,
+      0.18,
+      3.8,
+      new Vector3(zx + 8, 2.71, zz),
+      "#f4f0e6",
+    );
+    makeGableRoof("nh_home_h2_roof", 4.0, 3.6, zx + 8, zz, 2.8, "#7a4a3a", "#e7d8c0");
+    makeChimney(zx + 9.2, zz + 0.5, 3.2, "#7a4a3a");
+    makeBox("nh_home_h2_door", 0.85, 1.6, 0.16, new Vector3(zx + 8, 0.8, zz - 1.85), "#5a3a22");
+    makeBox("nh_home_h2_step", 1.3, 0.16, 0.5, new Vector3(zx + 8, 0.5, zz - 2.1), "#cfc8b4");
+    makeMullionedWindow("nh_home_h2_winL", zx + 6.8, 1.7, zz - 1.8, 0.9, 0.8, "south");
+    makeMullionedWindow("nh_home_h2_winR", zx + 9.2, 1.7, zz - 1.8, 0.9, 0.8, "south");
+    makeFrontPath("nh_home_h2_path", zx + 8, zz - 2.4, zx + 8, zz - 5.0);
+    makePicketFence(zx + 5.4, zx + 7.4, zz - 5.6, 0, "#e7d8c0");
+    makePicketFence(zx + 8.6, zx + 10.6, zz - 5.6, 0, "#e7d8c0");
 
     // Trees
     makeTree(zx - 3.5, zz + 2);
@@ -766,7 +1456,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     makeTree(zx + 11, zz - 2);
 
     // Customer (Michael)
-    makePerson(zx - 1, zz - 5, "#d6a35c");
+    makePerson(zx - 1, zz - 5, "customerHome", { x: -7, z: -4 });
 
     // Water-extraction & drying gear staged out front — supports the
     // emergency make-safe story (scenario 3, supplier coordination step).
@@ -824,7 +1514,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     makeBox("nh_tow_hook", 1.4, 0.2, 0.2, new Vector3(zx + 9.6, 0.7, zz - 0.8), "#3a3a3a");
 
     // Driver standing nearby (Aisha)
-    makePerson(zx + 1.2, zz + 1.2, "#b03a6f");
+    makePerson(zx + 1.2, zz + 1.2, "customerMotor", { x: -7, z: -4 });
 
     // Northside Smash Repairs garage — supports the supplier coordination
     // step in scenario 1 (motor collision).
@@ -958,7 +1648,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     makeBox("nh_fire_ladder", 3.0, 0.15, 0.3, new Vector3(zx + 4.6, 1.95, zz - 5), "#b8b0a0");
 
     // Customer (Tom)
-    makePerson(cafeX - 1.5, zz - 4.5, "#5a8a4a");
+    makePerson(cafeX - 1.5, zz - 4.5, "customerBusiness", { x: -7, z: -4 });
 
     // Cordon cones around the cafe entrance — fire scene under investigation
     makeCone(cafeX - 2.4, zz - 3.4);
@@ -1052,7 +1742,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     makeBox("nh_lug_lost", 0.7, 0.4, 0.5, new Vector3(zx + 5, 0.3, zz + 2), "#5a8a4a");
 
     // Worried traveller (Grace) on phone
-    makePerson(zx - 1, zz + 0.5, "#e07a2c");
+    makePerson(zx - 1, zz + 0.5, "customerTravel", { x: -7, z: -4 });
 
     makeIncidentMarker(zx - 2, 2.4, zz + 1.5, "luggage");
 
@@ -1072,12 +1762,25 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     const zx = 16;
     const zz = -16;
 
-    // Calm house, set apart
-    makeBox("nh_life_base", 4.6, 2.6, 4, new Vector3(zx, 1.3, zz), "#f0e6d2");
-    makeRoof("nh_life_roof", 4.6, 2.2, 4.2, new Vector3(zx, 3.0, zz), "#5a6a7c");
-    makeBox("nh_life_door", 0.9, 1.6, 0.15, new Vector3(zx, 0.8, zz - 2.05), "#3a3a3a");
-    makeBox("nh_life_win1", 1.0, 0.8, 0.1, new Vector3(zx - 1.5, 1.6, zz - 2.05), "#cfe7ff");
-    makeBox("nh_life_win2", 1.0, 0.8, 0.1, new Vector3(zx + 1.5, 1.6, zz - 2.05), "#cfe7ff");
+    // Calm house, set apart — full suburban detail with a slate gable
+    // roof, a chimney, mullioned windows, and a soft front path.
+    makeBox("nh_life_found", 5.0, 0.4, 4.4, new Vector3(zx, 0.2, zz), "#9a8f7a");
+    makeBox("nh_life_base", 4.6, 2.6, 4, new Vector3(zx, 1.7, zz), "#f0e6d2");
+    makeBox(
+      "nh_life_trim",
+      4.8,
+      0.18,
+      4.2,
+      new Vector3(zx, 2.91, zz),
+      "#fff8e6",
+    );
+    makeGableRoof("nh_life_roof", 4.6, 4, zx, zz, 3.0, "#5a6a7c", "#dcd0bc");
+    makeChimney(zx - 1.4, zz + 0.5, 3.4, "#7a6a5c");
+    makeBox("nh_life_door", 0.95, 1.7, 0.16, new Vector3(zx, 0.85, zz - 2.05), "#3a3a3a");
+    makeBox("nh_life_step", 1.4, 0.16, 0.5, new Vector3(zx, 0.5, zz - 2.3), "#cfc8b4");
+    makeMullionedWindow("nh_life_winL", zx - 1.55, 1.7, zz - 2.0, 1.0, 0.85, "south");
+    makeMullionedWindow("nh_life_winR", zx + 1.55, 1.7, zz - 2.0, 1.0, 0.85, "south");
+    makeMullionedWindow("nh_life_winE", zx + 2.3, 1.7, zz, 0.9, 0.85, "east");
 
     // Driveway with parked family car
     makeBox("nh_life_drive", 2.6, 0.05, 4, new Vector3(zx - 3.5, 0.07, zz - 1), "#b8b0a0");
@@ -1108,7 +1811,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
     makeBox("nh_life_wreath_ribbon", 0.18, 0.55, 0.06, new Vector3(zx, 1.25, zz - 2.08), "#c2566f");
 
     // Beneficiary (Robert) walking calmly down the path
-    makePerson(zx - 2.5, zz - 4, "#2a3a5c", "#3a3a3a");
+    makePerson(zx - 2.5, zz - 4, "customerLife", { x: -7, z: -4 });
 
     // Soft heart marker (gentle)
     makeIncidentMarker(zx, 4.6, zz, "heart");
@@ -1181,7 +1884,7 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
 
     // Claimant (Jordan) standing on the path with arms out — body language
     // is left to the viewer's imagination; he's just a small voxel figure.
-    makePerson(zx - 1.5, zz - 4, "#7a6a8a");
+    makePerson(zx - 1.5, zz - 4, "customerContents", { x: -7, z: -4 });
 
     // Trees / planter beside the building
     makeTree(zx - 5, zz - 1, 0.9);
@@ -1334,13 +2037,39 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
   makeCone(26, 1);
 
   // ----- Background filler: a few generic suburban houses -----
-  for (const [hx, hz, color, roof] of [
-    [-30, 6, "#e7c8a0", "#7a4a3a"],
-    [30, 10, "#e7d6c0", "#5a6a7c"],
-    [10, 22, "#f0d6b0", "#5a6a7c"],
-  ] as Array<[number, number, string, string]>) {
-    makeBox(`nh_filler_base_${hx}_${hz}`, 3.6, 2.2, 3.2, new Vector3(hx, 1.1, hz), color);
-    makeRoof(`nh_filler_roof_${hx}_${hz}`, 3.4, 2.0, 3.4, new Vector3(hx, 2.6, hz), roof);
+  // These now use the full suburban-house recipe so they don't read as
+  // "fake" boxes. Each gets a foundation, mullioned windows, gable roof,
+  // chimney, picket fence, and a front path. Positions chosen so they
+  // line a side street or sit on an unused verge — clear of the other
+  // zones and the new streets above.
+  const fillers: Array<{
+    cx: number;
+    cz: number;
+    wall: string;
+    roof: string;
+    storeys?: 1 | 2;
+    sidewalkZ: number;
+    fenceColor?: string;
+  }> = [
+    // West side, between Cedar Way and the main road.
+    { cx: -22, cz: 6, wall: "#e7c8a0", roof: "#7a4a3a", sidewalkZ: 4.4 },
+    // West side, south of the main road, on Cedar Way.
+    { cx: -22, cz: -2, wall: "#f0d6b0", roof: "#5a6a7c", sidewalkZ: -3.6 },
+    // North-east, between Maple Crescent houses (a two-storey home).
+    { cx: 4, cz: 24.5, wall: "#cfe1f0", roof: "#3a5fb0", sidewalkZ: 22.5,
+      storeys: 2, fenceColor: "#e7d8c0" },
+  ];
+  for (const f of fillers) {
+    makeSuburbanHouse(`nh_filler_${f.cx}_${f.cz}`, f.cx, f.cz, {
+      wall: f.wall,
+      roof: f.roof,
+      storeys: f.storeys,
+      chimney: true,
+      fence: true,
+      mailbox: true,
+      sidewalkZ: f.sidewalkZ,
+      fenceColor: f.fenceColor,
+    });
   }
 
   // ----- Streetlights & post boxes along the main road -----
@@ -1394,10 +2123,16 @@ export function buildNeighbourhood(scene: Scene): TransformNode {
   }
 
   // ----- Decorative customer trail: a few people on streets heading to office -----
-  makePerson(0, -10, "#3a8fd6");
-  makePerson(8, -2, "#c44a3a");
-  makePerson(-3, 6, "#5a8a4a");
-  makePerson(-2, -3, "#b03a6f");
+  const office = { x: -7, z: -4 };
+  makePerson(0, -10, "intakeOfficer", office);
+  makePerson(8, -2, "supplierCoord", office);
+  makePerson(-3, 6, "claimsAssessor", office);
+  makePerson(-2, -3, "lossAdjuster", office);
+  // Extra figures along the new side streets to make the suburb feel lived-in.
+  makePerson(18, 20, "commsSpecialist", office);
+  makePerson(26, 16, "settlementOfficer", office);
+  makePerson(-12, -19, "fraudInvestigator", office);
+  makePerson(30, 6, "teamLeader", office);
 
   return root;
 }
