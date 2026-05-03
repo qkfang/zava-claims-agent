@@ -1726,6 +1726,22 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeBox("nh_rental_top", 1.4, 0.55, 1.2, new Vector3(gx - 3.2, 1.1, gz + 1.5), "#4a8a4a");
     makeBox("nh_rental_win", 1.2, 0.4, 1.25, new Vector3(gx - 3.2, 1.1, gz + 1.5), "#cfe7ff");
     makeBox("nh_rental_label", 1.2, 0.3, 0.06, new Vector3(gx - 3.2, 1.65, gz + 0.85), "#ffd166");
+    // Wheels so the rental reads as a car instead of a floating block.
+    for (const [dx, dz] of [
+      [0.85, 0.6],
+      [-0.85, 0.6],
+      [0.85, -0.6],
+      [-0.85, -0.6],
+    ] as Array<[number, number]>) {
+      makeBox(
+        `nh_rental_wheel_${dx}_${dz}`,
+        0.25,
+        0.45,
+        0.45,
+        new Vector3(gx - 3.2 + dx, 0.22, gz + 1.5 + dz),
+        "#1c2230",
+      );
+    }
 
     // Incident marker
     makeIncidentMarker(zx + 1.5, 3.4, zz - 0.8, "car");
@@ -1966,6 +1982,21 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeBox("nh_life_car_body", 2.4, 0.7, 1.3, new Vector3(zx - 3.5, 0.5, zz - 1), "#5a6a7c");
     makeBox("nh_life_car_top", 1.4, 0.55, 1.2, new Vector3(zx - 3.5, 1.1, zz - 1), "#3a4a5c");
     makeBox("nh_life_car_win", 1.2, 0.4, 1.25, new Vector3(zx - 3.5, 1.1, zz - 1), "#cfe7ff");
+    for (const [dx, dz] of [
+      [0.85, 0.6],
+      [-0.85, 0.6],
+      [0.85, -0.6],
+      [-0.85, -0.6],
+    ] as Array<[number, number]>) {
+      makeBox(
+        `nh_life_car_wheel_${dx}_${dz}`,
+        0.25,
+        0.45,
+        0.45,
+        new Vector3(zx - 3.5 + dx, 0.22, zz - 1 + dz),
+        "#1c2230",
+      );
+    }
 
     // Garden — flowerbed (no alarm symbols)
     makeBox("nh_life_bed", 3.0, 0.1, 0.6, new Vector3(zx, 0.12, zz + 2.4), "#7a4f2a");
@@ -2064,6 +2095,21 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeBox("nh_inv_body", 2.4, 0.7, 1.3, new Vector3(zx + 5, 0.5, zz - 3.5), "#2a3a5c");
     makeBox("nh_inv_top", 1.4, 0.55, 1.2, new Vector3(zx + 5, 1.1, zz - 3.5), "#1c2230");
     makeBox("nh_inv_win", 1.2, 0.4, 1.25, new Vector3(zx + 5, 1.1, zz - 3.5), "#cfe7ff");
+    for (const [dx, dz] of [
+      [0.85, 0.6],
+      [-0.85, 0.6],
+      [0.85, -0.6],
+      [-0.85, -0.6],
+    ] as Array<[number, number]>) {
+      makeBox(
+        `nh_inv_wheel_${dx}_${dz}`,
+        0.25,
+        0.45,
+        0.45,
+        new Vector3(zx + 5 + dx, 0.22, zz - 3.5 + dz),
+        "#1c2230",
+      );
+    }
 
     // Claimant (Jordan) standing on the path with arms out — body language
     // is left to the viewer's imagination; he's just a small voxel figure.
@@ -2481,7 +2527,9 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // static incident scenery (parked cars, smashed bumpers, plumber van etc.).
   const ambient = new NeighbourhoodAmbient(scene, root);
 
-  // Cars looping along the side streets.
+  // Cars looping along the side streets. Each route gets a different
+  // vehicle type so the neighbourhood reads as a real mixed-traffic
+  // street rather than a row of identical sedans.
   // Maple Crescent (z=20) — runs east-west; lanes at z=19 (eastbound) and z=21 (westbound).
   ambient.addCar(
     "maple_e",
@@ -2489,7 +2537,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       [8, 19],
       [32, 19],
     ],
-    { bodyColor: "#5fa657", topColor: "#3a7a3a", speed: 4.5 },
+    { type: "jeep", bodyColor: "#5fa657", topColor: "#3a7a3a", speed: 4.5 },
   );
   ambient.addCar(
     "maple_w",
@@ -2497,7 +2545,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       [32, 21],
       [8, 21],
     ],
-    { bodyColor: "#c188d4", topColor: "#7a4f9c", speed: 4.0 },
+    { type: "mini", bodyColor: "#c188d4", topColor: "#3a3a3a", speed: 4.0 },
   );
   // Birch Lane (z=-10) — east-west. Eastbound lane only to keep clear of the
   // apartment block / café approach.
@@ -2507,7 +2555,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       [-26, -11],
       [6, -11],
     ],
-    { bodyColor: "#ffd166", topColor: "#c4a14a", speed: 4.2 },
+    { type: "sedan", bodyColor: "#ffd166", topColor: "#c4a14a", speed: 4.2 },
   );
   // Oak Drive (x=33) — north-south, avoiding the motor incident at x=22.
   ambient.addCar(
@@ -2516,7 +2564,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       [34, -4],
       [34, 20],
     ],
-    { bodyColor: "#3a8fd6", topColor: "#1f5fa0", speed: 4.0 },
+    { type: "jeep", bodyColor: "#3a8fd6", topColor: "#1f5fa0", speed: 4.0 },
   );
   // Cedar Way (x=-26) — north-south on the west side.
   ambient.addCar(
@@ -2525,7 +2573,33 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       [-27, 18],
       [-27, -1],
     ],
-    { bodyColor: "#e84b3a", topColor: "#a23a2c", speed: 4.0 },
+    { type: "mini", bodyColor: "#e84b3a", topColor: "#1c1c1c", speed: 4.0 },
+  );
+
+  // Bicycles and scooters share the quieter lanes for a bit of light traffic.
+  ambient.addCar(
+    "maple_bike",
+    [
+      [10, 20],
+      [30, 20],
+    ],
+    { type: "bicycle", bodyColor: "#2b6cb0", topColor: "#f08a3a", speed: 2.6 },
+  );
+  ambient.addCar(
+    "vert_scooter",
+    [
+      [3, 8],
+      [3, -8],
+    ],
+    { type: "scooter", bodyColor: "#e84b3a", topColor: "#f8d34a", speed: 3.2 },
+  );
+  ambient.addCar(
+    "birch_bike_w",
+    [
+      [6, -9],
+      [-26, -9],
+    ],
+    { type: "bicycle", bodyColor: "#4a8a4a", topColor: "#ffd166", speed: 2.4 },
   );
 
   // Wandering pedestrians on sidewalks. Routes hug the kerbs so the
@@ -2574,10 +2648,65 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   );
 
   // Friendly pets bumbling around grass patches well clear of the roads
-  // and incident scenery (corners of the map are mostly empty grass).
-  ambient.addPet("nw_dog", { cx: -30, cz: 28, radius: 3.0 }, { furColor: "#c8a878" });
-  ambient.addPet("se_dog", { cx: 30, cz: -28, radius: 3.0 }, { furColor: "#5a4a3a" });
-  ambient.addPet("ne_dog", { cx: 30, cz: 30, radius: 2.5 }, { furColor: "#e7c8a0" });
+  // and incident scenery (corners of the map are mostly empty grass). A
+  // mix of dogs, cats, and a rabbit so the neighbourhood has more life.
+  ambient.addPet(
+    "nw_dog",
+    { cx: -30, cz: 28, radius: 3.0 },
+    { type: "dog", furColor: "#c8a878" },
+  );
+  ambient.addPet(
+    "se_cat",
+    { cx: 30, cz: -28, radius: 3.0 },
+    { type: "cat", furColor: "#3a3a3a" },
+  );
+  ambient.addPet(
+    "ne_dog",
+    { cx: 30, cz: 30, radius: 2.5 },
+    { type: "dog", furColor: "#e7c8a0" },
+  );
+  ambient.addPet(
+    "sw_rabbit",
+    { cx: -30, cz: -26, radius: 2.5 },
+    { type: "rabbit", furColor: "#bfa68a" },
+  );
+  ambient.addPet(
+    "n_cat",
+    { cx: -8, cz: 30, radius: 2.5 },
+    { type: "cat", furColor: "#e0a060" },
+  );
+
+  // Birds gliding overhead in lazy loops above the roads.
+  ambient.addBird(
+    "bird_loop_n",
+    [
+      [-28, 26],
+      [28, 26],
+      [28, 8],
+      [-28, 8],
+    ],
+    { bodyColor: "#3a4a52", wingColor: "#1c2a32", altitude: 8, speed: 6.0 },
+  );
+  ambient.addBird(
+    "bird_loop_s",
+    [
+      [28, -26],
+      [-28, -26],
+      [-28, -6],
+      [28, -6],
+    ],
+    { bodyColor: "#c44a3a", wingColor: "#7a2a20", altitude: 7, speed: 5.5 },
+  );
+  ambient.addBird(
+    "bird_high",
+    [
+      [-20, -10],
+      [20, 10],
+      [-20, 18],
+      [20, -18],
+    ],
+    { bodyColor: "#f4d36a", wingColor: "#b89a3a", altitude: 10, speed: 7.0 },
+  );
 
   // Register per-scenario incident animations.
   if (homePuddle && homeKitchenSource) {

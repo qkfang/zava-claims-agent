@@ -37,6 +37,18 @@ interface IncidentAnimation {
 }
 
 /**
+ * Vehicle types supported by {@link NeighbourhoodAmbient.addCar}. Each
+ * variant has a distinctive voxel silhouette so a row of ambient
+ * traffic feels varied instead of "five identical sedans".
+ */
+export type VehicleType =
+  | "sedan"
+  | "jeep"
+  | "mini"
+  | "bicycle"
+  | "scooter";
+
+/**
  * Build a simple voxel sedan (chassis + cabin + windows + four wheels)
  * parented under a single TransformNode the caller can move and rotate.
  *
@@ -105,6 +117,436 @@ function buildCarMeshes(
     w.parent = parent;
     w.position = new Vector3(dx, 0.22, dz);
     w.material = wheelMat;
+  }
+}
+
+/**
+ * Build a chunky voxel jeep / SUV (taller cabin, exposed roll cage,
+ * larger wheels). Long axis runs along local +Z, matching the sedan.
+ */
+function buildJeepMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  bodyHex: string,
+  topHex: string,
+): void {
+  const bodyMat = new StandardMaterial(`${parent.name}_body_mat`, scene);
+  bodyMat.diffuseColor = Color3.FromHexString(bodyHex);
+  bodyMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const topMat = new StandardMaterial(`${parent.name}_top_mat`, scene);
+  topMat.diffuseColor = Color3.FromHexString(topHex);
+  topMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const winMat = new StandardMaterial(`${parent.name}_win_mat`, scene);
+  winMat.diffuseColor = Color3.FromHexString("#cfe7ff");
+
+  // Tall, square chassis.
+  const body = MeshBuilder.CreateBox(
+    `${parent.name}_body`,
+    { width: 1.45, height: 0.85, depth: 2.2 },
+    scene,
+  );
+  body.parent = parent;
+  body.position = new Vector3(0, 0.6, 0);
+  body.material = bodyMat;
+
+  // Boxy upright cabin sitting almost square on the chassis.
+  const cab = MeshBuilder.CreateBox(
+    `${parent.name}_cab`,
+    { width: 1.35, height: 0.85, depth: 1.6 },
+    scene,
+  );
+  cab.parent = parent;
+  cab.position = new Vector3(0, 1.45, -0.1);
+  cab.material = topMat;
+
+  // Front windscreen.
+  const win = MeshBuilder.CreateBox(
+    `${parent.name}_win`,
+    { width: 1.4, height: 0.5, depth: 1.55 },
+    scene,
+  );
+  win.parent = parent;
+  win.position = new Vector3(0, 1.55, -0.1);
+  win.material = winMat;
+
+  // Front grille / bull bar.
+  const grille = MeshBuilder.CreateBox(
+    `${parent.name}_grille`,
+    { width: 1.5, height: 0.35, depth: 0.18 },
+    scene,
+  );
+  grille.parent = parent;
+  grille.position = new Vector3(0, 0.5, 1.15);
+  const grilleMat = new StandardMaterial(`${parent.name}_grille_mat`, scene);
+  grilleMat.diffuseColor = Color3.FromHexString("#1c2230");
+  grille.material = grilleMat;
+
+  // Spare wheel on the back.
+  const spare = MeshBuilder.CreateBox(
+    `${parent.name}_spare`,
+    { width: 0.55, height: 0.55, depth: 0.18 },
+    scene,
+  );
+  spare.parent = parent;
+  spare.position = new Vector3(0, 0.95, -1.2);
+  const spareMat = new StandardMaterial(`${parent.name}_spare_mat`, scene);
+  spareMat.diffuseColor = Color3.FromHexString("#1c2230");
+  spare.material = spareMat;
+
+  // Four chunky wheels.
+  const wheelMat = new StandardMaterial(`${parent.name}_wheel_mat`, scene);
+  wheelMat.diffuseColor = Color3.FromHexString("#1c2230");
+  for (const [dx, dz] of [
+    [0.65, 0.8],
+    [-0.65, 0.8],
+    [0.65, -0.8],
+    [-0.65, -0.8],
+  ] as Array<[number, number]>) {
+    const w = MeshBuilder.CreateBox(
+      `${parent.name}_wheel_${dx}_${dz}`,
+      { width: 0.3, height: 0.6, depth: 0.6 },
+      scene,
+    );
+    w.parent = parent;
+    w.position = new Vector3(dx, 0.3, dz);
+    w.material = wheelMat;
+  }
+}
+
+/**
+ * Build a stubby voxel Mini Cooper-style hatchback: short, rounded
+ * silhouette with a contrasting roof stripe. Long axis runs along
+ * local +Z.
+ */
+function buildMiniCooperMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  bodyHex: string,
+  topHex: string,
+): void {
+  const bodyMat = new StandardMaterial(`${parent.name}_body_mat`, scene);
+  bodyMat.diffuseColor = Color3.FromHexString(bodyHex);
+  bodyMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const topMat = new StandardMaterial(`${parent.name}_top_mat`, scene);
+  topMat.diffuseColor = Color3.FromHexString(topHex);
+  const winMat = new StandardMaterial(`${parent.name}_win_mat`, scene);
+  winMat.diffuseColor = Color3.FromHexString("#cfe7ff");
+
+  // Short, squat body.
+  const body = MeshBuilder.CreateBox(
+    `${parent.name}_body`,
+    { width: 1.2, height: 0.65, depth: 1.9 },
+    scene,
+  );
+  body.parent = parent;
+  body.position = new Vector3(0, 0.45, 0);
+  body.material = bodyMat;
+
+  // Rounded cabin slightly inset.
+  const top = MeshBuilder.CreateBox(
+    `${parent.name}_top`,
+    { width: 1.1, height: 0.55, depth: 1.05 },
+    scene,
+  );
+  top.parent = parent;
+  top.position = new Vector3(0, 1.05, -0.05);
+  top.material = topMat;
+
+  // Wraparound windows.
+  const win = MeshBuilder.CreateBox(
+    `${parent.name}_win`,
+    { width: 1.15, height: 0.32, depth: 0.95 },
+    scene,
+  );
+  win.parent = parent;
+  win.position = new Vector3(0, 1.1, -0.05);
+  win.material = winMat;
+
+  // Roof stripe (contrast).
+  const stripeMat = new StandardMaterial(`${parent.name}_stripe_mat`, scene);
+  stripeMat.diffuseColor = Color3.FromHexString("#f8f8f8");
+  const stripe = MeshBuilder.CreateBox(
+    `${parent.name}_stripe`,
+    { width: 0.5, height: 0.06, depth: 1.05 },
+    scene,
+  );
+  stripe.parent = parent;
+  stripe.position = new Vector3(0, 1.36, -0.05);
+  stripe.material = stripeMat;
+
+  // Headlights (round-ish blocks).
+  const headMat = new StandardMaterial(`${parent.name}_head_mat`, scene);
+  headMat.diffuseColor = Color3.FromHexString("#fff5c8");
+  headMat.emissiveColor = Color3.FromHexString("#fff5c8").scale(0.3);
+  for (const dx of [-0.4, 0.4]) {
+    const h = MeshBuilder.CreateBox(
+      `${parent.name}_head_${dx}`,
+      { width: 0.22, height: 0.22, depth: 0.08 },
+      scene,
+    );
+    h.parent = parent;
+    h.position = new Vector3(dx, 0.5, 0.95);
+    h.material = headMat;
+  }
+
+  // Four small wheels.
+  const wheelMat = new StandardMaterial(`${parent.name}_wheel_mat`, scene);
+  wheelMat.diffuseColor = Color3.FromHexString("#1c2230");
+  for (const [dx, dz] of [
+    [0.5, 0.65],
+    [-0.5, 0.65],
+    [0.5, -0.65],
+    [-0.5, -0.65],
+  ] as Array<[number, number]>) {
+    const w = MeshBuilder.CreateBox(
+      `${parent.name}_wheel_${dx}_${dz}`,
+      { width: 0.22, height: 0.42, depth: 0.42 },
+      scene,
+    );
+    w.parent = parent;
+    w.position = new Vector3(dx, 0.2, dz);
+    w.material = wheelMat;
+  }
+}
+
+/**
+ * Build a voxel bicycle with a rider (frame + two wheels + handlebar +
+ * seat + simple cyclist). Long axis runs along local +Z.
+ */
+function buildBicycleMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  frameHex: string,
+  shirtHex: string,
+): void {
+  const frameMat = new StandardMaterial(`${parent.name}_frame_mat`, scene);
+  frameMat.diffuseColor = Color3.FromHexString(frameHex);
+  const wheelMat = new StandardMaterial(`${parent.name}_wheel_mat`, scene);
+  wheelMat.diffuseColor = Color3.FromHexString("#1c2230");
+
+  // Two thin wheels.
+  for (const dz of [0.6, -0.6]) {
+    const w = MeshBuilder.CreateBox(
+      `${parent.name}_wheel_${dz}`,
+      { width: 0.1, height: 0.55, depth: 0.55 },
+      scene,
+    );
+    w.parent = parent;
+    w.position = new Vector3(0, 0.3, dz);
+    w.material = wheelMat;
+  }
+
+  // Frame: top tube + down tube approximated as two boxes.
+  const top = MeshBuilder.CreateBox(
+    `${parent.name}_frame_top`,
+    { width: 0.1, height: 0.1, depth: 1.0 },
+    scene,
+  );
+  top.parent = parent;
+  top.position = new Vector3(0, 0.7, 0);
+  top.material = frameMat;
+  const down = MeshBuilder.CreateBox(
+    `${parent.name}_frame_down`,
+    { width: 0.1, height: 0.1, depth: 0.9 },
+    scene,
+  );
+  down.parent = parent;
+  down.position = new Vector3(0, 0.45, 0.05);
+  down.material = frameMat;
+
+  // Seat.
+  const seatMat = new StandardMaterial(`${parent.name}_seat_mat`, scene);
+  seatMat.diffuseColor = Color3.FromHexString("#1c2230");
+  const seat = MeshBuilder.CreateBox(
+    `${parent.name}_seat`,
+    { width: 0.18, height: 0.08, depth: 0.3 },
+    scene,
+  );
+  seat.parent = parent;
+  seat.position = new Vector3(0, 0.92, -0.45);
+  seat.material = seatMat;
+
+  // Handlebars.
+  const bar = MeshBuilder.CreateBox(
+    `${parent.name}_bar`,
+    { width: 0.5, height: 0.08, depth: 0.08 },
+    scene,
+  );
+  bar.parent = parent;
+  bar.position = new Vector3(0, 0.95, 0.55);
+  bar.material = frameMat;
+
+  // Rider: torso + head + arms + legs (no animation — silhouette only).
+  const skinMat = new StandardMaterial(`${parent.name}_skin_mat`, scene);
+  skinMat.diffuseColor = Color3.FromHexString("#e9c8a3");
+  const shirtMat = new StandardMaterial(`${parent.name}_shirt_mat`, scene);
+  shirtMat.diffuseColor = Color3.FromHexString(shirtHex);
+  const trouserMat = new StandardMaterial(`${parent.name}_trouser_mat`, scene);
+  trouserMat.diffuseColor = Color3.FromHexString("#2c3a52");
+
+  const torso = MeshBuilder.CreateBox(
+    `${parent.name}_torso`,
+    { width: 0.45, height: 0.55, depth: 0.35 },
+    scene,
+  );
+  torso.parent = parent;
+  torso.position = new Vector3(0, 1.25, -0.25);
+  torso.material = shirtMat;
+
+  const head = MeshBuilder.CreateBox(
+    `${parent.name}_head`,
+    { width: 0.4, height: 0.4, depth: 0.4 },
+    scene,
+  );
+  head.parent = parent;
+  head.position = new Vector3(0, 1.7, -0.1);
+  head.material = skinMat;
+
+  // Helmet.
+  const helmetMat = new StandardMaterial(`${parent.name}_helmet_mat`, scene);
+  helmetMat.diffuseColor = Color3.FromHexString(frameHex);
+  const helmet = MeshBuilder.CreateBox(
+    `${parent.name}_helmet`,
+    { width: 0.46, height: 0.18, depth: 0.46 },
+    scene,
+  );
+  helmet.parent = parent;
+  helmet.position = new Vector3(0, 1.95, -0.1);
+  helmet.material = helmetMat;
+
+  // Legs angled forward toward pedals.
+  for (const dx of [-0.12, 0.12]) {
+    const leg = MeshBuilder.CreateBox(
+      `${parent.name}_leg_${dx}`,
+      { width: 0.16, height: 0.55, depth: 0.16 },
+      scene,
+    );
+    leg.parent = parent;
+    leg.position = new Vector3(dx, 0.65, -0.1);
+    leg.material = trouserMat;
+  }
+}
+
+/**
+ * Build a voxel kick scooter with a standing rider. Long axis runs
+ * along local +Z (deck stretches forward to back).
+ */
+function buildScooterMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  deckHex: string,
+  shirtHex: string,
+): void {
+  const deckMat = new StandardMaterial(`${parent.name}_deck_mat`, scene);
+  deckMat.diffuseColor = Color3.FromHexString(deckHex);
+  const wheelMat = new StandardMaterial(`${parent.name}_wheel_mat`, scene);
+  wheelMat.diffuseColor = Color3.FromHexString("#1c2230");
+
+  // Deck.
+  const deck = MeshBuilder.CreateBox(
+    `${parent.name}_deck`,
+    { width: 0.3, height: 0.1, depth: 1.2 },
+    scene,
+  );
+  deck.parent = parent;
+  deck.position = new Vector3(0, 0.25, 0);
+  deck.material = deckMat;
+
+  // Wheels.
+  for (const dz of [0.55, -0.55]) {
+    const w = MeshBuilder.CreateBox(
+      `${parent.name}_wheel_${dz}`,
+      { width: 0.12, height: 0.32, depth: 0.32 },
+      scene,
+    );
+    w.parent = parent;
+    w.position = new Vector3(0, 0.18, dz);
+    w.material = wheelMat;
+  }
+
+  // Stem + handlebar.
+  const stem = MeshBuilder.CreateBox(
+    `${parent.name}_stem`,
+    { width: 0.1, height: 1.1, depth: 0.1 },
+    scene,
+  );
+  stem.parent = parent;
+  stem.position = new Vector3(0, 0.85, 0.55);
+  stem.material = deckMat;
+  const bar = MeshBuilder.CreateBox(
+    `${parent.name}_bar`,
+    { width: 0.5, height: 0.08, depth: 0.08 },
+    scene,
+  );
+  bar.parent = parent;
+  bar.position = new Vector3(0, 1.35, 0.55);
+  bar.material = deckMat;
+
+  // Rider standing on the deck.
+  const skinMat = new StandardMaterial(`${parent.name}_skin_mat`, scene);
+  skinMat.diffuseColor = Color3.FromHexString("#e9c8a3");
+  const shirtMat = new StandardMaterial(`${parent.name}_shirt_mat`, scene);
+  shirtMat.diffuseColor = Color3.FromHexString(shirtHex);
+  const trouserMat = new StandardMaterial(`${parent.name}_trouser_mat`, scene);
+  trouserMat.diffuseColor = Color3.FromHexString("#2c3a52");
+
+  for (const dx of [-0.1, 0.1]) {
+    const leg = MeshBuilder.CreateBox(
+      `${parent.name}_leg_${dx}`,
+      { width: 0.16, height: 0.55, depth: 0.18 },
+      scene,
+    );
+    leg.parent = parent;
+    leg.position = new Vector3(dx, 0.6, 0);
+    leg.material = trouserMat;
+  }
+
+  const torso = MeshBuilder.CreateBox(
+    `${parent.name}_torso`,
+    { width: 0.45, height: 0.55, depth: 0.35 },
+    scene,
+  );
+  torso.parent = parent;
+  torso.position = new Vector3(0, 1.2, 0);
+  torso.material = shirtMat;
+
+  const head = MeshBuilder.CreateBox(
+    `${parent.name}_head`,
+    { width: 0.4, height: 0.4, depth: 0.4 },
+    scene,
+  );
+  head.parent = parent;
+  head.position = new Vector3(0, 1.65, 0.05);
+  head.material = skinMat;
+}
+
+/**
+ * Dispatch to the correct vehicle builder based on `type`.
+ */
+function buildVehicleMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  type: VehicleType,
+  bodyHex: string,
+  topHex: string,
+): void {
+  switch (type) {
+    case "jeep":
+      buildJeepMeshes(scene, parent, bodyHex, topHex);
+      return;
+    case "mini":
+      buildMiniCooperMeshes(scene, parent, bodyHex, topHex);
+      return;
+    case "bicycle":
+      buildBicycleMeshes(scene, parent, bodyHex, topHex);
+      return;
+    case "scooter":
+      buildScooterMeshes(scene, parent, bodyHex, topHex);
+      return;
+    case "sedan":
+    default:
+      buildCarMeshes(scene, parent, bodyHex, topHex);
+      return;
   }
 }
 
@@ -191,6 +633,285 @@ function buildDogMeshes(
 }
 
 /**
+ * Pet types supported by {@link NeighbourhoodAmbient.addPet}.
+ */
+export type PetType = "dog" | "cat" | "rabbit";
+
+/**
+ * Build a small voxel cat (slim body + perked ears + upright tail).
+ * Same return contract as {@link buildDogMeshes} so the wandering
+ * mover can drive it identically.
+ */
+function buildCatMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  furHex: string,
+): {
+  legs: Mesh[];
+  tail: TransformNode;
+} {
+  const furMat = new StandardMaterial(`${parent.name}_fur_mat`, scene);
+  furMat.diffuseColor = Color3.FromHexString(furHex);
+  furMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const darkMat = new StandardMaterial(`${parent.name}_dark_mat`, scene);
+  darkMat.diffuseColor = Color3.FromHexString("#1c2230");
+
+  const body = MeshBuilder.CreateBox(
+    `${parent.name}_body`,
+    { width: 0.75, height: 0.35, depth: 0.4 },
+    scene,
+  );
+  body.parent = parent;
+  body.position = new Vector3(0, 0.4, 0);
+  body.material = furMat;
+
+  const head = MeshBuilder.CreateBox(
+    `${parent.name}_head`,
+    { width: 0.38, height: 0.38, depth: 0.38 },
+    scene,
+  );
+  head.parent = parent;
+  head.position = new Vector3(0.5, 0.55, 0);
+  head.material = furMat;
+
+  // Two pointy ears.
+  for (const dz of [-0.1, 0.1]) {
+    const ear = MeshBuilder.CreateBox(
+      `${parent.name}_ear_${dz}`,
+      { width: 0.12, height: 0.18, depth: 0.12 },
+      scene,
+    );
+    ear.parent = parent;
+    ear.position = new Vector3(0.5, 0.82, dz);
+    ear.material = furMat;
+  }
+
+  // Nose.
+  const nose = MeshBuilder.CreateBox(
+    `${parent.name}_nose`,
+    { width: 0.12, height: 0.12, depth: 0.12 },
+    scene,
+  );
+  nose.parent = parent;
+  nose.position = new Vector3(0.72, 0.5, 0);
+  nose.material = darkMat;
+
+  // Upright tail with pivot at the base for a gentle sway.
+  const tailPivot = new TransformNode(`${parent.name}_tail_pivot`, scene);
+  tailPivot.parent = parent;
+  tailPivot.position = new Vector3(-0.38, 0.5, 0);
+  const tail = MeshBuilder.CreateBox(
+    `${parent.name}_tail`,
+    { width: 0.12, height: 0.5, depth: 0.12 },
+    scene,
+  );
+  tail.parent = tailPivot;
+  tail.position = new Vector3(-0.05, 0.25, 0);
+  tail.material = furMat;
+
+  const legs: Mesh[] = [];
+  for (const [dx, dz] of [
+    [0.25, 0.14],
+    [-0.25, 0.14],
+    [0.25, -0.14],
+    [-0.25, -0.14],
+  ] as Array<[number, number]>) {
+    const leg = MeshBuilder.CreateBox(
+      `${parent.name}_leg_${dx}_${dz}`,
+      { width: 0.13, height: 0.28, depth: 0.13 },
+      scene,
+    );
+    leg.parent = parent;
+    leg.position = new Vector3(dx, 0.16, dz);
+    leg.material = furMat;
+    legs.push(leg);
+  }
+
+  return { legs, tail: tailPivot };
+}
+
+/**
+ * Build a small voxel rabbit (round body + tall ears + puff tail).
+ * Same return contract as {@link buildDogMeshes}.
+ */
+function buildRabbitMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  furHex: string,
+): {
+  legs: Mesh[];
+  tail: TransformNode;
+} {
+  const furMat = new StandardMaterial(`${parent.name}_fur_mat`, scene);
+  furMat.diffuseColor = Color3.FromHexString(furHex);
+  furMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const tailMat = new StandardMaterial(`${parent.name}_tail_mat`, scene);
+  tailMat.diffuseColor = Color3.FromHexString("#f8f4ee");
+  const darkMat = new StandardMaterial(`${parent.name}_dark_mat`, scene);
+  darkMat.diffuseColor = Color3.FromHexString("#1c2230");
+
+  const body = MeshBuilder.CreateBox(
+    `${parent.name}_body`,
+    { width: 0.55, height: 0.4, depth: 0.45 },
+    scene,
+  );
+  body.parent = parent;
+  body.position = new Vector3(0, 0.4, 0);
+  body.material = furMat;
+
+  const head = MeshBuilder.CreateBox(
+    `${parent.name}_head`,
+    { width: 0.38, height: 0.34, depth: 0.34 },
+    scene,
+  );
+  head.parent = parent;
+  head.position = new Vector3(0.4, 0.6, 0);
+  head.material = furMat;
+
+  // Two tall ears.
+  for (const dz of [-0.12, 0.12]) {
+    const ear = MeshBuilder.CreateBox(
+      `${parent.name}_ear_${dz}`,
+      { width: 0.1, height: 0.4, depth: 0.12 },
+      scene,
+    );
+    ear.parent = parent;
+    ear.position = new Vector3(0.4, 0.95, dz);
+    ear.material = furMat;
+  }
+
+  // Eye dots.
+  for (const dz of [-0.1, 0.1]) {
+    const eye = MeshBuilder.CreateBox(
+      `${parent.name}_eye_${dz}`,
+      { width: 0.06, height: 0.06, depth: 0.06 },
+      scene,
+    );
+    eye.parent = parent;
+    eye.position = new Vector3(0.55, 0.65, dz);
+    eye.material = darkMat;
+  }
+
+  // Puff tail (no real wag — pivot is here for animation parity).
+  const tailPivot = new TransformNode(`${parent.name}_tail_pivot`, scene);
+  tailPivot.parent = parent;
+  tailPivot.position = new Vector3(-0.3, 0.45, 0);
+  const tail = MeshBuilder.CreateBox(
+    `${parent.name}_tail`,
+    { width: 0.16, height: 0.16, depth: 0.16 },
+    scene,
+  );
+  tail.parent = tailPivot;
+  tail.position = new Vector3(0, 0, 0);
+  tail.material = tailMat;
+
+  const legs: Mesh[] = [];
+  // Front legs short, back legs longer (rabbit hop posture).
+  for (const [dx, dz, h] of [
+    [0.18, 0.14, 0.25],
+    [0.18, -0.14, 0.25],
+    [-0.18, 0.16, 0.36],
+    [-0.18, -0.16, 0.36],
+  ] as Array<[number, number, number]>) {
+    const leg = MeshBuilder.CreateBox(
+      `${parent.name}_leg_${dx}_${dz}`,
+      { width: 0.13, height: h, depth: 0.18 },
+      scene,
+    );
+    leg.parent = parent;
+    leg.position = new Vector3(dx, h / 2, dz);
+    leg.material = furMat;
+    legs.push(leg);
+  }
+
+  return { legs, tail: tailPivot };
+}
+
+/**
+ * Build a small voxel bird (body + head + two wings + tail). The
+ * wings are returned as separate meshes so the flying mover can flap
+ * them on every frame.
+ */
+function buildBirdMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  bodyHex: string,
+  wingHex: string,
+): { wings: Mesh[] } {
+  const bodyMat = new StandardMaterial(`${parent.name}_body_mat`, scene);
+  bodyMat.diffuseColor = Color3.FromHexString(bodyHex);
+  const wingMat = new StandardMaterial(`${parent.name}_wing_mat`, scene);
+  wingMat.diffuseColor = Color3.FromHexString(wingHex);
+  const beakMat = new StandardMaterial(`${parent.name}_beak_mat`, scene);
+  beakMat.diffuseColor = Color3.FromHexString("#e8a13a");
+  const eyeMat = new StandardMaterial(`${parent.name}_eye_mat`, scene);
+  eyeMat.diffuseColor = Color3.FromHexString("#1c2230");
+
+  const body = MeshBuilder.CreateBox(
+    `${parent.name}_body`,
+    { width: 0.32, height: 0.3, depth: 0.5 },
+    scene,
+  );
+  body.parent = parent;
+  body.position = new Vector3(0, 0, 0);
+  body.material = bodyMat;
+
+  const head = MeshBuilder.CreateBox(
+    `${parent.name}_head`,
+    { width: 0.28, height: 0.28, depth: 0.28 },
+    scene,
+  );
+  head.parent = parent;
+  head.position = new Vector3(0, 0.15, 0.32);
+  head.material = bodyMat;
+
+  const beak = MeshBuilder.CreateBox(
+    `${parent.name}_beak`,
+    { width: 0.1, height: 0.08, depth: 0.14 },
+    scene,
+  );
+  beak.parent = parent;
+  beak.position = new Vector3(0, 0.12, 0.5);
+  beak.material = beakMat;
+
+  for (const dx of [-0.1, 0.1]) {
+    const eye = MeshBuilder.CreateBox(
+      `${parent.name}_eye_${dx}`,
+      { width: 0.05, height: 0.05, depth: 0.05 },
+      scene,
+    );
+    eye.parent = parent;
+    eye.position = new Vector3(dx, 0.2, 0.42);
+    eye.material = eyeMat;
+  }
+
+  const tail = MeshBuilder.CreateBox(
+    `${parent.name}_tail`,
+    { width: 0.28, height: 0.06, depth: 0.18 },
+    scene,
+  );
+  tail.parent = parent;
+  tail.position = new Vector3(0, 0.02, -0.32);
+  tail.material = wingMat;
+
+  // Two wings hinged near the body so they can flap (rotation around Z).
+  const wings: Mesh[] = [];
+  for (const dx of [-0.28, 0.28]) {
+    const wing = MeshBuilder.CreateBox(
+      `${parent.name}_wing_${dx}`,
+      { width: 0.4, height: 0.08, depth: 0.3 },
+      scene,
+    );
+    wing.parent = parent;
+    wing.position = new Vector3(dx, 0.05, 0);
+    wing.material = wingMat;
+    wings.push(wing);
+  }
+
+  return { wings };
+}
+
+/**
  * Move `parent` toward `target` along the XZ plane at `speed` units/sec.
  * Returns true if the parent has reached the target this frame.
  */
@@ -228,21 +949,30 @@ export class NeighbourhoodAmbient {
   constructor(private readonly scene: Scene, private readonly root: TransformNode) {}
 
   /**
-   * Spawn a sedan that drives back and forth along the supplied route.
-   * The route is a simple list of XZ waypoints; the car loops them
+   * Spawn a vehicle that drives back and forth along the supplied
+   * route. Defaults to a sedan; pass `type` for a jeep, mini cooper,
+   * bicycle, or scooter so a row of ambient traffic feels varied. The
+   * route is a simple list of XZ waypoints; the vehicle loops them
    * forever (A → B → ... → A → B → ...).
    */
   addCar(
     id: string,
     waypoints: Array<[number, number]>,
-    opts: { bodyColor?: string; topColor?: string; speed?: number } = {},
+    opts: {
+      bodyColor?: string;
+      topColor?: string;
+      speed?: number;
+      type?: VehicleType;
+    } = {},
   ): void {
     if (waypoints.length < 2) return;
+    const vehicleType: VehicleType = opts.type ?? "sedan";
     const carRoot = new TransformNode(`nh_car_${id}`, this.scene);
     carRoot.parent = this.root;
-    buildCarMeshes(
+    buildVehicleMeshes(
       this.scene,
       carRoot,
+      vehicleType,
       opts.bodyColor ?? "#3a8fd6",
       opts.topColor ?? "#2a6fb0",
     );
@@ -323,22 +1053,26 @@ export class NeighbourhoodAmbient {
   }
 
   /**
-   * Spawn a wandering pet (voxel dog) that bumbles around inside the
-   * supplied rectangular grass patch. Picks a fresh random target
-   * whenever it arrives.
+   * Spawn a wandering pet (voxel dog, cat, or rabbit) that bumbles
+   * around inside the supplied circular grass patch. Picks a fresh
+   * random target whenever it arrives.
    */
   addPet(
     id: string,
     home: { cx: number; cz: number; radius: number },
-    opts: { furColor?: string; speed?: number } = {},
+    opts: { furColor?: string; speed?: number; type?: PetType } = {},
   ): void {
     const petRoot = new TransformNode(`nh_pet_${id}`, this.scene);
     petRoot.parent = this.root;
-    const { legs, tail } = buildDogMeshes(
-      this.scene,
-      petRoot,
-      opts.furColor ?? "#c8a878",
-    );
+    const petType: PetType = opts.type ?? "dog";
+    const furColor = opts.furColor ?? "#c8a878";
+    const built =
+      petType === "cat"
+        ? buildCatMeshes(this.scene, petRoot, furColor)
+        : petType === "rabbit"
+          ? buildRabbitMeshes(this.scene, petRoot, furColor)
+          : buildDogMeshes(this.scene, petRoot, furColor);
+    const { legs, tail } = built;
     petRoot.position = new Vector3(home.cx, 0, home.cz);
     let target = new Vector3(home.cx, 0, home.cz);
     let pauseTimer = 0;
@@ -354,15 +1088,23 @@ export class NeighbourhoodAmbient {
       );
     };
     pickTarget();
+    // Per-pet baseline for leg height (rabbits sit lower than dogs).
+    const legBaseY = legs.map((l) => l.position.y);
     this.movers.push({
       update: (dt) => {
-        // Tail always wags.
-        phase += dt * 8;
-        tail.rotation.y = Math.sin(phase) * 0.6;
+        // Tail / cat-tail / rabbit puff sways gently.
+        phase += dt * (petType === "cat" ? 4 : petType === "rabbit" ? 6 : 8);
+        if (petType === "cat") {
+          tail.rotation.x = Math.sin(phase) * 0.25;
+        } else if (petType === "rabbit") {
+          tail.rotation.y = Math.sin(phase) * 0.2;
+        } else {
+          tail.rotation.y = Math.sin(phase) * 0.6;
+        }
         if (pauseTimer > 0) {
           pauseTimer -= dt;
           // Settle legs while paused.
-          for (const leg of legs) leg.position.y = 0.18;
+          legs.forEach((l, i) => (l.position.y = legBaseY[i]));
           return;
         }
         if (stepToward(petRoot, target, speed, dt)) {
@@ -370,12 +1112,83 @@ export class NeighbourhoodAmbient {
           pickTarget();
           return;
         }
-        // Bouncy leg shuffle while walking.
-        const bounce = Math.sin(phase * 1.4) * 0.04;
-        legs[0].position.y = 0.18 + Math.max(0, bounce);
-        legs[3].position.y = 0.18 + Math.max(0, bounce);
-        legs[1].position.y = 0.18 + Math.max(0, -bounce);
-        legs[2].position.y = 0.18 + Math.max(0, -bounce);
+        if (petType === "rabbit") {
+          // Rabbit hops: bob whole pet vertically.
+          const hop = Math.max(0, Math.sin(phase * 1.6) * 0.18);
+          petRoot.position.y = hop;
+        } else {
+          // Bouncy leg shuffle while walking.
+          const bounce = Math.sin(phase * 1.4) * 0.04;
+          legs[0].position.y = legBaseY[0] + Math.max(0, bounce);
+          legs[3].position.y = legBaseY[3] + Math.max(0, bounce);
+          legs[1].position.y = legBaseY[1] + Math.max(0, -bounce);
+          legs[2].position.y = legBaseY[2] + Math.max(0, -bounce);
+        }
+      },
+    });
+  }
+
+  /**
+   * Spawn a flying bird that loops along the supplied XZ waypoints at
+   * the given altitude. Wings flap on every frame and the body bobs
+   * gently. Routes loop one-way (A → B → ... → A) like {@link addCar}.
+   */
+  addBird(
+    id: string,
+    waypoints: Array<[number, number]>,
+    opts: {
+      bodyColor?: string;
+      wingColor?: string;
+      altitude?: number;
+      speed?: number;
+    } = {},
+  ): void {
+    if (waypoints.length < 2) return;
+    const birdRoot = new TransformNode(`nh_bird_${id}`, this.scene);
+    birdRoot.parent = this.root;
+    const { wings } = buildBirdMeshes(
+      this.scene,
+      birdRoot,
+      opts.bodyColor ?? "#3a4a52",
+      opts.wingColor ?? "#1c2a32",
+    );
+    const altitude = opts.altitude ?? 6;
+    const start = waypoints[0];
+    birdRoot.position = new Vector3(start[0], altitude, start[1]);
+    {
+      const next = waypoints[1];
+      const nx = next[0] - start[0];
+      const nz = next[1] - start[1];
+      birdRoot.rotation.y = Math.atan2(nx, nz);
+    }
+    let idx = 1;
+    const speed = opts.speed ?? 5.5;
+    let phase = Math.random() * Math.PI * 2;
+    this.movers.push({
+      update: (dt) => {
+        phase += dt * 14;
+        // Flap wings around local Z so they flick up and down on the sides.
+        const flap = Math.sin(phase) * 0.9;
+        wings[0].rotation.z = flap;
+        wings[1].rotation.z = -flap;
+        // Gentle vertical bob.
+        birdRoot.position.y = altitude + Math.sin(phase * 0.5) * 0.25;
+        const wp = waypoints[idx];
+        const target = new Vector3(wp[0], birdRoot.position.y, wp[1]);
+        if (stepToward(birdRoot, target, speed, dt)) {
+          idx++;
+          if (idx >= waypoints.length) {
+            const first = waypoints[0];
+            birdRoot.position.x = first[0];
+            birdRoot.position.z = first[1];
+            const next = waypoints[1];
+            birdRoot.rotation.y = Math.atan2(
+              next[0] - first[0],
+              next[1] - first[1],
+            );
+            idx = 1;
+          }
+        }
       },
     });
   }
