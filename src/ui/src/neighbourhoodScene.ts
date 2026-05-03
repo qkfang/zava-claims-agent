@@ -1947,7 +1947,11 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       { x: -7, z: 4 },
     );
 
-    makeLabel(zx, zz - 5, "Travel Hub — Travel Claims (Grace)", "#3a5fb0");
+    // Pushed well west of the travel terminal (and the Zava Insurance
+    // office at x≈-10, z≈8, which is 6m tall and was occluding this
+    // label from the south-east camera angle). Sitting on open grass
+    // at the far-left edge keeps the sign readable.
+    makeLabel(zx - 12, zz - 10, "Travel Hub — Travel Claims (Grace)", "#3a5fb0");
   }
 
   // ----- Zone 5: Quiet Suburb Home — Life Insurance -----
