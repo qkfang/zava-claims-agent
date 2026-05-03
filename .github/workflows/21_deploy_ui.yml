@@ -1,10 +1,11 @@
-name: 21 Deploy Frontend
+name: 21 Deploy UI (Vite)
 
 on:
   push:
     branches: [main]
     paths:
       - "src/ui/**"
+      - ".github/workflows/21_deploy_ui.yml"
   workflow_dispatch:
 
 permissions:
@@ -29,11 +30,22 @@ jobs:
         working-directory: src/ui
         run: npm ci
 
+      - name: Resolve backend (src/app) base URL
+        id: backend
+        run: |
+          if [ -n "${{ vars.BACKEND_APP_URL }}" ]; then
+            echo "url=${{ vars.BACKEND_APP_URL }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=https://${{ vars.BACKEND_APP_NAME }}.azurewebsites.net" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build
         working-directory: src/ui
+        env:
+          VITE_APP_BASE_URL: ${{ steps.backend.outputs.url }}
         run: npm run build
 
-      - name: Package application
+      - name: Stage static site for Azure App Service (Linux/Node)
         run: |
           mkdir -p ./publish
           cp -r src/ui/dist/. ./publish/
