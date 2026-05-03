@@ -1,0 +1,429 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "actions": {
+            "Build_Attachment_Array": {
+                "type": "Foreach",
+                "foreach": "@triggerBody()?['attachments']",
+                "actions": {
+                    "Check_If_Image": {
+                        "type": "If",
+                        "expression": {
+                            "and": [
+                                {
+                                    "startsWith": [
+                                        "@items('Build_Attachment_Array')?['contentType']",
+                                        "image/"
+                                    ]
+                                }
+                            ]
+                        },
+                        "actions": {
+                            "Append_Image_Block": {
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                    "name": "attachmentContent",
+                                    "value": {
+                                        "type": "input_image",
+                                        "image_url": "data:@{items('Build_Attachment_Array')?['contentType']};base64,@{items('Build_Attachment_Array')?['contentBytes']}"
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "actions": {
+                                "Append_File_Block": {
+                                    "type": "AppendToArrayVariable",
+                                    "inputs": {
+                                        "name": "attachmentContent",
+                                        "value": {
+                                            "type": "input_file",
+                                            "file_data": "data:@{items('Build_Attachment_Array')?['contentType']};base64,@{items('Build_Attachment_Array')?['contentBytes']}",
+                                            "filename": "@{items('Build_Attachment_Array')?['name']}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "runAfter": {
+                    "Append_Input_Text": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "runtimeConfiguration": {
+                    "concurrency": {
+                        "repetitions": 1
+                    }
+                }
+            },
+            "Create_Conversation": {
+                "type": "Http",
+                "inputs": {
+                    "uri": "https://zava-foundry.services.ai.azure.com/api/projects/zava-claims-project/openai/conversations?api-version=2025-05-15-preview",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "items": [
+                            {
+                                "type": "message",
+                                "role": "user",
+                                "content": "@variables('attachmentContent')"
+                            }
+                        ]
+                    },
+                    "authentication": {
+                        "type": "ManagedServiceIdentity",
+                        "audience": "https://ai.azure.com"
+                    }
+                },
+                "runAfter": {
+                    "Build_Attachment_Array": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Generate_Agent_Response": {
+                "type": "Http",
+                "inputs": {
+                    "uri": "https://zava-foundry.services.ai.azure.com/api/projects/zava-claims-project/openai/responses?api-version=2025-05-15-preview",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "conversation": "@{body('Create_Conversation')?['id']}",
+                        "agent": {
+                            "name": "return-email-agent",
+                            "type": "agent_reference"
+                        }
+                    },
+                    "authentication": {
+                        "type": "ManagedServiceIdentity",
+                        "audience": "https://ai.azure.com"
+                    }
+                },
+                "runAfter": {
+                    "Create_Conversation": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Filter_Message_Output": {
+                "type": "Query",
+                "inputs": {
+                    "from": "@body('Generate_Agent_Response')?['output']",
+                    "where": "@equals(item()?['type'], 'message')"
+                },
+                "runAfter": {
+                    "Generate_Agent_Response": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Agent": {
+                "type": "Agent",
+                "inputs": {
+                    "parameters": {
+                        "deploymentId": "gpt-5.2",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "check if the response from process indicates a successful run.\nif successful, nothing to be done.\nif unsuccessful, engage a human team member via teams\n\nprocess result is below:\n@{body('Filter_Message_Output')[0]['content'][0]['text']}"
+                            }
+                        ],
+                        "agentModelType": "AzureOpenAI",
+                        "agentModelSettings": {
+                            "agentHistoryReductionSettings": {
+                                "agentHistoryReductionType": "maximumTokenCountReduction",
+                                "maximumTokenCount": 128000
+                            },
+                            "deploymentModelProperties": {
+                                "name": "gpt-5.2",
+                                "format": "OpenAI",
+                                "version": "2024-05-01-preview"
+                            }
+                        }
+                    },
+                    "modelConfigurations": {
+                        "model1": {
+                            "referenceName": "agent"
+                        }
+                    }
+                },
+                "tools": {
+                    "Tool_HIL": {
+                        "actions": {
+                            "Post_a_choice_of_options_as_the_Flow_bot_to_a_user": {
+                                "type": "ApiConnectionWebhook",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "referenceName": "conn-teams"
+                                        }
+                                    },
+                                    "body": {
+                                        "notificationUrl": "@listCallbackUrl()",
+                                        "body": {
+                                            "options": [
+                                                "Click to Complete Manual Review"
+                                            ],
+                                            "recipient": {
+                                                "to": "claims-team-leader@zava-insurance.com",
+                                                "summary": "Return Email Process Issue"
+                                            },
+                                            "messageBody": "[manual review required]\n\ncustomer_email: @{variables('fabricLog')['customer_email']}\n\ncustomer_email_title: @{variables('fabricLog')['customer_email_title']}\n\ncustomer_email_body: @{variables('fabricLog')['customer_email_body']}\n\nfabric_filename: @{variables('fabricFileName')}\n\nprocessing_note: @{variables('agentResponse')['processing_note']}",
+                                            "messageTitle": "Return Email Process Issue"
+                                        }
+                                    },
+                                    "path": "/flowbot/actions/messagewithoptions/recipienttypes/user/$subscriptions"
+                                }
+                            },
+                            "Get_user": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "referenceName": "conn-azuread"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/v1.0/users/@{encodeURIComponent(body('Post_a_choice_of_options_as_the_Flow_bot_to_a_user')['responder']['userId'])}"
+                                },
+                                "runAfter": {
+                                    "Post_a_choice_of_options_as_the_Flow_bot_to_a_user": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            },
+                            "Fabric_Log_Step3": {
+                                "type": "Workflow",
+                                "inputs": {
+                                    "host": {
+                                        "workflow": {
+                                            "id": "fabric-file-log"
+                                        }
+                                    },
+                                    "headers": {
+                                        "filename": "@variables('fabricFileName')"
+                                    },
+                                    "body": "@outputs('Compose_fabricLog_Step3')"
+                                },
+                                "runAfter": {
+                                    "Compose_fabricLog_Step3": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            },
+                            "Compose_fabricLog_Step3": {
+                                "type": "Compose",
+                                "inputs": "@mergeObjects(variables('fabricLog'), outputs('Compose_Review'))",
+                                "runAfter": {
+                                    "Compose_Review": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            },
+                            "Compose_Review": {
+                                "type": "Compose",
+                                "inputs": {
+                                    "manual_review_by": "@{body('Get_user')?['displayName']}",
+                                    "manual_review_note": "@{body('Post_a_choice_of_options_as_the_Flow_bot_to_a_user')?['comments']}",
+                                    "manual_review_datetime": "@{utcNow()}"
+                                },
+                                "runAfter": {
+                                    "Get_user": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            }
+                        },
+                        "description": "raise an issue of processing to human member "
+                    }
+                },
+                "runAfter": {
+                    "Fabric_Log_Step2": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "limit": {
+                    "count": 100
+                }
+            },
+            "Fabric_Log_Step2": {
+                "type": "Workflow",
+                "inputs": {
+                    "host": {
+                        "workflow": {
+                            "id": "fabric-file-log"
+                        }
+                    },
+                    "headers": {
+                        "filename": "@variables('fabricFileName')"
+                    },
+                    "body": "@variables('fabricLog')"
+                },
+                "runAfter": {
+                    "Set_fabricLog_Step2": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Append_Input_Text": {
+                "type": "AppendToArrayVariable",
+                "inputs": {
+                    "name": "attachmentContent",
+                    "value": {
+                        "type": "input_text",
+                        "text": "process the request based below information and documents or images: \n email sender: @{triggerBody()?['from']} \n email subject: @{triggerBody()?['subject']}\n email body: @{triggerBody()?['body']}"
+                    }
+                },
+                "runAfter": {
+                    "Fabric_Log_Step1": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Fabric_Log_Step1": {
+                "type": "Workflow",
+                "inputs": {
+                    "host": {
+                        "workflow": {
+                            "id": "fabric-file-log"
+                        }
+                    },
+                    "headers": {
+                        "filename": "@variables('fabricFileName')"
+                    },
+                    "body": "@variables('fabricLog')"
+                },
+                "runAfter": {
+                    "Set_fabricLog_Step1": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_Vars": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "fabricFileName",
+                            "type": "string",
+                            "value": "@{concat('claim_email_', formatDateTime(utcNow(), 'yyyyMMdd-HHmmss'), '.json')}"
+                        },
+                        {
+                            "name": "attachmentContent",
+                            "type": "array",
+                            "value": []
+                        },
+                        {
+                            "name": "agentResponse",
+                            "type": "object"
+                        },
+                        {
+                            "name": "fabricLog",
+                            "type": "object",
+                            "value": {}
+                        }
+                    ]
+                },
+                "runAfter": {}
+            },
+            "Set_fabricLog_Step1": {
+                "type": "SetVariable",
+                "inputs": {
+                    "name": "fabricLog",
+                    "value": {
+                        "customer_email": "@{triggerBody()?['from']}",
+                        "customer_email_title": "@{triggerBody()?['subject']}",
+                        "customer_email_body": "@{body('Html_to_text')}",
+                        "customer_email_attachment": "@{if(equals(length(triggerBody()?['attachments']), 0), '', triggerBody()?['attachments'][0]['name'])}",
+                        "customer_email_datetime": "@{utcNow()}",
+                        "workflow_type": "claims_return_email"
+                    }
+                },
+                "runAfter": {
+                    "Html_to_text": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Set_agentResponse": {
+                "type": "SetVariable",
+                "inputs": {
+                    "name": "agentResponse",
+                    "value": "@json(body('Filter_Message_Output')[0]['content'][0]['text'])"
+                },
+                "runAfter": {
+                    "Filter_Message_Output": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Compose_fabricLog_Step2": {
+                "type": "Compose",
+                "inputs": "@addProperty(addProperty(mergeObjects(variables('fabricLog'), variables('agentResponse')), 'processed_by', 'return-email-agent'), 'processed_datetime', utcNow())",
+                "runAfter": {
+                    "Set_agentResponse": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Set_fabricLog_Step2": {
+                "type": "SetVariable",
+                "inputs": {
+                    "name": "fabricLog",
+                    "value": "@outputs('Compose_fabricLog_Step2')"
+                },
+                "runAfter": {
+                    "Compose_fabricLog_Step2": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Response_OK": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 200
+                },
+                "runAfter": {
+                    "Agent": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Html_to_text": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "conn-conversionservice"
+                        }
+                    },
+                    "method": "post",
+                    "body": "<p class=\"editor-paragraph\">@{triggerBody()['body']}</p>",
+                    "path": "/html2text"
+                },
+                "runAfter": {
+                    "Initialize_Vars": [
+                        "SUCCEEDED"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "triggers": {
+            "When_an_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http"
+            }
+        }
+    },
+    "kind": "Stateful"
+}
