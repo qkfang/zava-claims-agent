@@ -2247,7 +2247,7 @@ function buildExteriorLandscape(
     colors: string[] = ["#e8504c", "#ffd166", "#f4a3c7", "#f0f0f0"],
   ): void => {
     const tag = `ext_flowers_${x.toFixed(1)}_${z.toFixed(1)}`;
-    const pad = makeBox(
+    makeBox(
       `${tag}_pad`,
       1.6,
       0.06,
@@ -2255,7 +2255,6 @@ function buildExteriorLandscape(
       new Vector3(x, 0.05, z),
       "#5a9648",
     );
-    pad.material = mat(`${tag}_padMat`, "#5a9648");
     const offsets: Array<[number, number]> = [
       [-0.45, -0.45],
       [0.45, -0.4],
@@ -2460,7 +2459,8 @@ function buildExteriorLandscape(
     [14, -26],
     [-25, -28],
     [25, -28],
-    [0, -22.5],
+    [-3, -22.5],
+    [3, -22.5],
   ];
   for (const [x, z] of frontFlowers) makeFlowerPatch(x, z);
 
