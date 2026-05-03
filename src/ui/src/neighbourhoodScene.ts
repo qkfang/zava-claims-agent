@@ -938,33 +938,15 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   };
 
   // A subtle dashed path line tracing a customer's route from an incident
-  // zone toward the Zava Insurance Claims Office. The theme guide calls these out as
-  // "a subtle path line showing the customer's route to the claims office".
-  // We emit a series of short, low-profile tiles between two points.
+  // zone toward the Zava Insurance Claims Office. Disabled — the small
+  // cream tiles were reading as scattered debris on the roads.
   const makePathLine = (
-    name: string,
-    from: { x: number; z: number },
-    to: { x: number; z: number },
-    color = "#f0d985",
+    _name: string,
+    _from: { x: number; z: number },
+    _to: { x: number; z: number },
+    _color = "#f0d985",
   ): void => {
-    const dx = to.x - from.x;
-    const dz = to.z - from.z;
-    const dist = Math.hypot(dx, dz);
-    const steps = Math.max(2, Math.floor(dist / 1.6));
-    const stepMat = mat(`pathLine_${color}`, color);
-    for (let i = 0; i < steps; i++) {
-      const t = (i + 0.5) / steps;
-      const px = from.x + dx * t;
-      const pz = from.z + dz * t;
-      const tile = MeshBuilder.CreateBox(
-        `${name}_${i}`,
-        { width: 0.55, height: 0.04, depth: 0.55 },
-        scene,
-      );
-      tile.position = new Vector3(px, 0.085, pz);
-      tile.material = stepMat;
-      attach(tile);
-    }
+    // intentionally empty
   };
 
   // ----- Construction-pack-style prop builders -----
