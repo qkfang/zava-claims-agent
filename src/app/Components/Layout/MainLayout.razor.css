@@ -6,29 +6,50 @@
 
 main {
     flex: 1;
+    background: transparent;
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background: linear-gradient(180deg, var(--zava-sidebar-from) 0%, var(--zava-sidebar-to) 100%);
+    border-right: 1px solid rgba(120, 150, 200, 0.14);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.45);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
+    background: rgba(15, 22, 38, 0.65);
+    border-bottom: 1px solid rgba(120, 150, 200, 0.14);
+    backdrop-filter: blur(10px);
+    justify-content: space-between;
     height: 3.5rem;
     display: flex;
     align-items: center;
+    gap: 1rem;
+}
+
+.top-row ::deep .env-badge {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #ffd9a8;
+    background: rgba(255, 179, 71, 0.10);
+    border: 1px solid rgba(255, 179, 71, 0.32);
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    font-weight: 700;
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
         white-space: nowrap;
         margin-left: 1.5rem;
         text-decoration: none;
+        color: var(--zava-muted);
+        font-size: 0.85rem;
+        letter-spacing: 0.3px;
     }
 
     .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
+        color: var(--zava-text-strong);
+        text-decoration: none;
     }
 
     .top-row ::deep a:first-child {
@@ -52,7 +73,7 @@ main {
     }
 
     .sidebar {
-        width: 250px;
+        width: 260px;
         height: 100vh;
         position: sticky;
         top: 0;
@@ -77,10 +98,12 @@ main {
 }
 
 #blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
+    color-scheme: dark only;
+    background: rgba(60, 20, 24, 0.95);
+    color: #ffd9d9;
+    border-top: 1px solid rgba(255, 122, 122, 0.45);
     bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.45);
     box-sizing: border-box;
     display: none;
     left: 0;
@@ -89,6 +112,11 @@ main {
     width: 100%;
     z-index: 1000;
 }
+
+    #blazor-error-ui .reload {
+        color: var(--zava-accent);
+        font-weight: 600;
+    }
 
     #blazor-error-ui .dismiss {
         cursor: pointer;

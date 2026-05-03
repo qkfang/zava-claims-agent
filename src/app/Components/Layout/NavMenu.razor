@@ -1,9 +1,13 @@
 @* Navigation menu: home + a link to each AI agent in the claims office. *@
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Claims Team in a Day</a>
-    </div>
+<div class="brand-row">
+    <a class="brand-link" href="">
+        <span class="brand-logo" aria-hidden="true">Z</span>
+        <span class="brand-text">
+            <span class="brand-title">Zava Insurance</span>
+            <span class="brand-subtitle">Claims Team in a Day</span>
+        </span>
+    </a>
 </div>
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
@@ -12,35 +16,27 @@
     <nav class="nav flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Claims office
+                <span class="nav-icon" aria-hidden="true">🏢</span> Claims office
             </NavLink>
         </div>
 
-        <div class="nav-section-label">Agents</div>
+        <div class="nav-section-label">AI Agents</div>
 
         @foreach (var agent in AgentCatalog.All)
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="@($"agents/{agent.Id}")">
-                    <span class="agent-emoji" aria-hidden="true">@agent.Icon</span> @agent.Department
+                    <span class="nav-icon" aria-hidden="true">@agent.Icon</span> @agent.Department
                 </NavLink>
             </div>
         }
     </nav>
-</div>
 
-<style>
-    .nav-section-label {
-        font-size: .7rem;
-        text-transform: uppercase;
-        letter-spacing: .08em;
-        color: rgba(255,255,255,.55);
-        padding: .9rem 1rem .35rem 1rem;
-    }
-    .agent-emoji {
-        display: inline-block;
-        width: 1.25rem;
-        text-align: center;
-        margin-right: .35rem;
-    }
-</style>
+    <div class="trust-footer" aria-label="Security and trust">
+        <span class="trust-badge" aria-hidden="true">🛡️</span>
+        <div class="trust-text">
+            <span class="trust-line">Trusted claims operations</span>
+            <span class="trust-sub">Human-in-the-loop · Auditable</span>
+        </div>
+    </div>
+</div>

@@ -1,28 +1,125 @@
+/* ============================================================
+   Claims Team in a Day — global theme
+   Matches the voxel UI in src/ui: dark navy base, glass-morphism
+   panels, orange + light-blue accents. Tuned to feel trustworthy
+   and professional for a claims-industry audience.
+   ============================================================ */
+
+:root {
+    /* Surfaces */
+    --zava-bg: #0f1626;
+    --zava-bg-2: #131c30;
+    --zava-panel: rgba(20, 28, 46, 0.82);
+    --zava-panel-solid: #182238;
+    --zava-panel-border: rgba(120, 150, 200, 0.18);
+    --zava-panel-border-strong: rgba(120, 150, 200, 0.32);
+
+    /* Text */
+    --zava-text: #eef2f7;
+    --zava-text-strong: #ffffff;
+    --zava-muted: #97a3b6;
+    --zava-muted-2: #6f7a8f;
+
+    /* Accents */
+    --zava-accent: #ffb347;        /* warm signal — primary action */
+    --zava-accent-warm: #ff7a59;   /* gradient pair for the brand */
+    --zava-accent-2: #6ec1ff;      /* trust blue — links / info */
+    --zava-good: #6dd58c;
+    --zava-bad: #ff7a7a;
+    --zava-warn: #ffd166;
+
+    /* Sidebar */
+    --zava-sidebar-from: #0b1d3a;
+    --zava-sidebar-to: #1a1330;
+}
+
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: var(--zava-bg);
+    color: var(--zava-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle dotted "secured grid" texture on the main background — a quiet
+   trust cue without being noisy. */
+body {
+    background-color: var(--zava-bg);
+    background-image:
+        radial-gradient(rgba(110, 193, 255, 0.06) 1px, transparent 1px),
+        radial-gradient(circle at 20% -10%, rgba(255, 179, 71, 0.08), transparent 55%),
+        radial-gradient(circle at 90% 110%, rgba(110, 193, 255, 0.07), transparent 55%);
+    background-size: 22px 22px, 100% 100%, 100% 100%;
+    background-attachment: fixed;
 }
 
 a, .btn-link {
-    color: #006bb7;
+    color: var(--zava-accent-2);
+    text-decoration: none;
+}
+
+a:hover, .btn-link:hover {
+    color: var(--zava-text-strong);
+    text-decoration: underline;
 }
 
 .btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    color: #1c2230;
+    background-color: var(--zava-accent);
+    border-color: var(--zava-accent);
+    font-weight: 600;
+    letter-spacing: 0.2px;
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+.btn-primary:hover, .btn-primary:focus {
+    background-color: #ffc06a;
+    border-color: #ffc06a;
+    color: #1c2230;
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus,
+.form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem rgba(255, 255, 255, 0.08), 0 0 0 0.25rem rgba(110, 193, 255, 0.55);
 }
 
 .content {
     padding-top: 1.1rem;
+    padding-bottom: 2rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--zava-text-strong);
+    letter-spacing: 0.2px;
 }
 
 h1:focus {
     outline: none;
 }
+
+/* Inline code chips inside copy. */
+code {
+    background: rgba(110, 193, 255, 0.10);
+    color: #c9e3ff;
+    border: 1px solid rgba(110, 193, 255, 0.18);
+    border-radius: 5px;
+    padding: 0.05em 0.4em;
+    font-size: 0.9em;
+}
+
+/* Custom scrollbar so dark panels feel finished. */
+* {
+    scrollbar-color: rgba(120, 150, 200, 0.35) transparent;
+    scrollbar-width: thin;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background: rgba(120, 150, 200, 0.28);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(120, 150, 200, 0.45); background-clip: padding-box; }
 
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;

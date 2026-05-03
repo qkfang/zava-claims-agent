@@ -4,30 +4,53 @@
 
 <div class="hero">
     <div class="hero-inner">
-        <h1>Claims Team in a Day — Zava Insurance</h1>
+        <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            Zava Insurance · Claims Operations
+        </div>
+        <h1>An AI claims team your customers can <span class="hl">trust</span>.</h1>
         <p class="lead">
             A coordinated team of specialised AI agents that supports human staff through every step
-            of the claims lifecycle. Each card below is one agent — open it to see how that agent
-            helps with two real customer scenarios.
+            of the claims lifecycle — intake, assessment, loss adjusting, fraud, supplier coordination,
+            settlement and customer communications. Each card below is one agent — open it to see how
+            that agent helps with two real customer scenarios.
         </p>
+        <div class="hero-meta">
+            <div class="hero-stat">
+                <span class="hero-stat-num">8</span>
+                <span class="hero-stat-label">Specialised agents</span>
+            </div>
+            <div class="hero-stat">
+                <span class="hero-stat-num">9</span>
+                <span class="hero-stat-label">Lifecycle stages</span>
+            </div>
+            <div class="hero-stat">
+                <span class="hero-stat-num">100%</span>
+                <span class="hero-stat-label">Human-in-the-loop</span>
+            </div>
+        </div>
         <p class="scenarios-line">
             <strong>Featured scenarios:</strong>
             <span class="chip">① Michael Harris — Home / burst pipe</span>
             <span class="chip">② Aisha Khan — Motor / rear-end collision</span>
         </p>
     </div>
+    <div class="hero-glow" aria-hidden="true"></div>
 </div>
+
+<div class="section-label">The claims office</div>
 
 <div class="agent-grid">
     @foreach (var agent in AgentCatalog.All)
     {
         <a class="agent-card" href="@($"/agents/{agent.Id}")" style="--accent: @agent.Accent">
-            <div class="agent-card-icon">@agent.Icon</div>
+            <div class="agent-card-icon" aria-hidden="true">@agent.Icon</div>
             <div class="agent-card-body">
                 <div class="agent-card-dept">@agent.Department</div>
                 <h2>@agent.Name</h2>
                 <div class="agent-card-persona">@agent.Persona</div>
                 <p>@agent.Tagline</p>
+                <div class="agent-card-cta">View agent →</div>
             </div>
         </a>
     }
@@ -35,70 +58,232 @@
 
 <style>
     .hero {
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+        position: relative;
+        overflow: hidden;
+        background:
+            linear-gradient(135deg, rgba(11, 29, 58, 0.92) 0%, rgba(26, 19, 48, 0.92) 100%),
+            radial-gradient(circle at 80% 20%, rgba(255, 179, 71, 0.18), transparent 55%);
         color: #fff;
-        padding: 2.5rem 2rem;
-        border-radius: 14px;
-        margin-bottom: 2rem;
+        padding: 2.6rem 2.2rem 2.2rem 2.2rem;
+        border: 1px solid rgba(120, 150, 200, 0.22);
+        border-radius: 16px;
+        margin-bottom: 1.75rem;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
     }
-    .hero h1 { margin: 0 0 .5rem 0; font-size: 1.9rem; }
-    .hero .lead { font-size: 1.05rem; max-width: 60rem; opacity: .92; }
-    .scenarios-line { margin-top: 1rem; font-size: .95rem; }
+    .hero-inner { position: relative; z-index: 1; }
+
+    .hero-glow {
+        position: absolute;
+        right: -120px;
+        top: -120px;
+        width: 380px;
+        height: 380px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 179, 71, 0.22) 0%, transparent 65%);
+        pointer-events: none;
+    }
+
+    .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #ffd9a8;
+        margin-bottom: 0.8rem;
+        font-weight: 600;
+    }
+    .eyebrow-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #ffb347;
+        box-shadow: 0 0 0 4px rgba(255, 179, 71, 0.18);
+    }
+
+    .hero h1 {
+        margin: 0 0 0.6rem 0;
+        font-size: 2.05rem;
+        line-height: 1.18;
+        font-weight: 700;
+        letter-spacing: -0.2px;
+        color: #fff;
+        max-width: 38rem;
+    }
+    .hero h1 .hl {
+        color: #ffb347;
+        background: linear-gradient(135deg, #ffb347, #ff7a59);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hero .lead {
+        font-size: 1rem;
+        line-height: 1.55;
+        max-width: 56rem;
+        color: rgba(238, 242, 247, 0.86);
+        margin: 0;
+    }
+
+    .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin: 1.25rem 0 1rem 0;
+    }
+    .hero-stat {
+        background: rgba(20, 28, 46, 0.55);
+        border: 1px solid rgba(120, 150, 200, 0.22);
+        border-radius: 10px;
+        padding: 0.55rem 0.9rem;
+        backdrop-filter: blur(6px);
+        min-width: 7.5rem;
+    }
+    .hero-stat-num {
+        display: block;
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #ffb347;
+        line-height: 1.1;
+    }
+    .hero-stat-label {
+        display: block;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(238, 242, 247, 0.6);
+        margin-top: 2px;
+    }
+
+    .scenarios-line {
+        margin-top: 0.6rem;
+        font-size: 0.92rem;
+        color: rgba(238, 242, 247, 0.78);
+    }
+    .scenarios-line strong { color: #fff; margin-right: 0.4rem; }
     .chip {
         display: inline-block;
-        background: rgba(255,255,255,.14);
-        padding: .25rem .65rem;
+        background: rgba(110, 193, 255, 0.10);
+        border: 1px solid rgba(110, 193, 255, 0.28);
+        color: #d6ecff;
+        padding: 0.22rem 0.7rem;
         border-radius: 999px;
-        margin-right: .4rem;
+        margin-right: 0.4rem;
+        font-size: 0.82rem;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--zava-muted, #97a3b6);
+        font-weight: 600;
+        margin: 0 0 0.7rem 0.15rem;
     }
 
     .agent-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
         gap: 1rem;
     }
+
     .agent-card {
+        position: relative;
         display: flex;
-        gap: .9rem;
+        gap: 0.9rem;
         align-items: flex-start;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-left: 6px solid var(--accent, #0ea5e9);
-        border-radius: 12px;
-        padding: 1rem 1rem 1rem .9rem;
+        background: rgba(20, 28, 46, 0.78);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 14px;
+        padding: 1.05rem 1.1rem 1rem 1.1rem;
         text-decoration: none;
         color: inherit;
-        transition: transform .12s ease, box-shadow .12s ease;
+        backdrop-filter: blur(8px);
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+        overflow: hidden;
+    }
+    .agent-card::before {
+        content: "";
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 4px;
+        background: var(--accent, #ffb347);
+        opacity: 0.85;
+    }
+    .agent-card::after {
+        content: "";
+        position: absolute;
+        right: -40px; top: -40px;
+        width: 140px; height: 140px;
+        border-radius: 50%;
+        background: radial-gradient(circle, color-mix(in srgb, var(--accent, #ffb347) 22%, transparent) 0%, transparent 70%);
+        pointer-events: none;
+        opacity: 0.55;
     }
     .agent-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(15,23,42,.08);
+        transform: translateY(-3px);
+        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
+        border-color: color-mix(in srgb, var(--accent, #ffb347) 45%, rgba(120, 150, 200, 0.18));
+        background: rgba(24, 34, 56, 0.86);
     }
+    .agent-card:hover { text-decoration: none; }
+
     .agent-card-icon {
-        font-size: 1.9rem;
+        font-size: 1.6rem;
         line-height: 1;
         flex: 0 0 auto;
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--accent, #ffb347) 18%, rgba(20, 28, 46, 0.6));
+        border: 1px solid color-mix(in srgb, var(--accent, #ffb347) 40%, transparent);
+        display: grid;
+        place-items: center;
+        position: relative;
+        z-index: 1;
     }
+
+    .agent-card-body { min-width: 0; flex: 1; position: relative; z-index: 1; }
     .agent-card-body h2 {
         font-size: 1.05rem;
-        margin: .15rem 0 .15rem 0;
-        color: #0f172a;
+        margin: 0.15rem 0 0.2rem 0;
+        color: #fff;
+        font-weight: 700;
     }
     .agent-card-dept {
-        font-size: .75rem;
+        font-size: 0.7rem;
         text-transform: uppercase;
-        letter-spacing: .05em;
-        color: var(--accent);
-        font-weight: 600;
+        letter-spacing: 0.1em;
+        color: var(--accent, #ffb347);
+        font-weight: 700;
     }
     .agent-card-persona {
-        font-size: .82rem;
-        color: #475569;
-        margin-bottom: .3rem;
+        font-size: 0.8rem;
+        color: rgba(214, 228, 245, 0.72);
+        margin-bottom: 0.4rem;
     }
     .agent-card p {
         margin: 0;
-        font-size: .9rem;
-        color: #334155;
+        font-size: 0.9rem;
+        color: rgba(238, 242, 247, 0.82);
+        line-height: 1.45;
+    }
+    .agent-card-cta {
+        margin-top: 0.65rem;
+        font-size: 0.78rem;
+        color: var(--accent, #ffb347);
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        opacity: 0.85;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .agent-card:hover .agent-card-cta {
+        opacity: 1;
+        transform: translateX(2px);
+    }
+
+    @@media (max-width: 640px) {
+        .hero { padding: 1.75rem 1.25rem; }
+        .hero h1 { font-size: 1.55rem; }
     }
 </style>
