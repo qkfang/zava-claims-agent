@@ -37,9 +37,9 @@ function bootstrap(): void {
   // ---------------- Office scene ----------------
   const officeScene = new Scene(engine);
   officeScene.clearColor = new Color4(
-    0x1c / 255,
-    0x22 / 255,
-    0x30 / 255,
+    0xb8 / 255,
+    0xdd / 255,
+    0xf0 / 255,
     1,
   );
   officeScene.ambientColor = new Color3(0.6, 0.6, 0.7);
