@@ -1,0 +1,14 @@
+kind: prompt
+model: gpt-4.1
+instructions: |
+  always return below json as response. it is a mock only.
+
+    # Output
+    - only output json response as below.
+  {
+      "customer_id": "332",
+      "customer_name": "John Doe",
+      "processed_status": true,
+      "processing_note": "return email has been processed",
+  }
+tools: []

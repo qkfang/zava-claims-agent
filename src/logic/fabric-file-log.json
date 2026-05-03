@@ -1,0 +1,78 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "actions": {
+            "Step1_Create_File": {
+                "type": "Http",
+                "inputs": {
+                    "uri": "https://onelake.dfs.fabric.microsoft.com/Zava_Claims_Demo/LH_Claims.Lakehouse/Files/@{triggerOutputs()?['headers']['filename']}?resource=file",
+                    "method": "PUT",
+                    "headers": {
+                        "Content-Length": "0"
+                    },
+                    "authentication": {
+                        "type": "ManagedServiceIdentity",
+                        "identity": "/subscriptions/873a4995-e21b-47e2-953e-f2e88e2fa4f9/resourcegroups/rg-zava-claims/providers/Microsoft.ManagedIdentity/userAssignedIdentities/zava-claims-logic-uid",
+                        "audience": "https://storage.azure.com/"
+                    }
+                },
+                "runAfter": {},
+                "runtimeConfiguration": {
+                    "contentTransfer": {
+                        "transferMode": "Chunked"
+                    }
+                }
+            },
+            "Step2_Append_Content": {
+                "type": "Http",
+                "inputs": {
+                    "uri": "https://onelake.dfs.fabric.microsoft.com/Zava_Claims_Demo/LH_Claims.Lakehouse/Files/@{triggerOutputs()?['headers']['filename']}?action=append&position=0&flush=true",
+                    "method": "PATCH",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": "@triggerBody()",
+                    "authentication": {
+                        "type": "ManagedServiceIdentity",
+                        "identity": "/subscriptions/873a4995-e21b-47e2-953e-f2e88e2fa4f9/resourcegroups/rg-zava-claims/providers/Microsoft.ManagedIdentity/userAssignedIdentities/zava-claims-logic-uid",
+                        "audience": "https://storage.azure.com/"
+                    }
+                },
+                "runAfter": {
+                    "Step1_Create_File": [
+                        "Succeeded"
+                    ]
+                },
+                "runtimeConfiguration": {
+                    "contentTransfer": {
+                        "transferMode": "Chunked"
+                    }
+                }
+            },
+            "Response": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 200
+                },
+                "runAfter": {
+                    "Step2_Append_Content": [
+                        "SUCCEEDED"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "triggers": {
+            "When_an_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "method": "POST"
+                }
+            }
+        }
+    },
+    "kind": "Stateful"
+}
