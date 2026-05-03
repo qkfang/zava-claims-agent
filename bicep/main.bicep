@@ -141,8 +141,10 @@ output codexDeploymentName string = foundry.outputs.deploymentName
 output appServicePlanName string = appService.outputs.appServicePlanName
 output frontendAppName string = appService.outputs.frontendAppName
 output frontendAppHostName string = appService.outputs.frontendAppHostName
+output frontendAppUrl string = appService.outputs.frontendAppUrl
 output backendAppName string = appService.outputs.backendAppName
 output backendAppHostName string = appService.outputs.backendAppHostName
+output backendAppUrl string = appService.outputs.backendAppUrl
 
 output storageAccountName string = storage.outputs.storageAccountName
 output keyVaultName string = keyVault.outputs.keyVaultName

@@ -1,0 +1,198 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "actions": {
+            "Email_Orchestrator_Agent": {
+                "type": "Agent",
+                "inputs": {
+                    "parameters": {
+                        "deploymentId": "gpt-5.2",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "review the content of the inbound claims-team email and attachments to decide which sub-workflow agent to invoke (claims intake/processing or customer return/acknowledgement email).\n\nemail_subject: @{triggerBody()?['subject']}\nemail_body: @{triggerBody()?['body']}"
+                            }
+                        ],
+                        "agentModelType": "AzureOpenAI",
+                        "agentModelSettings": {
+                            "agentHistoryReductionSettings": {
+                                "agentHistoryReductionType": "maximumTokenCountReduction",
+                                "maximumTokenCount": 128000
+                            },
+                            "deploymentModelProperties": {
+                                "name": "gpt-5.2",
+                                "format": "OpenAI",
+                                "version": "2024-05-01-preview"
+                            }
+                        }
+                    },
+                    "modelConfigurations": {
+                        "model1": {
+                            "referenceName": "agent"
+                        }
+                    }
+                },
+                "tools": {
+                    "Tool_claims": {
+                        "actions": {
+                            "claims_workflow": {
+                                "type": "Workflow",
+                                "inputs": {
+                                    "host": {
+                                        "workflow": {
+                                            "id": "claims-email-processing"
+                                        }
+                                    },
+                                    "body": {
+                                        "from": "@{triggerBody()?['from']}",
+                                        "subject": "@{triggerBody()?['subject']}",
+                                        "body": "@{triggerBody()?['body']}",
+                                        "attachments": "@triggerBody()?['attachments']"
+                                    }
+                                }
+                            },
+                            "Set_variable": {
+                                "type": "SetVariable",
+                                "inputs": {
+                                    "name": "statusOk",
+                                    "value": false
+                                },
+                                "runAfter": {
+                                    "claims_workflow": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            }
+                        },
+                        "description": "this tool is to process insurance claim email related process"
+                    },
+                    "Tool_return_email": {
+                        "actions": {
+                            "return_email_workflow": {
+                                "type": "Workflow",
+                                "inputs": {
+                                    "host": {
+                                        "workflow": {
+                                            "id": "return-email-processing"
+                                        }
+                                    },
+                                    "body": {
+                                        "from": "@{triggerBody()?['from']}",
+                                        "subject": "@{triggerBody()?['subject']}",
+                                        "body": "@{triggerBody()?['body']}",
+                                        "attachments": "@triggerBody()?['attachments']"
+                                    }
+                                }
+                            },
+                            "Set_variable-copy": {
+                                "type": "SetVariable",
+                                "inputs": {
+                                    "name": "statusOk",
+                                    "value": false
+                                },
+                                "runAfter": {
+                                    "return_email_workflow": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            }
+                        },
+                        "description": "this tool is to send return/acknowledgement emails to customers"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_variables": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "limit": {
+                    "count": 100
+                }
+            },
+            "Initialize_variables": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "statusOk",
+                            "type": "boolean",
+                            "value": true
+                        }
+                    ]
+                },
+                "runAfter": {}
+            },
+            "Condition": {
+                "type": "If",
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@variables('statusOk')",
+                                "@false"
+                            ]
+                        }
+                    ]
+                },
+                "actions": {},
+                "else": {
+                    "actions": {
+                        "Terminate": {
+                            "type": "Terminate",
+                            "inputs": {
+                                "runStatus": "Failed"
+                            }
+                        }
+                    }
+                },
+                "runAfter": {
+                    "Email_Orchestrator_Agent": [
+                        "SUCCEEDED"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "triggers": {
+            "When_a_new_email_arrives_(V3)": {
+                "type": "ApiConnectionNotification",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "conn-office365"
+                        }
+                    },
+                    "fetch": {
+                        "pathTemplate": {
+                            "template": "/v3/Mail/OnNewEmail"
+                        },
+                        "method": "get",
+                        "queries": {
+                            "importance": "Any",
+                            "fetchOnlyWithAttachment": false,
+                            "includeAttachments": true,
+                            "folderPath": "Inbox"
+                        }
+                    },
+                    "subscribe": {
+                        "body": {
+                            "NotificationUrl": "@listCallbackUrl()"
+                        },
+                        "pathTemplate": {
+                            "template": "/GraphMailSubscriptionPoke/$subscriptions"
+                        },
+                        "method": "post",
+                        "queries": {
+                            "importance": "Any",
+                            "fetchOnlyWithAttachment": false,
+                            "folderPath": "Inbox"
+                        }
+                    }
+                },
+                "splitOn": "@triggerBody()?['value']"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

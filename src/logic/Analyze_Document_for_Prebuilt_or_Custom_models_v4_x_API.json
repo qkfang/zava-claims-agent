@@ -1,0 +1,200 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0",
+        "actions": {
+            "AnalyzeDocumentV40": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "formrecognizer"
+                        }
+                    },
+                    "method": "post",
+                    "body": "@base64ToBinary(variables('docBinary'))",
+                    "headers": {
+                        "inputFileUrl": "@variables('docUrl')"
+                    },
+                    "path": "/connectorinternaldocumentintelligence/documentModels/@{encodeURIComponent(triggerBody()['modelId'])}:analyze",
+                    "queries": {
+                        "api-version": "2024-11-30"
+                    }
+                },
+                "runAfter": {
+                    "Condition": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Response": {
+                "type": "Response",
+                "inputs": {
+                    "statusCode": 200,
+                    "body": "@body('AnalyzeDocumentV40')"
+                },
+                "runAfter": {
+                    "AnalyzeDocumentV40": [
+                        "Succeeded",
+                        "Failed",
+                        "TimedOut"
+                    ]
+                }
+            },
+            "Condition": {
+                "type": "If",
+                "expression": {
+                    "and": [
+                        {
+                            "startsWith": [
+                                "@variables('docUrl')",
+                                "http"
+                            ]
+                        }
+                    ]
+                },
+                "actions": {},
+                "else": {
+                    "actions": {
+                        "Read_blob_content": {
+                            "type": "ServiceProvider",
+                            "inputs": {
+                                "parameters": {
+                                    "containerName": "email-attachment",
+                                    "blobName": "@variables('docUrl')"
+                                },
+                                "serviceProviderConfiguration": {
+                                    "connectionName": "AzureBlob",
+                                    "operationId": "readBlob",
+                                    "serviceProviderId": "/serviceProviders/AzureBlob"
+                                }
+                            },
+                            "runAfter": {
+                                "Condition_1": [
+                                    "SUCCEEDED"
+                                ]
+                            }
+                        },
+                        "Set_variable": {
+                            "type": "SetVariable",
+                            "inputs": {
+                                "name": "docBinary",
+                                "value": "@body('Read_blob_content')?['content']"
+                            },
+                            "runAfter": {
+                                "Read_blob_content": [
+                                    "SUCCEEDED"
+                                ]
+                            }
+                        },
+                        "Set_variable_1": {
+                            "type": "SetVariable",
+                            "inputs": {
+                                "name": "docUrl",
+                                "value": "@null"
+                            },
+                            "runAfter": {
+                                "Set_variable": [
+                                    "SUCCEEDED"
+                                ]
+                            }
+                        },
+                        "Condition_1": {
+                            "type": "If",
+                            "expression": {
+                                "and": [
+                                    {
+                                        "equals": [
+                                            "@if(empty(variables('docUrl')), 'empty', 'notempty')",
+                                            "empty"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "actions": {
+                                "Response_1": {
+                                    "type": "Response",
+                                    "kind": "Http",
+                                    "inputs": {
+                                        "statusCode": 400,
+                                        "body": "document url is empty"
+                                    }
+                                },
+                                "Terminate": {
+                                    "type": "Terminate",
+                                    "inputs": {
+                                        "runStatus": "Failed"
+                                    },
+                                    "runAfter": {
+                                        "Response_1": [
+                                            "SUCCEEDED"
+                                        ]
+                                    }
+                                }
+                            },
+                            "else": {
+                                "actions": {}
+                            }
+                        }
+                    }
+                },
+                "runAfter": {
+                    "Initialize_variables": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "docUrl",
+                            "type": "string",
+                            "value": "@{triggerBody()?['inputFileUrl']}"
+                        },
+                        {
+                            "name": "docBinary",
+                            "type": "string",
+                            "value": "@{if(equals(triggerBody()?['inputFileContent'], null), '', base64ToBinary(triggerBody()?['inputFileContent']))}"
+                        }
+                    ]
+                },
+                "runAfter": {}
+            }
+        },
+        "triggers": {
+            "Request": {
+                "type": "Request",
+                "description": "Extract key-value pairs, tables, and semantic values from a given document (v4.x API).",
+                "kind": "Http",
+                "inputs": {
+                    "schema": {
+                        "type": "object",
+                        "required": [
+                            "modelId"
+                        ],
+                        "properties": {
+                            "modelId": {
+                                "description": "Prebuilt modelIds: prebuilt-read, prebuilt-layout, prebuilt-businessCard, prebuilt-idDocument, prebuilt-invoice, prebuilt-receipt, prebuilt-tax.us.w2, prebuilt-vaccinationCard, prebuilt-healthInsuranceCard.us, prebuilt-tax.us.1098, prebuilt-tax.us.1098E, prebuilt-tax.us.1098T, prebuilt-contract, etc. Custom modelId format - [a-zA-Z0-9][a-zA-Z0-9._~-]{1,63}. Unique model name.",
+                                "type": "string",
+                                "title": "Model Identifier"
+                            },
+                            "inputFileContent": {
+                                "description": "Base64 file content for input file. Document/Image File Content.",
+                                "format": "binary",
+                                "type": "string"
+                            },
+                            "inputFileUrl": {
+                                "description": "Url path for input file. Alternative to Document/Image File Content.",
+                                "type": "string",
+                                "title": "Document/Image URL"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "kind": "Stateful"
+}

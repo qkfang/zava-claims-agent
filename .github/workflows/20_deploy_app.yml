@@ -1,0 +1,45 @@
+name: 20 Deploy App (Blazor)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/app/**"
+      - ".github/workflows/20_deploy_app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Restore
+        working-directory: src/app
+        run: dotnet restore app.csproj
+
+      - name: Publish
+        working-directory: src/app
+        run: dotnet publish app.csproj -c Release -o ${{ github.workspace }}/publish --no-restore
+
+      - name: Azure CLI Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.BACKEND_APP_NAME }}
+          package: ${{ github.workspace }}/publish

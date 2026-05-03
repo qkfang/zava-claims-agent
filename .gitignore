@@ -18,6 +18,10 @@ bin/
 obj/
 *.user
 
+# Bicep compiled ARM templates
+bicep/*.json
+!bicep/*.bicepparam
+
 # Logs
 logs/
 *.log
