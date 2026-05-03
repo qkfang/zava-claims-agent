@@ -1847,7 +1847,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     // Builder rebuild props for the cafe (scenario 4): a small crane lifting
     // ceiling materials, a skip for fire-damaged joinery, and a stack of
     // timber for the rebuild.
-    makeCrane(cafeX + 8, zz + 2);
+    makeCrane(cafeX - 12, zz + 2);
     makeSkip(cafeX - 6, zz - 4.5);
     makeTimberStack(cafeX + 2.5, zz - 4.5);
     makeBarrier(cafeX, zz - 4.0);
