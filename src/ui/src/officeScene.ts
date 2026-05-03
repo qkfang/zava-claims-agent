@@ -2755,9 +2755,9 @@ function buildCarPark(scene: Scene, mat: MaterialFactory): void {
  * four wheel cubes). Mirrors the silhouette of the ambient sedans
  * used in the neighbourhood scene so the diorama looks consistent.
  *
- * The car's long axis runs along Z (nose toward -x is achieved by the
- * caller positioning it; we orient with the long axis on Z so a row of
- * bays running along Z reads as cars parked side-by-side).
+ * The car's long axis runs along X (width = 2.4, depth = 1.3) so a
+ * row of bays stacked along Z reads as cars parked side-by-side with
+ * their noses pointing toward -x (the driving lane).
  */
 function buildParkedCar(
   scene: Scene,
@@ -2782,7 +2782,7 @@ function buildParkedCar(
   };
   // Body (long axis on X so the car spans across the bay)
   makeBox(`${tag}_body`, 2.4, 0.7, 1.3, new Vector3(pos.x, pos.y + 0.5, pos.z), bodyHex);
-  // Cabin
+  // Cabin (also oriented with its long axis on X)
   makeBox(`${tag}_top`, 1.4, 0.55, 1.2, new Vector3(pos.x - 0.05, pos.y + 1.1, pos.z), topHex);
   // Windows (slightly inset so the cabin still shows colour)
   makeBox(
