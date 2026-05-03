@@ -8,7 +8,7 @@
   "narrations": {
     "assessor": "Adam reviews Home — burst pipe damage for Michael",
     "settlement": "Seth reviews settlement for Michael",
-    "comms": "Cara confirms repair plan with Michael — claim closed"
+    "comms": "Cara confirms to Michael that the claim is APPROVED and walks him through the repair plan — claim closed"
   },
   "preAssessor": [],
   "extras": [
@@ -25,9 +25,9 @@
   ],
   "beats": [
     { "at": "customer", "action": "arrive-at-zone",       "narration": "Michael discovers a burst pipe has flooded the kitchen and calls Zava Insurance.", "duration": 2.0 },
-    { "at": "customer", "action": "walk-to-office",       "narration": "Michael heads to the Zava Insurance Claims Office to lodge his claim." },
-    { "at": "customer", "action": "enter-office",         "narration": "Michael arrives at the office and joins reception." },
-    { "at": "customer", "action": "lodge-at-reception",   "narration": "Michael lodges his Home — burst pipe damage claim." },
+    { "at": "customer", "action": "walk-to-office",       "narration": "Michael leaves the residential street and heads through the neighbourhood toward the Zava Insurance Claims Office." },
+    { "at": "customer", "action": "enter-office",         "narration": "Michael steps inside the Zava Insurance building and joins the reception queue." },
+    { "at": "customer", "action": "lodge-at-reception",   "narration": "Michael lodges his Home — burst pipe damage claim at the Zava Insurance reception." },
     { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris picks up the claim and confirms next steps." },
     { "at": "Claims Intake Officer", "action": "intake-route",  "narration": "Iris routes the claim to the Claims Assessor." },
     { "at": "Claims Assessor", "action": "assessor-pickup", "narration": "Adam begins the policy-coverage review." },
@@ -36,7 +36,7 @@
     { "at": "Supplier Coordinator","action": "supplier-coordinate","narration": "Sam books an approved plumber and emergency drying gear.", "duration": 2.5 },
     { "at": "Claims Assessor", "action": "assessor-handoff","narration": "Adam hands the claim to Settlement." },
     { "at": "Settlement Officer","action": "settle","narration": "Seth approves the payout less the excess.", "duration": 2.5, "outcome": "approved" },
-    { "at": "Customer Communications Specialist","action": "comms-notify","narration": "Cara calls Michael to confirm the outcome and timing.", "duration": 2.0 }
+    { "at": "Customer Communications Specialist","action": "comms-notify","narration": "Cara calls Michael with the final decision — claim APPROVED — and confirms the payout amount and repair timing.", "duration": 2.0 }
   ],
   "reset": {
     "office": {
