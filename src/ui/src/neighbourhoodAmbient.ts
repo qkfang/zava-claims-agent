@@ -966,13 +966,13 @@ export class NeighbourhoodAmbient {
     } = {},
   ): void {
     if (waypoints.length < 2) return;
-    const type: VehicleType = opts.type ?? "sedan";
+    const vehicleType: VehicleType = opts.type ?? "sedan";
     const carRoot = new TransformNode(`nh_car_${id}`, this.scene);
     carRoot.parent = this.root;
     buildVehicleMeshes(
       this.scene,
       carRoot,
-      type,
+      vehicleType,
       opts.bodyColor ?? "#3a8fd6",
       opts.topColor ?? "#2a6fb0",
     );
@@ -1064,12 +1064,12 @@ export class NeighbourhoodAmbient {
   ): void {
     const petRoot = new TransformNode(`nh_pet_${id}`, this.scene);
     petRoot.parent = this.root;
-    const type: PetType = opts.type ?? "dog";
+    const petType: PetType = opts.type ?? "dog";
     const furColor = opts.furColor ?? "#c8a878";
     const built =
-      type === "cat"
+      petType === "cat"
         ? buildCatMeshes(this.scene, petRoot, furColor)
-        : type === "rabbit"
+        : petType === "rabbit"
           ? buildRabbitMeshes(this.scene, petRoot, furColor)
           : buildDogMeshes(this.scene, petRoot, furColor);
     const { legs, tail } = built;
@@ -1093,10 +1093,10 @@ export class NeighbourhoodAmbient {
     this.movers.push({
       update: (dt) => {
         // Tail / cat-tail / rabbit puff sways gently.
-        phase += dt * (type === "cat" ? 4 : type === "rabbit" ? 6 : 8);
-        if (type === "cat") {
+        phase += dt * (petType === "cat" ? 4 : petType === "rabbit" ? 6 : 8);
+        if (petType === "cat") {
           tail.rotation.x = Math.sin(phase) * 0.25;
-        } else if (type === "rabbit") {
+        } else if (petType === "rabbit") {
           tail.rotation.y = Math.sin(phase) * 0.2;
         } else {
           tail.rotation.y = Math.sin(phase) * 0.6;
@@ -1112,7 +1112,7 @@ export class NeighbourhoodAmbient {
           pickTarget();
           return;
         }
-        if (type === "rabbit") {
+        if (petType === "rabbit") {
           // Rabbit hops: bob whole pet vertically.
           const hop = Math.max(0, Math.sin(phase * 1.6) * 0.18);
           petRoot.position.y = hop;
