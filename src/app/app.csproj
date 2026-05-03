@@ -9,4 +9,8 @@
     <AssemblyName>app</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\agent\agent.csproj" />
+  </ItemGroup>
+
 </Project>

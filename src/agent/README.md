@@ -63,6 +63,20 @@ dotnet run -- --team-leader "Summarise today's escalations"
 
 Run with no arguments to print the full usage list.
 
+## Used as a .NET library
+
+The project is a `Microsoft.NET.Sdk` Exe assembly (the same shape as
+[`quantlib`](https://github.com/qkfang/quant-agent/tree/main/src/quantlib))
+which means it can both run as a command-line host **and** be referenced
+as a .NET library by other projects in this solution.
+
+The Blazor web app in [`src/app`](../app) takes a `ProjectReference` on
+this `agent.csproj` and resolves a `ClaimsAgentFactory` from DI to invoke
+the same `ClaimsIntakeAgent`, `ClaimsAssessmentAgent`, … classes the CLI
+exposes — analogous to how
+[`quantapi`](https://github.com/qkfang/quant-agent/tree/main/src/quantapi)
+consumes `quantlib`.
+
 ## Adding a new agent
 
 1. Create `Agents/<Name>Agent.cs` that extends `ClaimsAgent`.

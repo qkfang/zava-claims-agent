@@ -43,6 +43,32 @@ Valid agent ids:
 | `customer-communications`   | Customer Communications |
 | `team-leader`               | Team Leader Office      |
 
+## Configuration
+
+The app references the [`agent`](../agent) project as a .NET library and uses
+the same Azure AI Foundry configuration keys as the CLI host. Set them in
+`appsettings.json`, `appsettings.Development.json`, or as environment variables:
+
+| Key | Purpose |
+| --- | --- |
+| `AZURE_AI_PROJECT_ENDPOINT` | Azure AI Foundry project endpoint URL |
+| `AZURE_AI_MODEL_DEPLOYMENT_NAME` | Default chat model deployment (e.g. `gpt-4.1`) |
+| `AZURE_TENANT_ID` | Optional tenant ID for `DefaultAzureCredential` |
+| `AZURE_AI_SEARCH_CONNECTION_ID` | Foundry connection ID for the claims knowledge base |
+| `AZURE_AI_SEARCH_INDEX_NAME` | Azure AI Search index name |
+| `AZURE_BING_CONNECTION_ID` | Foundry Bing grounding connection ID |
+
+When these values are set, the app's DI container exposes a
+`ClaimsAgentFactory` that constructs the same agents the CLI exposes (see
+[`Services/ClaimsAgentFactory.cs`](Services/ClaimsAgentFactory.cs)). Inject
+the factory into a Blazor component or service and call
+`factory.Create("intake").RunStreamingAsync(message)` — the same pattern
+[`quantapi`](https://github.com/qkfang/quant-agent/tree/main/src/quantapi)
+uses to invoke `quantlib` agents.
+
+If the configuration is empty, `ClaimsAgentFactory.IsConfigured` is `false`
+and the static demo pages still render normally.
+
 ## Future work
 
 Once `src/ui` is wired up, the clickable links in the voxel office should
