@@ -11,6 +11,8 @@ import {
 import { PALETTES } from "./characterPalettes";
 import {
   NeighbourhoodAmbient,
+  buildCarMeshes,
+  buildJeepMeshes,
   makeBurstPipeIncident,
   makeCalmGlowIncident,
   makeLuggageIncident,
@@ -210,6 +212,37 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     m.material = mat(name, color);
     attach(m);
     return m;
+  };
+
+  /**
+   * Build a properly-modelled static voxel vehicle (sedan or jeep) with
+   * cabin, windscreen and four wheels — reusing the same mesh recipes as
+   * the ambient traffic so static "highlight" cars (motor collision pair,
+   * rental car, parked family car, investigator's sedan) read as real
+   * vehicles instead of plain coloured boxes.
+   *
+   * The ambient builders model the car along local +Z. `rotY` rotates the
+   * parent so the long axis can be aligned along X (rotY = π/2) for cars
+   * parked along an east-west road.
+   */
+  const makeStaticVehicle = (
+    name: string,
+    kind: "car" | "jeep",
+    pos: Vector3,
+    rotY: number,
+    bodyHex: string,
+    topHex: string,
+  ): TransformNode => {
+    const node = new TransformNode(name, scene);
+    node.parent = root;
+    node.position = pos.clone();
+    node.rotation.y = rotY;
+    if (kind === "jeep") {
+      buildJeepMeshes(scene, node, bodyHex, topHex);
+    } else {
+      buildCarMeshes(scene, node, bodyHex, topHex);
+    }
+    return node;
   };
 
   // (Legacy `makeRoof` removed — all roofs now use `makeGableRoof` /
@@ -1541,8 +1574,8 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // "story of the accident" animation when started.
   let homePuddle: Mesh | null = null;
   let homeKitchenSource: Vector3 | null = null;
-  let motorLeadCar: Mesh[] = [];
-  let motorRearCar: Mesh[] = [];
+  let motorLeadCar: TransformNode[] = [];
+  let motorRearCar: TransformNode[] = [];
   let motorContact: Vector3 | null = null;
   let cafeSmokeMeshes: Mesh[] = [];
   let cafeFlickerAt: Vector3 | null = null;
@@ -1661,17 +1694,30 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     const zx = 22;
     const zz = 0;
 
-    // Two cars touching bumpers
-    const car1Body = makeBox("nh_car1_body", 2.6, 0.8, 1.4, new Vector3(zx, 0.55, zz - 0.8), "#c44a3a");
-    const car1Top = makeBox("nh_car1_top", 1.6, 0.6, 1.2, new Vector3(zx - 0.2, 1.25, zz - 0.8), "#a23a2c");
-    const car1Win = makeBox("nh_car1_win", 1.4, 0.4, 1.25, new Vector3(zx - 0.2, 1.25, zz - 0.8), "#cfe7ff");
+    // Two cars touching bumpers — modelled as proper voxel sedans
+    // (chassis + cabin + windscreen + wheels) so they read as real cars
+    // instead of plain coloured boxes. The ambient car builder models the
+    // car along local +Z, so we rotate by π/2 to lay the long axis along
+    // the east-west main road.
+    const car1 = makeStaticVehicle(
+      "nh_car1",
+      "car",
+      new Vector3(zx, 0, zz - 0.8),
+      Math.PI / 2,
+      "#c44a3a",
+      "#a23a2c",
+    );
+    const car2 = makeStaticVehicle(
+      "nh_car2",
+      "car",
+      new Vector3(zx + 3, 0, zz - 0.8),
+      Math.PI / 2,
+      "#3a6dc4",
+      "#2a55a0",
+    );
 
-    const car2Body = makeBox("nh_car2_body", 2.6, 0.8, 1.4, new Vector3(zx + 3, 0.55, zz - 0.8), "#3a6dc4");
-    const car2Top = makeBox("nh_car2_top", 1.6, 0.6, 1.2, new Vector3(zx + 3.2, 1.25, zz - 0.8), "#2a55a0");
-    const car2Win = makeBox("nh_car2_win", 1.4, 0.4, 1.25, new Vector3(zx + 3.2, 1.25, zz - 0.8), "#cfe7ff");
-
-    motorLeadCar = [car1Body, car1Top, car1Win];
-    motorRearCar = [car2Body, car2Top, car2Win];
+    motorLeadCar = [car1];
+    motorRearCar = [car2];
     motorContact = new Vector3(zx + 1.4, 1.0, zz - 0.8);
 
     // Hazard triangle (small red pyramid via rotated box)
@@ -1721,27 +1767,17 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     gmat.specularColor = new Color3(0, 0, 0);
     garageSign.material = gmat;
     attach(garageSign);
-    // Courtesy / rental car waiting on the forecourt
-    makeBox("nh_rental_body", 2.4, 0.7, 1.3, new Vector3(gx - 3.2, 0.5, gz + 1.5), "#5fa657");
-    makeBox("nh_rental_top", 1.4, 0.55, 1.2, new Vector3(gx - 3.2, 1.1, gz + 1.5), "#4a8a4a");
-    makeBox("nh_rental_win", 1.2, 0.4, 1.25, new Vector3(gx - 3.2, 1.1, gz + 1.5), "#cfe7ff");
+    // Courtesy / rental car waiting on the forecourt — modelled as a
+    // proper voxel jeep so it reads as a real vehicle.
+    makeStaticVehicle(
+      "nh_rental",
+      "jeep",
+      new Vector3(gx - 3.2, 0, gz + 1.5),
+      0,
+      "#5fa657",
+      "#4a8a4a",
+    );
     makeBox("nh_rental_label", 1.2, 0.3, 0.06, new Vector3(gx - 3.2, 1.65, gz + 0.85), "#ffd166");
-    // Wheels so the rental reads as a car instead of a floating block.
-    for (const [dx, dz] of [
-      [0.85, 0.6],
-      [-0.85, 0.6],
-      [0.85, -0.6],
-      [-0.85, -0.6],
-    ] as Array<[number, number]>) {
-      makeBox(
-        `nh_rental_wheel_${dx}_${dz}`,
-        0.25,
-        0.45,
-        0.45,
-        new Vector3(gx - 3.2 + dx, 0.22, gz + 1.5 + dz),
-        "#1c2230",
-      );
-    }
 
     // Incident marker
     makeIncidentMarker(zx + 1.5, 3.4, zz - 0.8, "car");
@@ -1981,26 +2017,16 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeMullionedWindow("nh_life_winR", zx + 1.55, 1.7, zz - 2.0, 1.0, 0.85, "south");
     makeMullionedWindow("nh_life_winE", zx + 2.3, 1.7, zz, 0.9, 0.85, "east");
 
-    // Driveway with parked family car
+    // Driveway with parked family car — a proper voxel sedan.
     makeBox("nh_life_drive", 2.6, 0.05, 4, new Vector3(zx - 3.5, 0.07, zz - 1), "#b8b0a0");
-    makeBox("nh_life_car_body", 2.4, 0.7, 1.3, new Vector3(zx - 3.5, 0.5, zz - 1), "#5a6a7c");
-    makeBox("nh_life_car_top", 1.4, 0.55, 1.2, new Vector3(zx - 3.5, 1.1, zz - 1), "#3a4a5c");
-    makeBox("nh_life_car_win", 1.2, 0.4, 1.25, new Vector3(zx - 3.5, 1.1, zz - 1), "#cfe7ff");
-    for (const [dx, dz] of [
-      [0.85, 0.6],
-      [-0.85, 0.6],
-      [0.85, -0.6],
-      [-0.85, -0.6],
-    ] as Array<[number, number]>) {
-      makeBox(
-        `nh_life_car_wheel_${dx}_${dz}`,
-        0.25,
-        0.45,
-        0.45,
-        new Vector3(zx - 3.5 + dx, 0.22, zz - 1 + dz),
-        "#1c2230",
-      );
-    }
+    makeStaticVehicle(
+      "nh_life_car",
+      "car",
+      new Vector3(zx - 3.5, 0, zz - 1),
+      0,
+      "#5a6a7c",
+      "#3a4a5c",
+    );
 
     // Garden — flowerbed (no alarm symbols)
     makeBox("nh_life_bed", 3.0, 0.1, 0.6, new Vector3(zx, 0.12, zz + 2.4), "#7a4f2a");
@@ -2095,25 +2121,15 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     // A small police evidence marker / cone on the stoop
     makeBox("nh_apt_evidence", 0.3, 0.5, 0.3, new Vector3(zx + 1.2, 0.27, zz - 2.85), "#3a6dc4");
 
-    // Investigator's car parked out front (plain sedan)
-    makeBox("nh_inv_body", 2.4, 0.7, 1.3, new Vector3(zx + 5, 0.5, zz - 3.5), "#2a3a5c");
-    makeBox("nh_inv_top", 1.4, 0.55, 1.2, new Vector3(zx + 5, 1.1, zz - 3.5), "#1c2230");
-    makeBox("nh_inv_win", 1.2, 0.4, 1.25, new Vector3(zx + 5, 1.1, zz - 3.5), "#cfe7ff");
-    for (const [dx, dz] of [
-      [0.85, 0.6],
-      [-0.85, 0.6],
-      [0.85, -0.6],
-      [-0.85, -0.6],
-    ] as Array<[number, number]>) {
-      makeBox(
-        `nh_inv_wheel_${dx}_${dz}`,
-        0.25,
-        0.45,
-        0.45,
-        new Vector3(zx + 5 + dx, 0.22, zz - 3.5 + dz),
-        "#1c2230",
-      );
-    }
+    // Investigator's car parked out front — proper voxel sedan.
+    makeStaticVehicle(
+      "nh_inv",
+      "car",
+      new Vector3(zx + 5, 0, zz - 3.5),
+      0,
+      "#2a3a5c",
+      "#1c2230",
+    );
 
     // Claimant (Jordan) standing on the path with arms out — body language
     // is left to the viewer's imagination; he's just a small voxel figure.

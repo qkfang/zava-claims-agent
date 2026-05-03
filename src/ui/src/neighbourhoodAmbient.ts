@@ -56,7 +56,7 @@ export type VehicleType =
  * Math.atan2(nx, nz)` (which yields 0 when travelling +Z) orients the
  * car correctly along its direction of travel.
  */
-function buildCarMeshes(
+export function buildCarMeshes(
   scene: Scene,
   parent: TransformNode,
   bodyHex: string,
@@ -124,7 +124,7 @@ function buildCarMeshes(
  * Build a chunky voxel jeep / SUV (taller cabin, exposed roll cage,
  * larger wheels). Long axis runs along local +Z, matching the sedan.
  */
-function buildJeepMeshes(
+export function buildJeepMeshes(
   scene: Scene,
   parent: TransformNode,
   bodyHex: string,
@@ -1374,8 +1374,8 @@ export function makeBurstPipeIncident(
 export function makeRearEndIncident(
   scene: Scene,
   root: TransformNode,
-  leadCarMeshes: Mesh[],
-  rearCarMeshes: Mesh[],
+  leadCarMeshes: TransformNode[],
+  rearCarMeshes: TransformNode[],
   contact: Vector3,
 ): IncidentAnimation {
   const leadBase = leadCarMeshes.map((m) => m.position.clone());
