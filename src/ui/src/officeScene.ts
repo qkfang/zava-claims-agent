@@ -627,7 +627,7 @@ function drawSignTexture(
   const tex = new DynamicTexture(`tex_${mesh.name}`, { width: w, height: h }, scene, false);
   const ctx = tex.getContext() as unknown as CanvasRenderingContext2D;
   draw(ctx);
-  tex.update(false);
+  tex.update();
   const m = new StandardMaterial(`signMat_${mesh.name}`, scene);
   m.diffuseTexture = tex;
   m.specularColor = new Color3(0.05, 0.05, 0.05);
