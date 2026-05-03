@@ -28,7 +28,7 @@ A flexible hose under Michael's kitchen sink burst overnight. By morning the kit
 - It generates a tailored checklist: photos, plumber's report on the failed hose, and a list of damaged items.
 - It lodges claim `CLM-2026-00307` and creates an **emergency make-safe task**.
 
-> Sarah confirms the lodgement and reassures Michael that an emergency plumber will be dispatched.
+> Iris confirms the lodgement and reassures Michael that an emergency plumber will be dispatched.
 
 ---
 
@@ -49,16 +49,16 @@ A flexible hose under Michael's kitchen sink burst overnight. By morning the kit
 - It confirms **temporary accommodation** is available under the policy if the home becomes uninhabitable. Since the kitchen is unusable but the home is otherwise habitable, it instead authorises **meal allowance and laundromat costs** for up to 14 days.
 - It produces a structured assessment: cover confirmed, reserves recommended at $18,000.
 
-> Daniel reviews the recommendation and accepts.
+> Adam reviews the recommendation and accepts.
 
 ---
 
 ### 4. Damage Scope — Loss Adjusting AI Agent
 
-- The **Loss Adjusting AI Agent** prepares an **inspection brief** for Priya:
+- The **Loss Adjusting AI Agent** prepares an **inspection brief** for Lara:
   - Background: burst flexi hose, kitchen and laundry affected.
   - Key questions: signs of pre-existing rot, age of cabinetry, scope of laundry damage, moisture readings behind walls.
-- During the site visit, Priya uploads photos and notes.
+- During the site visit, Lara uploads photos and notes.
 - The agent drafts a **damage scope**: replace lower cabinetry, kickboards, vinyl flooring across kitchen and laundry, repaint affected walls, and check the subfloor.
 - Estimated cost band: `$14,000–$19,000`.
 

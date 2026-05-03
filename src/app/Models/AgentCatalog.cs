@@ -66,7 +66,7 @@ public static class AgentCatalog
         Id: "claims-intake",
         Name: "Claims Intake Agent",
         Department: "Claims Intake",
-        Persona: "Sarah Mitchell — Claims Intake Officer",
+        Persona: "Iris — Claims Intake Officer",
         Tagline: "First notice of loss, captured calmly and completely.",
         Purpose: "Watches the customer's email inbox and online claim form, receives the first notice of loss, and creates a structured Claim Case so the rest of the office can pick it up.",
         Responsibilities: new[]
@@ -124,7 +124,7 @@ public static class AgentCatalog
         Id: "claims-assessment",
         Name: "Claims Assessment Agent",
         Department: "Claims Assessment",
-        Persona: "Daniel Cho — Claims Assessor",
+        Persona: "Adam — Claims Assessor",
         Tagline: "Reads the policy, checks the evidence, recommends the call.",
         Purpose: "Reviews the open Claim Case against the policy wording and submitted evidence, identifies coverage and exclusions, and recommends approve / partial / decline for a human to confirm.",
         Responsibilities: new[]
@@ -182,7 +182,7 @@ public static class AgentCatalog
         Id: "loss-adjuster",
         Name: "Loss Adjuster Agent",
         Department: "Loss Adjusting",
-        Persona: "Priya Nair — Loss Adjuster",
+        Persona: "Lara — Loss Adjuster",
         Tagline: "On-the-ground investigator for complex or high-value losses.",
         Purpose: "Prepares inspection briefs, reviews damage evidence, and drafts a scope of loss for human loss adjusters to confirm in the field.",
         Responsibilities: new[]
@@ -212,7 +212,7 @@ public static class AgentCatalog
                     new AgentAction("Build inspection brief", "Generates a checklist: confirm leak point, moisture-meter readings, photograph behind kickboards, check sub-floor, list affected appliances."),
                     new AgentAction("Draft scope of loss", "Drafts a scope: replace 4 base cabinets, 12 m² vinyl flooring, repaint two walls, dry-out 5 days; estimated $4,800 ex-GST."),
                     new AgentAction("Benchmark the quote", "Compares the customer's plumber quote against regional benchmarks; flags it as within the expected band."),
-                    new AgentAction("Hand to human adjuster", "Sends Priya the brief and draft scope so she can confirm on site tomorrow at 10:00 AM."),
+                    new AgentAction("Hand to human adjuster", "Sends Lara the brief and draft scope so she can confirm on site tomorrow at 10:00 AM."),
                 },
                 Handoff: "Once the human adjuster signs the report, hands back to Assessment / Settlement and to the Supplier Coordinator for repair booking."),
             new ScenarioDemo(
@@ -236,7 +236,7 @@ public static class AgentCatalog
         Id: "fraud-investigation",
         Name: "Fraud Investigation Agent",
         Department: "Fraud Investigation",
-        Persona: "Elena Garcia — Fraud Investigator",
+        Persona: "Felix — Fraud Investigator",
         Tagline: "Quietly checks every claim for inconsistencies — fairly and explainably.",
         Purpose: "Scores the claim for fraud risk, explains every flag in plain English, and recommends investigation steps for a human investigator.",
         Responsibilities: new[]
@@ -292,7 +292,7 @@ public static class AgentCatalog
         Id: "supplier-coordinator",
         Name: "Supplier Coordinator Agent",
         Department: "Supplier Coordination",
-        Persona: "James O'Connor — Supplier Coordinator",
+        Persona: "Sam — Supplier Coordinator",
         Tagline: "Books the right repairer at the right time and chases overdue jobs.",
         Purpose: "Recommends approved suppliers, schedules inspections and repairs, tracks SLAs, and keeps the claim file updated with supplier status.",
         Responsibilities: new[]
@@ -348,7 +348,7 @@ public static class AgentCatalog
         Id: "settlement",
         Name: "Settlement Agent",
         Department: "Settlement",
-        Persona: "Hannah Lee — Settlement Officer",
+        Persona: "Seth — Settlement Officer",
         Tagline: "Does the maths transparently and prepares the payment.",
         Purpose: "Calculates the payable amount using approved scope, policy limits, excess, depreciation, and prior payments, then prepares the payment and settlement letter for human approval.",
         Responsibilities: new[]
@@ -406,7 +406,7 @@ public static class AgentCatalog
         Id: "customer-communications",
         Name: "Customer Communications Agent",
         Department: "Customer Communications",
-        Persona: "Olivia Martin — Customer Communications Specialist",
+        Persona: "Cara — Customer Communications Specialist",
         Tagline: "Plain-English, empathetic updates at every step of the claim.",
         Purpose: "Drafts customer-facing emails, SMS, and call scripts that explain claim status and decisions clearly and empathetically — never inventing facts or making promises.",
         Responsibilities: new[]
@@ -462,7 +462,7 @@ public static class AgentCatalog
         Id: "team-leader",
         Name: "Team Leader Agent",
         Department: "Team Leader Office",
-        Persona: "Mark Reynolds — Claims Team Leader",
+        Persona: "Theo — Claims Team Leader",
         Tagline: "Watches the whole floor — escalations, approvals, and SLA.",
         Purpose: "Oversees the workload, approves higher-value items, surfaces escalations and SLA breaches, and keeps quality and consistency across the office.",
         Responsibilities: new[]
@@ -489,12 +489,12 @@ public static class AgentCatalog
                 Actions: new[]
                 {
                     new AgentAction("Surface the case", "Pins CLM-10234 to the dashboard with the urgency flag and a one-line summary."),
-                    new AgentAction("Review intake escalation", "Reviews the agent's note about kitchen unusable; recommends Mark approve emergency-accommodation cover under the policy benefit."),
-                    new AgentAction("Approve settlement", "Surfaces the Settlement recommendation ($4,050) and the supporting Loss Adjuster scope; recommends Mark click-approve."),
+                    new AgentAction("Review intake escalation", "Reviews the agent's note about kitchen unusable; recommends Theo approve emergency-accommodation cover under the policy benefit."),
+                    new AgentAction("Approve settlement", "Surfaces the Settlement recommendation ($4,050) and the supporting Loss Adjuster scope; recommends Theo click-approve."),
                     new AgentAction("QA the comms drafts", "Runs the Communications drafts through QA — confirms tone is empathetic and decisions are not pre-announced."),
                     new AgentAction("Watch the SLA", "Tracks the 5-day acknowledgement and 30-day decision SLAs; sets an alert at day 3 if no movement."),
                 },
-                Handoff: "After Mark approves, the Settlement Agent releases payment and the Customer Communications Agent sends the letter."),
+                Handoff: "After Theo approves, the Settlement Agent releases payment and the Customer Communications Agent sends the letter."),
             new ScenarioDemo(
                 ScenarioId: "2",
                 CustomerName: "Aisha Khan",
@@ -505,11 +505,11 @@ public static class AgentCatalog
                 Actions: new[]
                 {
                     new AgentAction("Surface the case", "Pins CLM-10235 to the dashboard as `straight-through-eligible` with no flags."),
-                    new AgentAction("Approve settlement", "Surfaces the Settlement recommendation ($3,585 paid to suppliers, $0 customer) for Mark's one-click approval."),
+                    new AgentAction("Approve settlement", "Surfaces the Settlement recommendation ($3,585 paid to suppliers, $0 customer) for Theo's one-click approval."),
                     new AgentAction("QA the comms drafts", "Confirms the SMS drafts are short, factual, and within the SMS template library."),
                     new AgentAction("Watch the SLA", "Tracks the repair-completion ETA and rental window; sets a reminder near day 13 of the rental."),
                     new AgentAction("Open the recovery", "Confirms the recovery sub-task against the at-fault driver's insurer is in the chase queue."),
                 },
-                Handoff: "After Mark approves, payments are released and Communications sends the closure SMS."),
+                Handoff: "After Theo approves, payments are released and Communications sends the closure SMS."),
         });
 }

@@ -29,7 +29,7 @@ Robert's first interaction is a phone call. The **Customer Communications AI Age
 - Recommends a **single point of contact** model so Robert never has to re-explain his loss to multiple people.
 - Pre-fills a private case note: "Bereavement claim. Sensitive. Single point of contact."
 
-> Sarah greets Robert warmly, listens, and reassures him there is no rush.
+> Iris greets Robert warmly, listens, and reassures him there is no rush.
 
 ---
 
@@ -60,7 +60,7 @@ Robert's first interaction is a phone call. The **Customer Communications AI Age
 - It identifies the policy is straightforward — no exclusions apply, and the sum insured is `$250,000`.
 - It pre-prepares an **approval recommendation** subject to identity and document verification.
 
-> Daniel reviews the file and concurs.
+> Adam reviews the file and concurs.
 
 ---
 
@@ -84,15 +84,15 @@ The **Fraud Investigation AI Agent** runs **silent, low-friction checks**:
 - Confirms Robert is the **named beneficiary** on the policy (no probate required).
 - Risk score: **Low**, with explanation. No interview needed.
 
-The agent surfaces a green tick on Elena's queue with one line: "No further investigation recommended."
+The agent surfaces a green tick on Felix's queue with one line: "No further investigation recommended."
 
 ---
 
 ### 6. Approval — Claims Team Leader AI Agent
 
-- Settlement value $250,000 is above Daniel's authority.
-- The **Claims Team Leader AI Agent** prepares Mark a **one-page approval brief**: cover, beneficiary, identity check, fraud review outcome, and the recommended payment.
-- Mark approves with a single signature.
+- Settlement value $250,000 is above Adam's authority.
+- The **Claims Team Leader AI Agent** prepares Theo a **one-page approval brief**: cover, beneficiary, identity check, fraud review outcome, and the recommended payment.
+- Theo approves with a single signature.
 
 ---
 

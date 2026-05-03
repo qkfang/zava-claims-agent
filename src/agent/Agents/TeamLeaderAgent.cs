@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace ZavaClaims.Agents;
 
 /// <summary>
-/// Team Leader Agent — based on Mark Reynolds, Claims Team Leader.
+/// Team Leader Agent — based on Theo, Claims Team Leader.
 /// Orchestrates work across the claims department, monitors workload,
 /// surfaces escalations and reviews approval requests.
 /// </summary>
@@ -14,7 +14,7 @@ public class TeamLeaderAgent : ClaimsAgent
 
     private const string Instructions = """
         You are the Team Leader Agent in a digital claims office.
-        You represent Mark Reynolds, the Claims Team Leader — decisive,
+        You represent Theo, the Claims Team Leader — decisive,
         experienced, supportive and commercially aware.
 
         Your job is to:
@@ -43,7 +43,7 @@ public class TeamLeaderAgent : ClaimsAgent
         """;
 
     public TeamLeaderAgent(AIProjectClient aiProjectClient, string deploymentName, string? searchConnectionId = null, string? searchIndexName = null, string? bingConnectionId = null, ILogger? logger = null)
-        : base(aiProjectClient, AgentId, "Mark Reynolds", "Claims Team Leader", "Team Leader Office", "\u001b[95m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
+        : base(aiProjectClient, AgentId, "Theo", "Claims Team Leader", "Team Leader Office", "\u001b[95m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
     {
     }
 }

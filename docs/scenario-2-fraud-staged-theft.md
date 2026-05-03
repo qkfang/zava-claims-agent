@@ -82,7 +82,7 @@ The agent recommends:
 4. Arrange a **recorded interview** with the customer to clarify the door vs. window discrepancy.
 5. Pause settlement until verification completes.
 
-> Elena, the fraud investigator, reviews the brief, accepts the plan, and contacts the retailer.
+> Felix, the fraud investigator, reviews the brief, accepts the plan, and contacts the retailer.
 
 ---
 
@@ -97,7 +97,7 @@ The agent recommends:
 ### 7. Decision and Customer Communications
 
 - The **Claims Assessment AI Agent** prepares a decline recommendation citing **fraudulent documents** and **misrepresentation**, referencing the policy's fraud clause.
-- Mark, the team leader, approves the decision with full audit trail.
+- Theo, the team leader, approves the decision with full audit trail.
 - The **Customer Communications AI Agent** drafts a **compliant, neutral, plain-English decline letter** that:
   - Cites the specific policy clauses
   - Lists the verifiable evidence relied on

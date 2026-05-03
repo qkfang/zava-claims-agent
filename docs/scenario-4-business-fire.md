@@ -50,7 +50,7 @@ An overnight electrical fault in the cafe's coffee machine power circuit caused 
 
 ### 3. Cause Investigation and Site Visit — Loss Adjusting AI Agent
 
-The **Loss Adjusting AI Agent** prepares Priya for a complex investigation:
+The **Loss Adjusting AI Agent** prepares Lara for a complex investigation:
 
 - Background brief: claim summary, cover sections, sub-limits, and policy conditions.
 - **Key questions**: when was the espresso machine last serviced, who installed the circuit, and is the electrical certificate current?
@@ -77,7 +77,7 @@ The **Supplier Coordination AI Agent** orchestrates multiple suppliers:
 | Refrigeration technician | Inspect fridges | Day 2 |
 | Forensic accountant | Validate BI loss | Day 5 |
 
-It tracks SLAs, follows up overdue quotes, and surfaces a single status board for Priya and Tom.
+It tracks SLAs, follows up overdue quotes, and surfaces a single status board for Lara and Tom.
 
 ---
 
@@ -96,11 +96,11 @@ It tracks SLAs, follows up overdue quotes, and surfaces a single status board fo
 ### 6. Reserves and Escalation — Claims Team Leader AI Agent
 
 - Combined estimate: property `$120,000` + BI `$70,000` + stock `$3,800` = **~$193,800**.
-- The **Claims Team Leader AI Agent** alerts Mark:
-  - High-value claim above Daniel's authority.
+- The **Claims Team Leader AI Agent** alerts Theo:
+  - High-value claim above Adam's authority.
   - Multiple suppliers, complex BI calculation.
   - Recommended reserves and key approval points.
-- Mark approves the reserves and the BI methodology in a single review.
+- Theo approves the reserves and the BI methodology in a single review.
 
 ---
 
@@ -111,7 +111,7 @@ Tom is anxious and calls every two days. The **Customer Communications AI Agent*
 - Sets up a **weekly written update** plus an **on-demand summary** he can refresh in the portal.
 - Translates technical assessor findings into plain English ("we've confirmed the cause was the espresso circuit, not your responsibility").
 - Drafts a sensitive note when the reopening date slips by a week due to ceiling material lead time.
-- Identifies signs of frustration in call notes and prompts a proactive check-in from Mark.
+- Identifies signs of frustration in call notes and prompts a proactive check-in from Theo.
 
 ---
 
