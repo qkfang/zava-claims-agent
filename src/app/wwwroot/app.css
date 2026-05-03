@@ -3,6 +3,7 @@
    Matches the voxel UI in src/ui: dark navy base, glass-morphism
    panels, orange + light-blue accents. Tuned to feel trustworthy
    and professional for a claims-industry audience.
+   See also: src/ui/src/styles.css for the source design system.
    ============================================================ */
 
 :root {
