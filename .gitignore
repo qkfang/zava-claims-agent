@@ -6,6 +6,10 @@ jspm_packages/
 dist/
 build/
 out/
+
+# Don't ignore vendored static assets shipped under src/app/wwwroot/lib
+# (e.g. Bootstrap's dist/ folder must be packed into the Blazor app).
+!src/app/wwwroot/lib/**
 .vite/
 .next/
 .nuxt/

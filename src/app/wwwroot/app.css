@@ -1,28 +1,126 @@
+/* ============================================================
+   Claims Team in a Day — global theme
+   Matches the voxel UI in src/ui: dark navy base, glass-morphism
+   panels, orange + light-blue accents. Tuned to feel trustworthy
+   and professional for a claims-industry audience.
+   See also: src/ui/src/styles.css for the source design system.
+   ============================================================ */
+
+:root {
+    /* Surfaces */
+    --zava-bg: #0f1626;
+    --zava-bg-2: #131c30;
+    --zava-panel: rgba(20, 28, 46, 0.82);
+    --zava-panel-solid: #182238;
+    --zava-panel-border: rgba(120, 150, 200, 0.18);
+    --zava-panel-border-strong: rgba(120, 150, 200, 0.32);
+
+    /* Text */
+    --zava-text: #eef2f7;
+    --zava-text-strong: #ffffff;
+    --zava-muted: #97a3b6;
+    --zava-muted-2: #6f7a8f;
+
+    /* Accents */
+    --zava-accent: #ffb347;        /* warm signal — primary action */
+    --zava-accent-warm: #ff7a59;   /* gradient pair for the brand */
+    --zava-accent-2: #6ec1ff;      /* trust blue — links / info */
+    --zava-good: #6dd58c;
+    --zava-bad: #ff7a7a;
+    --zava-warn: #ffd166;
+
+    /* Sidebar */
+    --zava-sidebar-from: #0b1d3a;
+    --zava-sidebar-to: #1a1330;
+}
+
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: var(--zava-bg);
+    color: var(--zava-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle dotted "secured grid" texture on the main background — a quiet
+   trust cue without being noisy. */
+body {
+    background-color: var(--zava-bg);
+    background-image:
+        radial-gradient(rgba(110, 193, 255, 0.06) 1px, transparent 1px),
+        radial-gradient(circle at 20% -10%, rgba(255, 179, 71, 0.08), transparent 55%),
+        radial-gradient(circle at 90% 110%, rgba(110, 193, 255, 0.07), transparent 55%);
+    background-size: 22px 22px, 100% 100%, 100% 100%;
+    background-attachment: fixed;
 }
 
 a, .btn-link {
-    color: #006bb7;
+    color: var(--zava-accent-2);
+    text-decoration: none;
+}
+
+a:hover, .btn-link:hover {
+    color: var(--zava-text-strong);
+    text-decoration: underline;
 }
 
 .btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    color: #1c2230;
+    background-color: var(--zava-accent);
+    border-color: var(--zava-accent);
+    font-weight: 600;
+    letter-spacing: 0.2px;
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+.btn-primary:hover, .btn-primary:focus {
+    background-color: #ffc06a;
+    border-color: #ffc06a;
+    color: #1c2230;
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus,
+.form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem rgba(255, 255, 255, 0.08), 0 0 0 0.25rem rgba(110, 193, 255, 0.55);
 }
 
 .content {
     padding-top: 1.1rem;
+    padding-bottom: 2rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--zava-text-strong);
+    letter-spacing: 0.2px;
 }
 
 h1:focus {
     outline: none;
 }
+
+/* Inline code chips inside copy. */
+code {
+    background: rgba(110, 193, 255, 0.10);
+    color: #c9e3ff;
+    border: 1px solid rgba(110, 193, 255, 0.18);
+    border-radius: 5px;
+    padding: 0.05em 0.4em;
+    font-size: 0.9em;
+}
+
+/* Custom scrollbar so dark panels feel finished. */
+* {
+    scrollbar-color: rgba(120, 150, 200, 0.35) transparent;
+    scrollbar-width: thin;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background: rgba(120, 150, 200, 0.28);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(120, 150, 200, 0.45); background-clip: padding-box; }
 
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
@@ -59,117 +157,146 @@ h1:focus {
     text-align: start;
 }
 /* ─────────────────────────────────────────────────────────────────────────────
-   Floating chatbot widget (ported from forex-trading-agent)
+   Floating chatbot widget (Zava Claims Assistant) — themed to match src/ui
    ───────────────────────────────────────────────────────────────────────────── */
 .chatkit-float-btn {
     position: fixed;
     bottom: 24px;
     right: 24px;
     z-index: 9999;
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    background: #0f172a;
-    color: #fff;
+    background: linear-gradient(135deg, var(--zava-accent, #ffb347), var(--zava-accent-warm, #ff7a59));
+    color: #1c2230;
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-    font-size: 1.3rem;
+    box-shadow: 0 6px 22px rgba(255, 122, 89, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    font-size: 1.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.15s ease;
 }
-.chatkit-float-btn:hover { background: #1e3a8a; }
+.chatkit-float-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+    box-shadow: 0 10px 28px rgba(255, 122, 89, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
 .chatkit-float-panel {
     position: fixed;
-    bottom: 88px;
+    bottom: 92px;
     right: 24px;
     z-index: 9998;
     width: 380px;
     height: 520px;
-    border-radius: 8px;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
     display: none;
-    background: #fff;
+    background: var(--zava-panel-solid, #182238);
+    border: 1px solid var(--zava-panel-border, rgba(120, 150, 200, 0.18));
+    backdrop-filter: blur(10px);
     flex-direction: column;
+    color: var(--zava-text, #eef2f7);
 }
 .chatkit-float-panel[style*="block"] { display: flex !important; }
 .chatkit-header {
-    background: #0f172a;
+    background: linear-gradient(180deg, rgba(11, 29, 58, 0.95), rgba(26, 19, 48, 0.95));
     color: #fff;
     padding: 12px 16px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.95rem;
+    letter-spacing: 0.2px;
+    border-bottom: 1px solid rgba(120, 150, 200, 0.18);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.chatkit-header::before {
+    content: "";
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--zava-accent, #ffb347);
+    box-shadow: 0 0 0 4px rgba(255, 179, 71, 0.18);
 }
 .chatkit-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 12px;
-    background: #f8fafc;
+    padding: 14px;
+    background: rgba(15, 22, 38, 0.6);
 }
 .chatkit-msg {
     margin-bottom: 10px;
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 9px 12px;
+    border-radius: 10px;
     font-size: 0.9rem;
     line-height: 1.45;
     max-width: 85%;
     word-wrap: break-word;
 }
 .chatkit-msg-user {
-    background: #0f172a;
-    color: #fff;
+    background: linear-gradient(135deg, var(--zava-accent, #ffb347), var(--zava-accent-warm, #ff7a59));
+    color: #1c2230;
     margin-left: auto;
     text-align: right;
+    font-weight: 500;
 }
 .chatkit-msg-assistant {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    color: #0f172a;
+    background: rgba(20, 28, 46, 0.85);
+    border: 1px solid rgba(120, 150, 200, 0.22);
+    color: var(--zava-text, #eef2f7);
 }
 .chatkit-prompts {
     padding: 10px 12px;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    background: #fff;
-    border-top: 1px solid #e2e8f0;
+    background: rgba(20, 28, 46, 0.78);
+    border-top: 1px solid rgba(120, 150, 200, 0.18);
 }
 .chatkit-prompt-btn {
-    background: #e8ecf1;
-    border: 1px solid #cbd5e1;
-    border-radius: 16px;
+    background: rgba(110, 193, 255, 0.10);
+    border: 1px solid rgba(110, 193, 255, 0.28);
+    color: #d6ecff;
+    border-radius: 999px;
     padding: 5px 12px;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.chatkit-prompt-btn:hover { background: #d0d7e2; }
+.chatkit-prompt-btn:hover {
+    background: rgba(255, 179, 71, 0.12);
+    border-color: rgba(255, 179, 71, 0.4);
+    color: #fff;
+}
 .chatkit-input {
     display: flex;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid rgba(120, 150, 200, 0.18);
     padding: 0;
     margin: 0;
-    background: #fff;
+    background: rgba(15, 22, 38, 0.85);
 }
 .chatkit-input input {
     flex: 1;
     border: none;
-    padding: 10px 12px;
+    background: transparent;
+    color: var(--zava-text, #eef2f7);
+    padding: 12px 14px;
     font-size: 0.9rem;
     outline: none;
 }
+.chatkit-input input::placeholder { color: var(--zava-muted, #97a3b6); }
 .chatkit-input button {
-    background: #0f172a;
-    color: #fff;
+    background: linear-gradient(135deg, var(--zava-accent, #ffb347), var(--zava-accent-warm, #ff7a59));
+    color: #1c2230;
     border: none;
-    padding: 0 16px;
+    padding: 0 18px;
     cursor: pointer;
     font-size: 1rem;
+    font-weight: 700;
+    transition: filter 0.15s ease;
 }
-.chatkit-input button:hover { opacity: 0.85; }
+.chatkit-input button:hover { filter: brightness(1.08); }
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Account page "Ask AI" chatbot (ported from forex-trading-agent)
