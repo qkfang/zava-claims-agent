@@ -185,7 +185,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     scene,
   );
   roundabout.position = new Vector3(0, 0.1, 0);
-  roundabout.material = mat("roundaboutTrim", "#d8d2c0");
+  roundabout.material = mat("roundaboutTrim", "#9a968a");
   attach(roundabout);
 
   const roundaboutGrass = MeshBuilder.CreateCylinder(
@@ -476,7 +476,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       scene,
     );
     k.position = pos;
-    k.material = mat("kerb", "#cfc8b4");
+    k.material = mat("kerb", "#9a968a");
     attach(k);
   };
 
@@ -1326,10 +1326,8 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // (radius 3) which previously looked like extra white blobs hugging the
   // roundabout. Span shortened to 2.4 to keep the stripes inside the 5-wide
   // road and avoid spilling onto the kerbs / grass.
-  makeCrosswalk("nh_xw_n", 0, 5.5, "ew", 2.4);
-  makeCrosswalk("nh_xw_s", 0, -5.5, "ew", 2.4);
-  makeCrosswalk("nh_xw_e", 5.5, 0, "ns", 2.4);
-  makeCrosswalk("nh_xw_w", -5.5, 0, "ns", 2.4);
+  // Crosswalks around the central roundabout removed — the four white
+  // stripe pads were reading as odd boxes against the asphalt.
 
   // Street name signs at the corners of the new streets.
   makeStreetSign(7.0, 22.5, "MAPLE CRESCENT", "#3a8fd6");
