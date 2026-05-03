@@ -4,33 +4,33 @@
   "customerId": "travel",
   "incidentZone": "travel",
   "approveAtAssessor": true,
-  "settlement": "partial",
+  "settlement": "rejected",
   "narrations": {
-    "assessor": "Adam reviews Travel — lost luggage for Grace",
-    "settlement": "Seth reviews settlement for Grace",
-    "comms": "Cara explains partial outcome to Grace — claim closed"
+    "assessor": "Adam reviews Travel — lost luggage for Grace and flags it for fraud review",
+    "settlement": "Seth reviews settlement for Grace — declined on fraud grounds",
+    "comms": "Cara explains to Grace that the claim is DENIED following the fraud review — claim closed"
   },
   "preAssessor": [],
   "extras": [
     {
       "role": "Fraud Investigator",
-      "narration": "Felix runs a quick fraud check — clears the claim.",
+      "narration": "Felix runs a fraud check and finds inconsistencies in the timeline and supporting documents.",
       "duration": 2.5
     }
   ],
   "beats": [
     { "at": "customer", "action": "arrive-at-zone",     "narration": "Grace realises her luggage didn't arrive and contacts Zava Insurance.", "duration": 2.0 },
-    { "at": "customer", "action": "walk-to-office",     "narration": "Grace heads from the airport to the Zava Insurance Claims Office to lodge her claim." },
-    { "at": "customer", "action": "enter-office",       "narration": "Grace arrives at the office." },
-    { "at": "customer", "action": "lodge-at-reception", "narration": "Grace lodges her Travel — lost luggage claim." },
+    { "at": "customer", "action": "walk-to-office",     "narration": "Grace heads from the travel hub through the neighbourhood to the Zava Insurance Claims Office to lodge her claim." },
+    { "at": "customer", "action": "enter-office",       "narration": "Grace walks into the Zava Insurance building and approaches reception." },
+    { "at": "customer", "action": "lodge-at-reception", "narration": "Grace lodges her Travel — lost luggage claim at the Zava Insurance reception." },
     { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris captures the airline reference and items list." },
     { "at": "Claims Intake Officer", "action": "intake-route",  "narration": "Iris routes the claim to the Claims Assessor." },
     { "at": "Claims Assessor", "action": "assessor-pickup", "narration": "Adam reviews the travel policy and item evidence." },
-    { "at": "Claims Assessor", "action": "assessor-process","narration": "Adam notes some items lack receipts — flagged for fraud quick-check.", "duration": 2.5 },
-    { "at": "Fraud Investigator","action": "fraud-review","narration": "Felix runs a quick fraud check — clears the claim.", "duration": 2.5 },
-    { "at": "Claims Assessor", "action": "assessor-handoff","narration": "Adam hands the claim to Settlement." },
-    { "at": "Settlement Officer","action": "settle","narration": "Seth approves a partial settlement covering the verified items.", "duration": 2.5, "outcome": "partial" },
-    { "at": "Customer Communications Specialist","action": "comms-notify","narration": "Cara explains the partial outcome to Grace in plain English.", "duration": 2.0 }
+    { "at": "Claims Assessor", "action": "assessor-process","narration": "Adam notes inconsistencies in the items list — escalates to fraud review.", "duration": 2.5 },
+    { "at": "Fraud Investigator","action": "fraud-review","narration": "Felix runs a fraud check and finds inconsistencies in the timeline and supporting documents.", "duration": 2.5 },
+    { "at": "Claims Assessor", "action": "assessor-handoff","narration": "Adam hands the fraud-flagged claim to Settlement with a recommendation to decline." },
+    { "at": "Settlement Officer","action": "settle","narration": "Seth declines the claim on fraud grounds and prepares the decline notice.", "duration": 2.5, "outcome": "rejected" },
+    { "at": "Customer Communications Specialist","action": "comms-notify","narration": "Cara calls Grace with the final decision — claim DENIED following the fraud review — and explains the outcome and review options in plain English.", "duration": 2.0 }
   ],
   "reset": {
     "office": {

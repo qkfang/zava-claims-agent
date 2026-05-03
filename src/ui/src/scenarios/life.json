@@ -8,7 +8,7 @@
   "narrations": {
     "assessor": "Adam reviews Life — beneficiary claim for Robert",
     "settlement": "Seth reviews settlement for Robert",
-    "comms": "Cara calls Robert with empathy and clear next steps — claim closed"
+    "comms": "Cara calls Robert with the final decision — claim APPROVED — with empathy and clear next steps — claim closed"
   },
   "preAssessor": [
     {
@@ -20,9 +20,9 @@
   "extras": [],
   "beats": [
     { "at": "customer", "action": "arrive-at-zone",     "narration": "Robert prepares the bereavement paperwork after losing a family member.", "duration": 2.0 },
-    { "at": "customer", "action": "walk-to-office",     "narration": "Robert travels to the Zava Insurance Claims Office to lodge the claim." },
-    { "at": "customer", "action": "enter-office",       "narration": "Robert arrives at the office." },
-    { "at": "customer", "action": "lodge-at-reception", "narration": "Robert lodges the Life — beneficiary claim." },
+    { "at": "customer", "action": "walk-to-office",     "narration": "Robert travels through the quiet suburb to the Zava Insurance Claims Office to lodge the claim." },
+    { "at": "customer", "action": "enter-office",       "narration": "Robert walks into the Zava Insurance building and is welcomed at reception." },
+    { "at": "customer", "action": "lodge-at-reception", "narration": "Robert lodges the Life — beneficiary claim at the Zava Insurance reception." },
     { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris handles the lodgement with care and patience." },
     { "at": "Claims Team Leader","action": "team-leader-review","narration": "Theo personally oversees the bereavement claim for compassionate handling.", "duration": 2.5 },
     { "at": "Claims Intake Officer", "action": "intake-route", "narration": "Iris routes the claim to the Claims Assessor." },
@@ -30,7 +30,7 @@
     { "at": "Claims Assessor", "action": "assessor-process","narration": "Adam confirms the policy is in force and beneficiary verified.", "duration": 2.5 },
     { "at": "Claims Assessor", "action": "assessor-handoff","narration": "Adam hands the claim to Settlement." },
     { "at": "Settlement Officer","action": "settle","narration": "Seth prepares the full benefit payment for the beneficiary.", "duration": 2.5, "outcome": "approved" },
-    { "at": "Customer Communications Specialist","action": "comms-notify","narration": "Cara calls Robert with empathy and clear next steps.", "duration": 2.5 }
+    { "at": "Customer Communications Specialist","action": "comms-notify","narration": "Cara calls Robert with the final decision — claim APPROVED — with empathy and clear next steps for the beneficiary payment.", "duration": 2.5 }
   ],
   "reset": {
     "office": {
