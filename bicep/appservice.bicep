@@ -25,6 +25,18 @@ param appInsightsConnectionString string
 @description('Application Insights instrumentation key')
 param appInsightsInstrumentationKey string
 
+@description('Linux runtime stack for the frontend (src/ui) Web App')
+param frontendLinuxFxVersion string = 'NODE|20-lts'
+
+@description('Linux runtime stack for the backend (src/app) Web App')
+param backendLinuxFxVersion string = 'DOTNETCORE|10.0'
+
+@description('Startup command for the frontend Web App (serves the static Vite build from /home/site/wwwroot)')
+param frontendAppCommandLine string = 'pm2 serve /home/site/wwwroot --no-daemon --spa'
+
+@description('Startup command for the backend Web App (.NET self-contained app entry)')
+param backendAppCommandLine string = 'dotnet app.dll'
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName
   location: location
@@ -69,12 +81,22 @@ resource frontendApp 'Microsoft.Web/sites@2023-12-01' = {
     serverFarmId: appServicePlan.id
     httpsOnly: true
     siteConfig: {
-      linuxFxVersion: 'NODE|20-lts'
+      linuxFxVersion: frontendLinuxFxVersion
+      appCommandLine: frontendAppCommandLine
       alwaysOn: true
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       http20Enabled: true
-      appSettings: commonAppSettings
+      appSettings: concat(commonAppSettings, [
+        {
+          name: 'WEBSITE_NODE_DEFAULT_VERSION'
+          value: '~20'
+        }
+        {
+          name: 'BACKEND_APP_URL'
+          value: 'https://${backendApp.properties.defaultHostName}'
+        }
+      ])
     }
   }
 }
@@ -90,12 +112,22 @@ resource backendApp 'Microsoft.Web/sites@2023-12-01' = {
     serverFarmId: appServicePlan.id
     httpsOnly: true
     siteConfig: {
-      linuxFxVersion: 'PYTHON|3.11'
+      linuxFxVersion: backendLinuxFxVersion
+      appCommandLine: backendAppCommandLine
       alwaysOn: true
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       http20Enabled: true
-      appSettings: commonAppSettings
+      appSettings: concat(commonAppSettings, [
+        {
+          name: 'ASPNETCORE_ENVIRONMENT'
+          value: 'Production'
+        }
+        {
+          name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED'
+          value: 'true'
+        }
+      ])
     }
   }
 }
@@ -104,7 +136,9 @@ output appServicePlanId string = appServicePlan.id
 output appServicePlanName string = appServicePlan.name
 output frontendAppName string = frontendApp.name
 output frontendAppHostName string = frontendApp.properties.defaultHostName
+output frontendAppUrl string = 'https://${frontendApp.properties.defaultHostName}'
 output frontendPrincipalId string = frontendApp.identity.principalId
 output backendAppName string = backendApp.name
 output backendAppHostName string = backendApp.properties.defaultHostName
+output backendAppUrl string = 'https://${backendApp.properties.defaultHostName}'
 output backendPrincipalId string = backendApp.identity.principalId
