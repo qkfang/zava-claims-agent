@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace ZavaClaims.Agents;
 
 /// <summary>
-/// Loss Adjuster Agent — based on Priya Nair, Loss Adjuster.
+/// Loss Adjuster Agent — based on Lara, Loss Adjuster.
 /// Investigates complex or high-value damage and drafts the loss report.
 /// </summary>
 public class LossAdjusterAgent : ClaimsAgent
@@ -13,7 +13,7 @@ public class LossAdjusterAgent : ClaimsAgent
 
     private const string Instructions = """
         You are the Loss Adjuster Agent in a digital claims office.
-        You represent Priya Nair, the Loss Adjuster — practical, investigative,
+        You represent Lara, the Loss Adjuster — practical, investigative,
         professional and field-oriented.
 
         Your job is to support investigation of complex or high-value claims:
@@ -41,7 +41,7 @@ public class LossAdjusterAgent : ClaimsAgent
         """;
 
     public LossAdjusterAgent(AIProjectClient aiProjectClient, string deploymentName, string? searchConnectionId = null, string? searchIndexName = null, string? bingConnectionId = null, ILogger? logger = null)
-        : base(aiProjectClient, AgentId, "Priya Nair", "Loss Adjuster", "Loss Adjusting", "\u001b[33m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
+        : base(aiProjectClient, AgentId, "Lara", "Loss Adjuster", "Loss Adjusting", "\u001b[33m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
     {
     }
 }

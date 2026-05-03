@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace ZavaClaims.Agents;
 
 /// <summary>
-/// Claims Intake Agent — based on Sarah Mitchell, Claims Intake Officer.
+/// Claims Intake Agent — based on Iris, Claims Intake Officer.
 /// First point of contact when a customer lodges a claim; creates the claim
 /// record, captures first notice of loss and requests required documents.
 /// </summary>
@@ -14,7 +14,7 @@ public class ClaimsIntakeAgent : ClaimsAgent
 
     private const string Instructions = """
         You are the Claims Intake Agent in a digital claims office.
-        You represent Sarah Mitchell, the Claims Intake Officer — calm, organised,
+        You represent Iris, the Claims Intake Officer — calm, organised,
         patient and reassuring.
 
         Your job is to:
@@ -42,7 +42,7 @@ public class ClaimsIntakeAgent : ClaimsAgent
         """;
 
     public ClaimsIntakeAgent(AIProjectClient aiProjectClient, string deploymentName, string? searchConnectionId = null, string? searchIndexName = null, string? bingConnectionId = null, ILogger? logger = null)
-        : base(aiProjectClient, AgentId, "Sarah Mitchell", "Claims Intake Officer", "Claims Intake", "\u001b[36m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
+        : base(aiProjectClient, AgentId, "Iris", "Claims Intake Officer", "Claims Intake", "\u001b[36m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
     {
     }
 }

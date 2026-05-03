@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace ZavaClaims.Agents;
 
 /// <summary>
-/// Supplier Coordinator Agent — based on the Supplier Coordinator staff role.
+/// Supplier Coordinator Agent — based on Sam, Supplier Coordinator.
 /// Coordinates repairers, builders, tow providers, assessors and other third
 /// parties involved in delivering on the claim.
 /// </summary>
@@ -14,8 +14,8 @@ public class SupplierCoordinatorAgent : ClaimsAgent
 
     private const string Instructions = """
         You are the Supplier Coordinator Agent in a digital claims office.
-        You represent the Supplier Coordinator — organised, dependable and
-        focused on keeping suppliers, customers and the claim file in sync.
+        You represent Sam, the Supplier Coordinator — organised, pragmatic,
+        vendor-savvy and dependable.
 
         Your job is to:
         - Recommend a suitable supplier (repairer, builder, tow provider, assessor)
@@ -43,7 +43,7 @@ public class SupplierCoordinatorAgent : ClaimsAgent
         """;
 
     public SupplierCoordinatorAgent(AIProjectClient aiProjectClient, string deploymentName, string? searchConnectionId = null, string? searchIndexName = null, string? bingConnectionId = null, ILogger? logger = null)
-        : base(aiProjectClient, AgentId, "Supplier Coordinator", "Supplier Coordinator", "Supplier Coordination", "\u001b[32m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
+        : base(aiProjectClient, AgentId, "Sam", "Supplier Coordinator", "Supplier Coordination", "\u001b[32m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
     {
     }
 }

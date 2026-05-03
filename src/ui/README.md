@@ -1,13 +1,15 @@
 # Claims Team in a Day — Web Demo (`src/ui`)
 
-A browser-based demo for **Zava Insurance** that visualizes a claims office staffed by AI
-agents. Customers (voxel characters) walk into the lobby, drop off claim
-folders at reception, and a team of staff agents (Receptionist → Validator →
-Approver → Filer) routes, validates, approves/rejects, and files each claim.
+A browser-based demo for **Zava Insurance** that visualises a claims office staffed by
+AI agents. Customers (voxel characters) walk from a neighbourhood scene into the Zava
+Insurance Claims Office, lodge claims at the reception desk, and a team of specialist
+staff agents — Iris, Adam, Lara, Felix, Sam, Seth, Cara, and Theo — routes, reviews,
+coordinates, and settles each claim. Each agent mirrors a real staff role from
+[`docs/characters.md`](../../docs/characters.md).
 
-The 3D scene is built with **Babylon.js** in an isometric voxel style that
-matches the project moodboard (blocky office, big back windows, cubicles,
-filing area, shipping-box pile in the foreground).
+The 3D scene is built with **Babylon.js** in an isometric voxel style that matches the
+project moodboard (blocky office, big back windows, cubicle desks, a neighbourhood
+street outside with residential, motor, high-street, travel, and life-themed zones).
 
 ## Tech stack
 
@@ -41,46 +43,80 @@ npm run preview
 
 ## What you see
 
-- **Lobby** with a green sofa and a potted plant on the left, reception desk
-  in front, big windows along the back wall, and a glass front door.
-- **Cubicles** along the back-left and back-right where the Validator and
-  Approver work.
-- **Filing area** in the center back with stacked storage boxes — this is
-  where the Filer agent archives processed claims.
+- **Neighbourhood** — a voxel street outside the office with five incident zones:
+  residential (home), road/motor, high street (business), airport/travel, and a
+  quiet suburb (life). Customers spawn at the zone matching their claim type.
+- **Lobby** — a glass front door, reception desk, and waiting area. Customers
+  walk in from the street and lodge claims here.
+- **Claims office floor** — open-plan cubicle desks for Iris (Intake), Adam
+  (Assessor), and Seth (Settlement), plus workstations for ambient staff.
+- **Specialist desks** — Lara (Loss Adjuster), Felix (Fraud Investigator), Sam
+  (Supplier Coordinator), and Cara (Customer Comms) each have their own area.
+- **Team Leader office** — Theo monitors escalations and workload from the back.
 - **HUD**:
   - Top bar shows live counts (submitted / in-flight / approved / rejected).
   - Left panel lists each AI staff agent with role and current activity.
   - Right panel streams an activity log in real time.
-  - Bottom button lets you submit an extra claim on demand.
+  - Bottom scenario picker lets you launch any of the five scripted scenarios.
+
+## Scripted scenarios
+
+Five claim scenarios can be launched from the scenario picker:
+
+| # | Customer | Claim type | Outcome |
+|---|---|---|---|
+| 1 | Michael (home) | Burst pipe — kitchen water damage | Approved |
+| 2 | Aisha (motor) | Rear-end collision | Approved |
+| 3 | Tom (business) | Café smoke damage — electrical fire | Approved |
+| 4 | Grace (travel) | Lost luggage — fraud indicators | Rejected |
+| 5 | Robert (life) | Bereavement beneficiary claim | Approved |
+
+Each scenario drives a deterministic sequence of agent beats (see the JSON files
+in `src/ui/src/scenarios/`) and can also insert consultation steps with ambient
+specialist staff between assessor review and settlement.
 
 ## Simulation flow
 
-1. A customer spawns outside the door carrying a colored claim folder, walks
-   in, and drops it on the reception inbox tray.
-2. The **Receptionist** picks it up and walks it over to the **Validator**'s
-   desk.
-3. The **Validator** inspects it (passing ~85% of the time). Passed claims go
-   to the **Approver**; rejects go straight to filing.
-4. The **Approver** approves or rejects based on claim amount (larger claims
-   are more likely to need a second review).
-5. The **Filer** carries the folder to the archive shelves and places it.
+1. A customer spawns at the neighbourhood incident zone matching their claim type,
+   walks through the street, and enters the Zava Insurance building.
+2. The customer lodges their claim folder at the **reception desk**.
+3. **Iris** (Claims Intake Officer) picks up the claim, captures the first notice
+   of loss, and routes it to the assessor.
+4. **Adam** (Claims Assessor) reviews policy coverage and evidence.
+5. Optional consultation beats with **Lara** (Loss Adjuster), **Felix** (Fraud
+   Investigator), **Sam** (Supplier Coordinator), and/or **Theo** (Team Leader)
+   run between assessment and settlement — determined by the scenario script.
+6. **Seth** (Settlement Officer) calculates the payable amount and issues a
+   decision (approved, rejected, or partial).
+7. **Cara** (Customer Communications Specialist) notifies the customer and
+   explains the outcome in plain English.
 
-All thresholds, claim types, and agent names live in `claimSimulation.ts` and
-are easy to tweak for your demo narrative.
+All agent roles, thresholds, and scripted beats live in `personaData.ts` (personas)
+and the scenario JSON files, and are easy to tweak for your demo narrative.
 
 ## File map
 
 ```
 src/ui
-├── index.html              # Page shell + HUD markup
-├── package.json            # Vite + Babylon dependencies
+├── index.html                  # Page shell + HUD markup
+├── package.json                # Vite + Babylon dependencies
 ├── tsconfig.json
 ├── vite.config.ts
 └── src
-    ├── main.ts             # Engine bootstrap, camera, lights, render loop
-    ├── styles.css          # HUD styling (panels, metrics, log)
-    ├── officeScene.ts      # Builds the voxel office geometry
-    ├── voxelCharacter.ts   # Box-built voxel humanoid + walk animation
-    ├── claimSimulation.ts  # Agent state machines + claim lifecycle
-    └── hud.ts              # DOM HUD wired to the SimLogger contract
+    ├── main.ts                 # Engine bootstrap, camera, lights, render loop
+    ├── styles.css              # HUD styling (panels, metrics, log)
+    ├── officeScene.ts          # Builds the voxel office geometry
+    ├── neighbourhoodScene.ts   # Builds the voxel neighbourhood geometry
+    ├── neighbourhoodAmbient.ts # Ambient pedestrian and vehicle movement
+    ├── voxelCharacter.ts       # Box-built voxel humanoid + walk animation
+    ├── characterPalettes.ts    # Per-persona colour palettes
+    ├── personaData.ts          # Single source of truth for staff and customer personas
+    ├── claimSimulation.ts      # Agent state machines + claim lifecycle
+    ├── scenarioPicker.ts       # Scenario selector UI
+    ├── scenarioRunner.ts       # Scripted scenario orchestration
+    ├── profileCard.ts          # Character profile pop-up
+    ├── activityPanel.ts        # Live activity log panel
+    ├── hud.ts                  # DOM HUD wired to the SimLogger contract
+    └── scenarios/              # Scripted scenario JSON files (home, motor, business, travel, life)
 ```
+
