@@ -5,8 +5,10 @@ import {
   MeshBuilder,
   Scene,
   StandardMaterial,
+  TransformNode,
   Vector3,
 } from "@babylonjs/core";
+import { NeighbourhoodAmbient } from "./neighbourhoodAmbient";
 
 /**
  * Anchor points used by the simulation. Coordinates are in scene units.
@@ -95,6 +97,11 @@ export function buildOffice(scene: Scene): OfficeLayout {
   // patches, a fountain, benches, lampposts and a stone path leading to
   // the entrance.
   buildExteriorLandscape(scene, mat);
+
+  // Spawn moving voxel cars that loop through the new outdoor car park
+  // on the right-hand side of the office. Self-contained: the ambient
+  // instance ticks itself off the scene's render observable.
+  buildOfficeAmbient(scene);
 
   // Main office floor — light tile
   const floor = MeshBuilder.CreateBox(
@@ -2496,25 +2503,21 @@ function buildExteriorLandscape(
   makeLamppost(-34, 0);
   makeLamppost(-34, 18);
 
-  // ---- Right side strip (x > 30) ----
-  const rightTrees: Array<[number, number, number]> = [
-    [36, -10, 1.0],
-    [40, -2, 1.1],
-    [36, 6, 0.95],
-    [42, 14, 1.05],
-    [37, 22, 1.0],
-    [44, 0, 0.9],
-    [48, 10, 0.85],
-    [46, -8, 0.95],
-  ];
-  for (const [x, z, s] of rightTrees) makeTree(x, z, s);
-  makeFlowerPatch(34, -4);
-  makeFlowerPatch(34, 12);
-  makeFlowerPatch(39, 18);
-  makeBench(34, 4, "W");
+  // ---- Right side strip (x > 30): outdoor staff car park ----
+  // Replaces what used to be a row of decorative trees with a small
+  // surface car park so the office reads as a real workplace. The car
+  // park has an asphalt apron, painted bay markings, a few parked
+  // voxel cars, and a one-way driving lane. Moving traffic is wired up
+  // separately by `buildOfficeAmbient`.
+  buildCarPark(scene, mat);
+  // Keep a couple of trees and a lamppost at the far edge so the lot
+  // still feels framed by the surrounding green belt.
+  makeTree(48, 10, 0.85);
+  makeTree(46, -8, 0.95);
+  makeTree(37, 22, 1.0);
   makeRock(38, -16, 0.9);
-  makeLamppost(34, 0);
-  makeLamppost(34, 18);
+  makeLamppost(34, -10);
+  makeLamppost(34, 16);
 
   // ---- Back strip (z > 25) ----
   const backTrees: Array<[number, number, number]> = [
@@ -2537,4 +2540,329 @@ function buildExteriorLandscape(
   makeFlowerPatch(20, 36);
   makeRock(-30, 30, 0.9);
   makeRock(30, 30, 0.9);
+}
+
+/**
+ * Build the outdoor staff car park along the right-hand strip of the
+ * office grounds. Layout (looking down at the diorama):
+ *
+ *   x = 33                                      x = 49
+ *   ┌────────────────────────────────────────────────────┐
+ *   │ asphalt apron                                       │
+ *   │ ── driving lane (one-way, runs north along x≈35) ── │
+ *   │  ┌──┬──┬──┬──┬──┬──┬──┬──┐ angled parking bays      │
+ *   │  │  │  │  │  │  │  │  │  │ (cars nose-east)         │
+ *   │  └──┴──┴──┴──┴──┴──┴──┴──┘                          │
+ *   └────────────────────────────────────────────────────┘
+ *   z = -12                                       z = +18
+ *
+ * The lot is purely scenic — no layout points are exposed because the
+ * simulation never routes characters here. Moving traffic is added by
+ * {@link buildOfficeAmbient}.
+ */
+function buildCarPark(scene: Scene, mat: MaterialFactory): void {
+  const makeBox = (
+    name: string,
+    w: number,
+    h: number,
+    d: number,
+    pos: Vector3,
+    hex: string,
+  ): Mesh => {
+    const box = MeshBuilder.CreateBox(name, { width: w, height: h, depth: d }, scene);
+    box.position = pos;
+    box.material = mat(name, hex);
+    return box;
+  };
+
+  // ----- Asphalt apron -----
+  // Sits a hair above the surrounding grass (y = 0) so the boundary
+  // reads cleanly without z-fighting against the ground slab.
+  const lotCx = 41;
+  const lotCz = 3;
+  const lotW = 16; // x-extent
+  const lotD = 30; // z-extent
+  makeBox(
+    "carpark_asphalt",
+    lotW,
+    0.08,
+    lotD,
+    new Vector3(lotCx, 0.06, lotCz),
+    "#3a3d44",
+  );
+
+  // ----- Kerb edges -----
+  // Light concrete kerb along the long edges so the lot reads as bounded.
+  const kerbHex = "#cdc6b4";
+  const kerbW = 0.3;
+  makeBox(
+    "carpark_kerb_w",
+    kerbW,
+    0.18,
+    lotD,
+    new Vector3(lotCx - lotW / 2 + kerbW / 2, 0.13, lotCz),
+    kerbHex,
+  );
+  makeBox(
+    "carpark_kerb_e",
+    kerbW,
+    0.18,
+    lotD,
+    new Vector3(lotCx + lotW / 2 - kerbW / 2, 0.13, lotCz),
+    kerbHex,
+  );
+  makeBox(
+    "carpark_kerb_n",
+    lotW,
+    0.18,
+    kerbW,
+    new Vector3(lotCx, 0.13, lotCz + lotD / 2 - kerbW / 2),
+    kerbHex,
+  );
+  makeBox(
+    "carpark_kerb_s",
+    lotW,
+    0.18,
+    kerbW,
+    new Vector3(lotCx, 0.13, lotCz - lotD / 2 + kerbW / 2),
+    kerbHex,
+  );
+
+  // ----- Painted bay markings -----
+  // Eight parking bays along the east half of the lot. Each bay is
+  // 3.0 deep (z) and 3.5 wide (x). Stripes are painted on the
+  // asphalt at every bay boundary plus a long stop-line on the east
+  // kerb side.
+  const stripeHex = "#f4f1e8";
+  const bayCount = 8;
+  const bayDepth = 3.0; // z step between stripes
+  const bayWidth = 3.5; // x extent of each bay
+  const bayCxX = 44.5; // bay area centre x (east half of lot)
+  const firstBayCz = lotCz - ((bayCount - 1) * bayDepth) / 2;
+  for (let i = 0; i <= bayCount; i++) {
+    const z = firstBayCz - bayDepth / 2 + i * bayDepth;
+    makeBox(
+      `carpark_bay_stripe_${i}`,
+      bayWidth,
+      0.02,
+      0.12,
+      new Vector3(bayCxX, 0.105, z),
+      stripeHex,
+    );
+  }
+  // Long stop-line along the wheel-stop side of the bays.
+  makeBox(
+    "carpark_bay_stopline",
+    0.15,
+    0.02,
+    bayCount * bayDepth,
+    new Vector3(bayCxX + bayWidth / 2, 0.105, lotCz),
+    stripeHex,
+  );
+
+  // Centre-lane dashes along the driving lane (x ≈ 38.5).
+  const laneCxX = 38.5;
+  for (let i = -6; i <= 6; i++) {
+    const z = lotCz + i * 2.0;
+    makeBox(
+      `carpark_lane_dash_${i + 6}`,
+      0.15,
+      0.02,
+      0.9,
+      new Vector3(laneCxX, 0.105, z),
+      stripeHex,
+    );
+  }
+
+  // ----- Wheel stops at the head of each parking bay -----
+  for (let i = 0; i < bayCount; i++) {
+    const z = firstBayCz + i * bayDepth;
+    makeBox(
+      `carpark_wheelstop_${i}`,
+      0.5,
+      0.18,
+      bayWidth - 0.6,
+      new Vector3(bayCxX + bayWidth / 2 - 0.4, 0.15, z),
+      "#9a9486",
+    );
+  }
+
+  // ----- Parked voxel cars in a few of the bays -----
+  // Simple chassis + cabin + windows + four wheels. Cars face west
+  // (nose toward the driving lane, i.e. -x), parked nose-out so the
+  // silhouettes read clearly when the camera orbits.
+  const parkedSpecs: Array<{
+    bay: number;
+    bodyHex: string;
+    topHex: string;
+  }> = [
+    { bay: 0, bodyHex: "#e84b3a", topHex: "#1c1c1c" },
+    { bay: 2, bodyHex: "#3a8fd6", topHex: "#1f5fa0" },
+    { bay: 3, bodyHex: "#ffd166", topHex: "#c4a14a" },
+    { bay: 5, bodyHex: "#5fa657", topHex: "#3a7a3a" },
+    { bay: 7, bodyHex: "#c188d4", topHex: "#3a3a3a" },
+  ];
+  for (const spec of parkedSpecs) {
+    const z = firstBayCz + spec.bay * bayDepth;
+    buildParkedCar(scene, mat, new Vector3(bayCxX, 0.1, z), spec.bodyHex, spec.topHex);
+  }
+
+  // ----- "P" car-park sign at the south entrance -----
+  const signCx = lotCx - lotW / 2 + 0.6;
+  const signCz = lotCz - lotD / 2 - 0.8;
+  makeBox(
+    "carpark_sign_post",
+    0.18,
+    2.2,
+    0.18,
+    new Vector3(signCx, 1.1, signCz),
+    "#3a3a44",
+  );
+  const signPlate = makeBox(
+    "carpark_sign_plate",
+    1.1,
+    1.1,
+    0.12,
+    new Vector3(signCx, 2.1, signCz),
+    "#2b6cb0",
+  );
+  // Paint a big white "P" on the front of the sign plate using a
+  // dynamic texture so it's instantly readable from a bird's-eye view.
+  const signTex = new DynamicTexture(
+    "carpark_sign_tex",
+    { width: 128, height: 128 },
+    scene,
+    false,
+  );
+  const ctx = signTex.getContext() as unknown as CanvasRenderingContext2D;
+  ctx.fillStyle = "#2b6cb0";
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = "#f4f1e8";
+  ctx.font = "bold 110px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("P", 64, 70);
+  signTex.update();
+  const signMat = new StandardMaterial("carpark_sign_mat", scene);
+  signMat.diffuseTexture = signTex;
+  signMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  signMat.emissiveColor = new Color3(0.2, 0.2, 0.25);
+  signPlate.material = signMat;
+}
+
+/**
+ * Build a single parked voxel car (body + cabin + tinted windows +
+ * four wheel cubes). Mirrors the silhouette of the ambient sedans
+ * used in the neighbourhood scene so the diorama looks consistent.
+ *
+ * The car's long axis runs along X (width = 2.4, depth = 1.3) so a
+ * row of bays stacked along Z reads as cars parked side-by-side with
+ * their noses pointing toward -x (the driving lane).
+ */
+function buildParkedCar(
+  scene: Scene,
+  mat: MaterialFactory,
+  pos: Vector3,
+  bodyHex: string,
+  topHex: string,
+): void {
+  const tag = `carpark_parked_${pos.x.toFixed(1)}_${pos.z.toFixed(1)}`;
+  const makeBox = (
+    name: string,
+    w: number,
+    h: number,
+    d: number,
+    p: Vector3,
+    hex: string,
+  ): Mesh => {
+    const box = MeshBuilder.CreateBox(name, { width: w, height: h, depth: d }, scene);
+    box.position = p;
+    box.material = mat(name, hex);
+    return box;
+  };
+  // Body (long axis on X so the car spans across the bay)
+  makeBox(`${tag}_body`, 2.4, 0.7, 1.3, new Vector3(pos.x, pos.y + 0.5, pos.z), bodyHex);
+  // Cabin (also oriented with its long axis on X)
+  makeBox(`${tag}_top`, 1.4, 0.55, 1.2, new Vector3(pos.x - 0.05, pos.y + 1.1, pos.z), topHex);
+  // Windows (slightly inset so the cabin still shows colour)
+  makeBox(
+    `${tag}_win`,
+    1.2,
+    0.4,
+    1.25,
+    new Vector3(pos.x - 0.05, pos.y + 1.1, pos.z),
+    "#cfe7ff",
+  );
+  // Four wheels at the corners
+  const wheelHex = "#1c2230";
+  for (const [dx, dz] of [
+    [0.8, 0.55],
+    [-0.8, 0.55],
+    [0.8, -0.55],
+    [-0.8, -0.55],
+  ]) {
+    makeBox(
+      `${tag}_wheel_${dx}_${dz}`,
+      0.4,
+      0.4,
+      0.3,
+      new Vector3(pos.x + dx, pos.y + 0.25, pos.z + dz),
+      wheelHex,
+    );
+  }
+}
+
+/**
+ * Spawn moving voxel cars that drive through the office car park.
+ *
+ * Reuses {@link NeighbourhoodAmbient} so the cars have the same
+ * silhouette and animation feel as the neighbourhood traffic. The
+ * ambient instance ticks itself off `scene.onBeforeRenderObservable`
+ * so callers don't have to thread an update callback through the
+ * office layout return type.
+ */
+function buildOfficeAmbient(scene: Scene): void {
+  const root = new TransformNode("office_ambient_root", scene);
+  const ambient = new NeighbourhoodAmbient(scene, root);
+
+  // Driving lane runs north-south along x ≈ 38.5 (the centre of the
+  // car-park lane drawn in {@link buildCarPark}). Two cars loop in
+  // opposite-feeling directions for a bit of life. Routes reach
+  // beyond the lot bounds at each end so cars enter and exit the
+  // diorama from off-screen.
+  ambient.addCar(
+    "office_carpark_in",
+    [
+      [38.5, -22],
+      [38.5, 18],
+    ],
+    { type: "sedan", bodyColor: "#3a8fd6", topColor: "#1f5fa0", speed: 3.6 },
+  );
+  ambient.addCar(
+    "office_carpark_out",
+    [
+      [37.0, 24],
+      [37.0, -16],
+    ],
+    { type: "mini", bodyColor: "#e84b3a", topColor: "#1c1c1c", speed: 3.2 },
+  );
+  // A slower jeep crossing the front of the lot along the entrance lane.
+  ambient.addCar(
+    "office_carpark_cross",
+    [
+      [-30, -12],
+      [50, -12],
+    ],
+    { type: "jeep", bodyColor: "#5fa657", topColor: "#3a7a3a", speed: 2.8 },
+  );
+
+  // Tick the ambient movers each frame the office scene renders. We
+  // use the engine's wall-clock delta (capped) so cars move at a
+  // sensible speed regardless of frame rate. This intentionally is
+  // not scaled by the simulation speed slider — the cars are pure
+  // ambient scenery, not part of the claim simulation.
+  scene.onBeforeRenderObservable.add(() => {
+    const dt = Math.min(0.1, scene.getEngine().getDeltaTime() / 1000);
+    ambient.update(dt);
+  });
 }
