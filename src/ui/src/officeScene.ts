@@ -79,15 +79,22 @@ export function buildOffice(scene: Scene): OfficeLayout {
 
   // ----- Floor & exterior ground -----
   // Doubled full-floor footprint: the office spans x∈[-30, 30], z∈[-15, 25]
-  // (60 × 40 units). The exterior ground extends well beyond it so the
-  // diorama edges don't cut off when the camera pans.
+  // (60 × 40 units). The exterior ground is a grass-land that extends well
+  // beyond the office so the diorama edges don't cut off when the camera
+  // pans, and is decorated with trees, flowers, a fountain, and benches by
+  // `buildExteriorLandscape` further down.
   const ground = MeshBuilder.CreateBox(
     "ground",
     { width: 110, depth: 110, height: 0.4 },
     scene,
   );
   ground.position.y = -0.2;
-  ground.material = mat("ground", "#2f3a52");
+  ground.material = mat("ground", "#6aa84f");
+
+  // Decorate the grass land surrounding the office with trees, flower
+  // patches, a fountain, benches, lampposts and a stone path leading to
+  // the entrance.
+  buildExteriorLandscape(scene, mat);
 
   // Main office floor — light tile
   const floor = MeshBuilder.CreateBox(
@@ -2174,4 +2181,360 @@ function buildMagazines(
     m.position = new Vector3(pos.x + i * 0.05, pos.y + 0.02 + i * 0.045, pos.z + i * 0.04);
     m.material = mat(`${name}_${i}_mat`, palette[i % palette.length]);
   }
+}
+
+/**
+ * Decorate the grass land surrounding the office with voxel trees, flower
+ * patches, a small fountain, benches, lampposts and a stone path that
+ * leads from the customer spawn point to the office entrance. All meshes
+ * are static and live entirely outside the office walls
+ * (x∈[-30, 30], z∈[-15, 25]) so they never overlap interior furniture or
+ * agent walking paths.
+ */
+function buildExteriorLandscape(
+  scene: Scene,
+  mat: MaterialFactory,
+): void {
+  const makeBox = (
+    name: string,
+    w: number,
+    h: number,
+    d: number,
+    pos: Vector3,
+    hex: string,
+  ): Mesh => {
+    const box = MeshBuilder.CreateBox(name, { width: w, height: h, depth: d }, scene);
+    box.position = pos;
+    box.material = mat(name, hex);
+    return box;
+  };
+
+  // Voxel tree: brown trunk + leafy cube, with a slight scale knob.
+  const makeTree = (x: number, z: number, scale = 1, leafHex = "#3f7a44"): void => {
+    const tag = `ext_tree_${x.toFixed(1)}_${z.toFixed(1)}`;
+    makeBox(
+      `${tag}_trunk`,
+      0.45 * scale,
+      1.3 * scale,
+      0.45 * scale,
+      new Vector3(x, 0.65 * scale, z),
+      "#7a4f2a",
+    );
+    makeBox(
+      `${tag}_leaves`,
+      1.6 * scale,
+      1.5 * scale,
+      1.6 * scale,
+      new Vector3(x, 1.85 * scale, z),
+      leafHex,
+    );
+    // A second smaller cube of leaves on top, gives a chunky voxel canopy.
+    makeBox(
+      `${tag}_leaves_top`,
+      1.0 * scale,
+      0.7 * scale,
+      1.0 * scale,
+      new Vector3(x, 2.85 * scale, z),
+      leafHex,
+    );
+  };
+
+  // A small flower patch: a darker grass square with 3-4 coloured flower
+  // cubes on top.
+  const makeFlowerPatch = (
+    x: number,
+    z: number,
+    colors: string[] = ["#e8504c", "#ffd166", "#f4a3c7", "#f0f0f0"],
+  ): void => {
+    const tag = `ext_flowers_${x.toFixed(1)}_${z.toFixed(1)}`;
+    makeBox(
+      `${tag}_pad`,
+      1.6,
+      0.06,
+      1.6,
+      new Vector3(x, 0.05, z),
+      "#5a9648",
+    );
+    const offsets: Array<[number, number]> = [
+      [-0.45, -0.45],
+      [0.45, -0.4],
+      [-0.4, 0.45],
+      [0.45, 0.45],
+    ];
+    for (let i = 0; i < offsets.length; i++) {
+      const [dx, dz] = offsets[i];
+      const c = colors[i % colors.length];
+      // stem
+      makeBox(
+        `${tag}_stem_${i}`,
+        0.08,
+        0.32,
+        0.08,
+        new Vector3(x + dx, 0.24, z + dz),
+        "#3f7a44",
+      );
+      // bloom
+      makeBox(
+        `${tag}_bloom_${i}`,
+        0.28,
+        0.22,
+        0.28,
+        new Vector3(x + dx, 0.5, z + dz),
+        c,
+      );
+    }
+  };
+
+  // Voxel park bench: wooden seat + back, two stone supports.
+  const makeBench = (
+    cx: number,
+    cz: number,
+    facing: "N" | "S" | "E" | "W" = "N",
+  ): void => {
+    const tag = `ext_bench_${cx.toFixed(1)}_${cz.toFixed(1)}`;
+    const seatLong = 1.8;
+    const seatShort = 0.5;
+    const horiz = facing === "E" || facing === "W";
+    const w = horiz ? seatShort : seatLong;
+    const d = horiz ? seatLong : seatShort;
+    // seat
+    makeBox(`${tag}_seat`, w, 0.14, d, new Vector3(cx, 0.45, cz), "#7a4f2a");
+    // back rail — offset behind the seat, on the side opposite the
+    // direction the bench is facing.
+    let bx = cx;
+    let bz = cz;
+    let bw = w;
+    let bd = 0.12;
+    if (facing === "N") bz = cz + 0.2; // back is to the south, faces N
+    else if (facing === "S") bz = cz - 0.2;
+    else if (facing === "E") {
+      bx = cx - 0.2;
+      bw = 0.12;
+      bd = d;
+    } else if (facing === "W") {
+      bx = cx + 0.2;
+      bw = 0.12;
+      bd = d;
+    }
+    makeBox(`${tag}_back`, bw, 0.55, bd, new Vector3(bx, 0.78, bz), "#7a4f2a");
+    // legs
+    const legColor = "#8a8576";
+    if (horiz) {
+      makeBox(`${tag}_legA`, 0.18, 0.4, 0.18, new Vector3(cx, 0.2, cz - 0.7), legColor);
+      makeBox(`${tag}_legB`, 0.18, 0.4, 0.18, new Vector3(cx, 0.2, cz + 0.7), legColor);
+    } else {
+      makeBox(`${tag}_legA`, 0.18, 0.4, 0.18, new Vector3(cx - 0.7, 0.2, cz), legColor);
+      makeBox(`${tag}_legB`, 0.18, 0.4, 0.18, new Vector3(cx + 0.7, 0.2, cz), legColor);
+    }
+  };
+
+  // Lamppost: tall slim post with a glowing cube head.
+  const makeLamppost = (x: number, z: number): void => {
+    const tag = `ext_lamp_${x.toFixed(1)}_${z.toFixed(1)}`;
+    makeBox(`${tag}_post`, 0.22, 2.4, 0.22, new Vector3(x, 1.2, z), "#3a3a44");
+    makeBox(`${tag}_arm`, 0.6, 0.14, 0.14, new Vector3(x + 0.3, 2.35, z), "#3a3a44");
+    const head = makeBox(
+      `${tag}_head`,
+      0.45,
+      0.45,
+      0.45,
+      new Vector3(x + 0.55, 2.35, z),
+      "#ffe6a8",
+    );
+    const m = head.material as StandardMaterial;
+    m.emissiveColor = Color3.FromHexString("#ffd066");
+  };
+
+  // Decorative voxel rock cluster.
+  const makeRock = (x: number, z: number, scale = 1): void => {
+    const tag = `ext_rock_${x.toFixed(1)}_${z.toFixed(1)}`;
+    makeBox(
+      `${tag}_a`,
+      0.9 * scale,
+      0.5 * scale,
+      0.9 * scale,
+      new Vector3(x, 0.25 * scale, z),
+      "#8a8576",
+    );
+    makeBox(
+      `${tag}_b`,
+      0.5 * scale,
+      0.35 * scale,
+      0.5 * scale,
+      new Vector3(x + 0.4 * scale, 0.18 * scale, z + 0.2 * scale),
+      "#9a958a",
+    );
+  };
+
+  // Central voxel fountain: stone basin, water, central pillar with droplet
+  // accent. Placed in the front lawn left of the entrance path.
+  const makeFountain = (cx: number, cz: number): void => {
+    const tag = `ext_fountain_${cx.toFixed(1)}_${cz.toFixed(1)}`;
+    // Outer stone ring (built from 4 rim segments around a square basin).
+    const stone = "#cdc6b4";
+    const stoneDark = "#9a9486";
+    // Basin pad (slightly raised square)
+    makeBox(`${tag}_base`, 4.4, 0.2, 4.4, new Vector3(cx, 0.1, cz), stoneDark);
+    // Stone rim
+    makeBox(`${tag}_rimN`, 4.4, 0.45, 0.4, new Vector3(cx, 0.42, cz - 2.0), stone);
+    makeBox(`${tag}_rimS`, 4.4, 0.45, 0.4, new Vector3(cx, 0.42, cz + 2.0), stone);
+    makeBox(`${tag}_rimE`, 0.4, 0.45, 4.4, new Vector3(cx + 2.0, 0.42, cz), stone);
+    makeBox(`${tag}_rimW`, 0.4, 0.45, 4.4, new Vector3(cx - 2.0, 0.42, cz), stone);
+    // Water surface
+    makeBox(`${tag}_water`, 3.6, 0.1, 3.6, new Vector3(cx, 0.45, cz), "#5fa8d6");
+    // Central pillar
+    makeBox(`${tag}_pillar1`, 0.9, 0.9, 0.9, new Vector3(cx, 0.95, cz), stone);
+    makeBox(`${tag}_pillar2`, 0.6, 0.6, 0.6, new Vector3(cx, 1.7, cz), stone);
+    // Top "spray" — a translucent-looking light-blue cube.
+    makeBox(`${tag}_spray`, 0.4, 0.5, 0.4, new Vector3(cx, 2.25, cz), "#cfe7ff");
+    // Droplet beads around the pillar
+    for (const [dx, dz] of [
+      [0.9, 0],
+      [-0.9, 0],
+      [0, 0.9],
+      [0, -0.9],
+    ]) {
+      makeBox(
+        `${tag}_drop_${dx}_${dz}`,
+        0.16,
+        0.16,
+        0.16,
+        new Vector3(cx + dx, 1.1, cz + dz),
+        "#9bd0ee",
+      );
+    }
+  };
+
+  // Stone slab — used to build the entrance path.
+  const makePathSlab = (x: number, z: number, w: number, d: number): void => {
+    const tag = `ext_path_${x.toFixed(1)}_${z.toFixed(1)}`;
+    makeBox(`${tag}`, w, 0.06, d, new Vector3(x, 0.03, z), "#cdc6b4");
+  };
+
+  // ---- Entrance path: from spawn (0, -18) up to the doors at z=-15. ----
+  // The office floor begins around z=-15 so the path runs from the front
+  // grass to the welcome mat. Three slabs give it a stepping-stone feel.
+  for (let i = 0; i < 6; i++) {
+    const z = -27 + i * 2;
+    makePathSlab(0, z, 3.2, 1.6);
+  }
+  // A wider stone "apron" right in front of the doors.
+  makePathSlab(0, -16.0, 5.0, 1.4);
+
+  // ---- Front lawn (z < -15): fountain + benches + trees + flowers. ----
+  // Fountain on the front-left lawn, away from the entrance path.
+  makeFountain(-12, -22);
+  // Benches flanking the fountain so visitors can sit while they wait.
+  makeBench(-15.5, -22, "E");
+  makeBench(-8.5, -22, "W");
+  // A second bench on the right side facing the path, for symmetry.
+  makeBench(10, -19, "S");
+  makeBench(-6, -16.5, "S");
+
+  // Trees along the front lawn, offset away from the path and the
+  // entrance arc. Mirror across x=0 so the lawn looks balanced.
+  const frontTrees: Array<[number, number, number]> = [
+    [-26, -20, 1.0],
+    [-22, -27, 1.1],
+    [-18, -32, 0.9],
+    [-10, -29, 1.0],
+    [-4, -33, 0.85],
+    [4, -33, 0.85],
+    [10, -29, 1.0],
+    [18, -32, 0.9],
+    [22, -27, 1.1],
+    [26, -20, 1.0],
+    [16, -22, 0.95],
+    [-16, -32, 0.8],
+  ];
+  for (const [x, z, s] of frontTrees) makeTree(x, z, s);
+
+  // Flower patches along the front, dotted between trees.
+  const frontFlowers: Array<[number, number]> = [
+    [-20, -18],
+    [-6, -18],
+    [6, -18],
+    [20, -18],
+    [-14, -26],
+    [14, -26],
+    [-25, -28],
+    [25, -28],
+    [-3, -22.5],
+    [3, -22.5],
+  ];
+  for (const [x, z] of frontFlowers) makeFlowerPatch(x, z);
+
+  // Lampposts framing the entrance path.
+  makeLamppost(-3.2, -17);
+  makeLamppost(3.2, -17);
+  makeLamppost(-3.2, -25);
+  makeLamppost(3.2, -25);
+
+  // Rocks for visual breakup.
+  makeRock(-22, -33, 1.0);
+  makeRock(22, -33, 1.0);
+  makeRock(-30, -22, 0.9);
+  makeRock(30, -22, 0.9);
+
+  // ---- Left side strip (x < -30) ----
+  const leftTrees: Array<[number, number, number]> = [
+    [-36, -10, 1.0],
+    [-40, -2, 1.1],
+    [-36, 6, 0.95],
+    [-42, 14, 1.05],
+    [-37, 22, 1.0],
+    [-44, 0, 0.9],
+    [-48, 10, 0.85],
+    [-46, -8, 0.95],
+  ];
+  for (const [x, z, s] of leftTrees) makeTree(x, z, s);
+  makeFlowerPatch(-34, -4);
+  makeFlowerPatch(-34, 12);
+  makeFlowerPatch(-39, 18);
+  makeBench(-34, 4, "E");
+  makeRock(-38, -16, 0.9);
+  makeLamppost(-34, 0);
+  makeLamppost(-34, 18);
+
+  // ---- Right side strip (x > 30) ----
+  const rightTrees: Array<[number, number, number]> = [
+    [36, -10, 1.0],
+    [40, -2, 1.1],
+    [36, 6, 0.95],
+    [42, 14, 1.05],
+    [37, 22, 1.0],
+    [44, 0, 0.9],
+    [48, 10, 0.85],
+    [46, -8, 0.95],
+  ];
+  for (const [x, z, s] of rightTrees) makeTree(x, z, s);
+  makeFlowerPatch(34, -4);
+  makeFlowerPatch(34, 12);
+  makeFlowerPatch(39, 18);
+  makeBench(34, 4, "W");
+  makeRock(38, -16, 0.9);
+  makeLamppost(34, 0);
+  makeLamppost(34, 18);
+
+  // ---- Back strip (z > 25) ----
+  const backTrees: Array<[number, number, number]> = [
+    [-26, 30, 1.0],
+    [-18, 33, 1.1],
+    [-10, 30, 0.95],
+    [-2, 34, 1.05],
+    [6, 30, 0.95],
+    [14, 33, 1.0],
+    [22, 30, 1.0],
+    [26, 36, 0.9],
+    [-26, 38, 0.9],
+    [0, 40, 1.0],
+    [16, 40, 0.95],
+    [-14, 40, 0.95],
+  ];
+  for (const [x, z, s] of backTrees) makeTree(x, z, s);
+  makeFlowerPatch(-22, 36);
+  makeFlowerPatch(0, 30);
+  makeFlowerPatch(20, 36);
+  makeRock(-30, 30, 0.9);
+  makeRock(30, 30, 0.9);
 }
