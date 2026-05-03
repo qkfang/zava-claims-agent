@@ -1871,9 +1871,12 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   }
 
   // ----- Zone 4: Travel Hub — Travel Insurance (lost luggage) -----
-  // North-west quadrant
+  // Far north-west corner — pushed all the way west onto the open grass
+  // beside the back-left skyline tower, so the blue terminal stands clear
+  // of the Zava Insurance office and reads as the western "edge" of the
+  // neighbourhood. Sits west of Cedar Way (kerb at x≈-28.65).
   {
-    const zx = -20;
+    const zx = -32;
     const zz = 18;
 
     // Small terminal building
@@ -1947,11 +1950,10 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       { x: -7, z: 4 },
     );
 
-    // Pushed well west of the travel terminal (and the Zava Insurance
-    // office at x≈-10, z≈8, which is 6m tall and was occluding this
-    // label from the south-east camera angle). Sitting on open grass
-    // at the far-left edge keeps the sign readable.
-    makeLabel(zx - 12, zz - 10, "Travel Hub — Travel Claims (Grace)", "#3a5fb0");
+    // Pushed south-east of the relocated travel terminal so the label
+    // sits on open grass between the hub and the main road, instead of
+    // running off the western edge of the map.
+    makeLabel(zx + 2, zz - 12, "Travel Hub — Travel Claims (Grace)", "#3a5fb0");
   }
 
   // ----- Zone 5: Quiet Suburb Home — Life Insurance -----
@@ -2521,7 +2523,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     home: new Vector3(16 - 2, 0, 14 - 4),
     motor: new Vector3(22 + 1.5, 0, 0 - 2),
     business: new Vector3(-18 + 1, 0, -14 + 2),
-    travel: new Vector3(-20 + 5, 0, 18 - 4),
+    travel: new Vector3(-32 + 8, 0, 18 - 4),
     life: new Vector3(16 - 1, 0, -16 + 2),
   };
 
