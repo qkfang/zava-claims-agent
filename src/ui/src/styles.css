@@ -136,7 +136,9 @@ aside h2 {
 .panel-toggle:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); }
 .collapsible.collapsed { max-height: none; padding-bottom: 10px; }
 .collapsible.collapsed .panel-header { margin-bottom: 0; }
-.collapsible.collapsed .panel-body { display: none; }
+.collapsible.collapsed .panel-body,
+#log-panel.collapsed .panel-body,
+#agents-panel.collapsed .panel-body { display: none; }
 #log-panel .panel-body {
   display: flex;
   flex-direction: column;
