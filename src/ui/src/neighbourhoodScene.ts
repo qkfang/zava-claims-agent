@@ -1211,6 +1211,22 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     to: number,
   ): void => {
     for (let v = from; v <= to; v += 3.2) {
+      // Skip dashes that fall inside the central main-road asphalt at the
+      // intersection. The main horizontal road occupies z∈[-2.5, 2.5] and
+      // the main vertical road occupies x∈[-2.5, 2.5]; with a small kerb
+      // buffer of ±0.6 a side-road dash anywhere in |v|<3.1 of the cross
+      // axis lands on the main road's tarmac and reads as an extra
+      // "floating" dotted line on top of the intersection.
+      if (along === "x") {
+        // Side road runs east-west at z=fixed; it crosses the main vertical
+        // road at x≈0. Skip dashes that would sit on the main vertical
+        // road's asphalt.
+        if (Math.abs(v) < 3.1) continue;
+      } else {
+        // Side road runs north-south at x=fixed; it crosses the main
+        // horizontal road at z≈0.
+        if (Math.abs(v) < 3.1) continue;
+      }
       const dash = MeshBuilder.CreateBox(
         `${name}_${v}`,
         along === "x"
@@ -1228,21 +1244,26 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   };
 
   // Maple Crescent — east-west residential street running through the
-  // northern half, in front of the home-claims zone.
-  makeRoad("nh_road_maple", 28, 3.5, new Vector3(20, 0.05, 20));
-  sideRoadDash("nh_dash_maple", "x", 20, 8, 32);
+  // northern half, in front of the home-claims zone. Extended west across
+  // the main vertical road (now reaches x≈-14) so the upper neighbourhood
+  // is no longer split in two by the previous gap at x=0..6. Stops short
+  // of the travel hub terminal (x≈-16) so it doesn't slice through that
+  // building.
+  makeRoad("nh_road_maple", 48, 3.5, new Vector3(10, 0.05, 20));
+  sideRoadDash("nh_dash_maple", "x", 20, -12, 32);
   // Side kerbs (sidewalks) along Maple Crescent.
-  makeKerb("nh_kerb_maple_n", 28, 0.9, new Vector3(20, 0.07, 22.2));
-  makeKerb("nh_kerb_maple_s", 28, 0.9, new Vector3(20, 0.07, 17.8));
+  makeKerb("nh_kerb_maple_n", 48, 0.9, new Vector3(10, 0.07, 22.2));
+  makeKerb("nh_kerb_maple_s", 48, 0.9, new Vector3(10, 0.07, 17.8));
 
   // Birch Lane — east-west street serving the southern apartment / civic
   // area. Sits between the central road and the apartment block. Extended
-  // east (to x≈22) so it reaches the new south-east connector and the
-  // relocated nh_birch_b house no longer sits on the central N-S asphalt.
-  makeRoad("nh_road_birch", 50, 3.5, new Vector3(-3, 0.05, -10));
-  sideRoadDash("nh_dash_birch", "x", -10, -26, 20);
-  makeKerb("nh_kerb_birch_n", 50, 0.9, new Vector3(-3, 0.07, -7.8));
-  makeKerb("nh_kerb_birch_s", 50, 0.9, new Vector3(-3, 0.07, -12.2));
+  // east to x≈38 so it now bridges Elm Court (x=22) and Oak Drive (x=33)
+  // — previously the eastern half was disconnected, leaving a gap south
+  // of the Northside Smash Repairs garage / Builder's Yard area.
+  makeRoad("nh_road_birch", 66, 3.5, new Vector3(5, 0.05, -10));
+  sideRoadDash("nh_dash_birch", "x", -10, -26, 36);
+  makeKerb("nh_kerb_birch_n", 66, 0.9, new Vector3(5, 0.07, -7.8));
+  makeKerb("nh_kerb_birch_s", 66, 0.9, new Vector3(5, 0.07, -12.2));
 
   // Oak Drive — north-south street on the east side, connecting Maple
   // Crescent to the main road. Placed at x=33 so it sits clear of the
@@ -1267,10 +1288,15 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   makeKerb("nh_kerb_main_w", 0.9, 80, new Vector3(-2.95, 0.07, 0));
 
   // Zebra crossings around the central roundabout — four approaches.
-  makeCrosswalk("nh_xw_n", 0, 4.6, "ew", 4.0);
-  makeCrosswalk("nh_xw_s", 0, -4.6, "ew", 4.0);
-  makeCrosswalk("nh_xw_e", 4.6, 0, "ns", 4.0);
-  makeCrosswalk("nh_xw_w", -4.6, 0, "ns", 4.0);
+  // Shifted out from ±4.6 to ±5.5 so the stripes sit cleanly on the road
+  // asphalt rather than overlapping the cream-coloured roundabout disc
+  // (radius 3) which previously looked like extra white blobs hugging the
+  // roundabout. Span shortened to 2.4 to keep the stripes inside the 5-wide
+  // road and avoid spilling onto the kerbs / grass.
+  makeCrosswalk("nh_xw_n", 0, 5.5, "ew", 2.4);
+  makeCrosswalk("nh_xw_s", 0, -5.5, "ew", 2.4);
+  makeCrosswalk("nh_xw_e", 5.5, 0, "ns", 2.4);
+  makeCrosswalk("nh_xw_w", -5.5, 0, "ns", 2.4);
 
   // Street name signs at the corners of the new streets.
   makeStreetSign(7.0, 22.5, "MAPLE CRESCENT", "#3a8fd6");
@@ -1378,21 +1404,43 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
 
   const officeBase = MeshBuilder.CreateBox(
     "nh_office_base",
-    { width: 12, height: 4.2, depth: 8 },
+    { width: 12, height: 6.0, depth: 8 },
     scene,
   );
-  officeBase.position = new Vector3(0, 2.1, 0);
+  officeBase.position = new Vector3(0, 3.0, 0);
   officeBase.material = mat("officeBase", "#efe0c8");
   officeBase.parent = officeRoot;
 
-  const officeRoof = MeshBuilder.CreateBox(
-    "nh_office_roof",
-    { width: 12.8, height: 0.6, depth: 8.8 },
+  // Floor-divider band between the two storeys — a thin trim that visually
+  // separates ground floor (door + sign) from the upper floor windows.
+  const officeBand = MeshBuilder.CreateBox(
+    "nh_office_band",
+    { width: 12.2, height: 0.2, depth: 8.2 },
     scene,
   );
-  officeRoof.position = new Vector3(0, 4.5, 0);
-  officeRoof.material = mat("officeRoof", "#3a5fb0");
-  officeRoof.parent = officeRoot;
+  officeBand.position = new Vector3(0, 3.0, 0);
+  officeBand.material = mat("officeBand", "#d8c9a2");
+  officeBand.parent = officeRoot;
+
+  // Pitched (gable) roof — replaces the previous flat slab so the office
+  // reads as a small two-storey building rather than a shoebox. Ridge runs
+  // along the Z (front-to-back) axis so the gable face is visible from the
+  // street side.
+  makeGableRoof("nh_office_roof", 12, 8, 0, 0, 6.0, "#3a5fb0", "#cfd6e6");
+  // makeGableRoof attaches to scene root, so reparent its created meshes
+  // (eave slab + 4 layers + ridge) under the officeRoot transform so the
+  // roof moves with the rest of the office.
+  for (const n of [
+    "nh_office_roof_eaveSlab",
+    "nh_office_roof_layer_0",
+    "nh_office_roof_layer_1",
+    "nh_office_roof_layer_2",
+    "nh_office_roof_layer_3",
+    "nh_office_roof_ridge",
+  ]) {
+    const m = scene.getMeshByName(n);
+    if (m) m.parent = officeRoot;
+  }
 
   // Office sign
   const officeSign = MeshBuilder.CreateBox(
@@ -1400,7 +1448,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     { width: 8, height: 1.4, depth: 0.2 },
     scene,
   );
-  officeSign.position = new Vector3(0, 3.6, -4.05);
+  officeSign.position = new Vector3(0, 2.55, -4.05);
   officeSign.parent = officeRoot;
 
   const signTex = new DynamicTexture(
@@ -1439,17 +1487,39 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   door.material = mat("officeDoor", "#7a4f2a");
   door.parent = officeRoot;
 
-  // Office windows
+  // Office windows — upper storey (front face) sits above the floor band.
+  // The ground floor face is taken up by the entrance + signage so windows
+  // there would overlap the sign.
   const winMat = mat("officeWin", "#cfe7ff");
-  for (const wx of [-4, -2, 2, 4]) {
+  for (const wx of [-4.4, -2.2, 2.2, 4.4]) {
     const w = MeshBuilder.CreateBox(
-      `nh_office_win_${wx}`,
-      { width: 1.2, height: 1.0, depth: 0.1 },
+      `nh_office_winU_${wx}`,
+      { width: 1.4, height: 1.2, depth: 0.1 },
       scene,
     );
-    w.position = new Vector3(wx, 2.6, -4.03);
+    w.position = new Vector3(wx, 4.6, -4.03);
     w.material = winMat;
     w.parent = officeRoot;
+  }
+  // Side windows (east + west) on the upper storey so the building doesn't
+  // look blank from the roundabout / pathway sides.
+  for (const wz of [-2.2, 0, 2.2]) {
+    const wE = MeshBuilder.CreateBox(
+      `nh_office_winE_${wz}`,
+      { width: 0.1, height: 1.2, depth: 1.2 },
+      scene,
+    );
+    wE.position = new Vector3(6.03, 4.6, wz);
+    wE.material = winMat;
+    wE.parent = officeRoot;
+    const wW = MeshBuilder.CreateBox(
+      `nh_office_winW_${wz}`,
+      { width: 0.1, height: 1.2, depth: 1.2 },
+      scene,
+    );
+    wW.position = new Vector3(-6.03, 4.6, wz);
+    wW.material = winMat;
+    wW.parent = officeRoot;
   }
 
   // Small pathway from the office door to the roundabout
@@ -1942,8 +2012,12 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // apartment block with a forced front door, police tape, and an
   // investigator's magnifier marker rather than alarm symbols.
   {
-    const zx = -10;
-    const zz = -24;
+    // Relocated to the far left edge of the map so the foreground reads
+    // cleanly into the central roundabout / Zava Insurance office without
+    // being blocked by a tall apartment block. The block now sits in the
+    // south-west corner just south of the downtown mid-rise cluster.
+    const zx = -32;
+    const zz = -28;
 
     // Three-storey apartment block
     makeBox("nh_apt_base", 7.0, 7.5, 5.0, new Vector3(zx, 3.75, zz), "#cfbfa8");
