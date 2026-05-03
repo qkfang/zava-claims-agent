@@ -12,6 +12,8 @@ import { PALETTES } from "./characterPalettes";
 import {
   NeighbourhoodAmbient,
   buildCarMeshes,
+  buildFireTruckMeshes,
+  buildVanMeshes,
   buildJeepMeshes,
   makeBurstPipeIncident,
   makeCalmGlowIncident,
@@ -227,7 +229,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
    */
   const makeStaticVehicle = (
     name: string,
-    kind: "car" | "jeep",
+    kind: "car" | "jeep" | "firetruck" | "van",
     pos: Vector3,
     rotY: number,
     bodyHex: string,
@@ -239,6 +241,10 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     node.rotation.y = rotY;
     if (kind === "jeep") {
       buildJeepMeshes(scene, node, bodyHex, topHex);
+    } else if (kind === "firetruck") {
+      buildFireTruckMeshes(scene, node, bodyHex, topHex);
+    } else if (kind === "van") {
+      buildVanMeshes(scene, node, bodyHex, topHex);
     } else {
       buildCarMeshes(scene, node, bodyHex, topHex);
     }
@@ -1864,11 +1870,18 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     // "Closed" sign
     makeBox("nh_closed_sign", 0.9, 0.4, 0.06, new Vector3(cafeX, 1.4, zz - 1.95), "#c44a3a");
 
-    // Fire truck nearby
-    makeBox("nh_fire_body", 3.6, 1.2, 1.6, new Vector3(zx + 4.4, 0.7, zz - 5), "#e84b3a");
-    makeBox("nh_fire_cab", 1.4, 1.0, 1.5, new Vector3(zx + 3.0, 1.7, zz - 5), "#c44a3a");
-    makeBox("nh_fire_light", 0.4, 0.25, 0.4, new Vector3(zx + 3.0, 2.35, zz - 5), "#3a8fd6");
-    makeBox("nh_fire_ladder", 3.0, 0.15, 0.3, new Vector3(zx + 4.6, 1.95, zz - 5), "#b8b0a0");
+    // Fire truck nearby — proper voxel fire truck (cab + tank + ladder
+    // + light bar + wheels) so it reads as a real vehicle. Long axis
+    // runs along the road (east-west); cab faces west (−X) so we rotate
+    // by −π/2 from the local +Z forward orientation.
+    makeStaticVehicle(
+      "nh_fire",
+      "firetruck",
+      new Vector3(zx + 4.0, 0, zz - 5),
+      -Math.PI / 2,
+      "#e84b3a",
+      "#c44a3a",
+    );
 
     // Customer (Tom)
     makePerson(cafeX - 1.5, zz - 4.5, "customerBusiness", { x: -7, z: -4 });
@@ -1886,9 +1899,17 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeTimberStack(cafeX + 2.5, zz - 4.5);
     makeBarrier(cafeX, zz - 4.0);
 
-    // Forensic electrician van — supports scenario 4 (cause investigation)
-    makeBox("nh_elec_body", 2.6, 1.2, 1.3, new Vector3(cafeX + 5.5, 0.7, zz - 5), "#2a55a0");
-    makeBox("nh_elec_cab", 1.2, 0.9, 1.25, new Vector3(cafeX + 6.5, 1.45, zz - 5), "#1f3f78");
+    // Forensic electrician van — supports scenario 4 (cause investigation).
+    // Proper voxel van (cab + cargo box + windscreen + side door + wheels).
+    // Cab faces east (+X) so we rotate by +π/2 from the local +Z forward.
+    makeStaticVehicle(
+      "nh_elec",
+      "van",
+      new Vector3(cafeX + 5.5, 0, zz - 5),
+      Math.PI / 2,
+      "#2a55a0",
+      "#1f3f78",
+    );
     makeBox("nh_elec_stripe", 2.7, 0.18, 1.32, new Vector3(cafeX + 5.5, 0.85, zz - 5), "#ffd166");
 
     // Incident marker
