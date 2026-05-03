@@ -1501,7 +1501,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   sctx.fillText("Z", 70, 105);
   sctx.fillStyle = "#ffffff";
   sctx.font = "bold 90px sans-serif";
-  sctx.fillText("ZAVA INSURANCE", 200, 110);
+  sctx.fillText("ZAVA Calims", 200, 110);
   signTex.update();
 
   const signMat = new StandardMaterial("nh_office_sign_mat", scene);
@@ -1883,7 +1883,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     // Builder rebuild props for the cafe (scenario 4): a small crane lifting
     // ceiling materials, a skip for fire-damaged joinery, and a stack of
     // timber for the rebuild.
-    makeCrane(cafeX - 12, zz + 2);
+    makeCrane(cafeX - 20, zz + 2);
     makeSkip(cafeX - 6, zz - 4.5);
     makeTimberStack(cafeX + 2.5, zz - 4.5);
     makeBarrier(cafeX, zz - 4.0);
@@ -1951,38 +1951,38 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     attach(tsign);
 
     // Tarmac
-    makeBox("nh_tarmac", 12, 0.05, 5, new Vector3(zx + 1, 0.07, zz + 4), "#5a5d65");
+    makeBox("nh_tarmac", 12, 0.05, 5, new Vector3(zx - 1, 0.07, zz - 4), "#5a5d65");
     // Stripe
-    makeBox("nh_tarmac_stripe", 8, 0.02, 0.2, new Vector3(zx + 1, 0.1, zz + 4), "#f4e8a8");
+    makeBox("nh_tarmac_stripe", 8, 0.02, 0.2, new Vector3(zx - 1, 0.1, zz - 4), "#f4e8a8");
 
     // Tiny plane parked
-    makeBox("nh_plane_body", 4.0, 0.7, 0.9, new Vector3(zx + 1, 0.55, zz + 4), "#ffffff");
-    makeBox("nh_plane_tail", 0.6, 1.0, 0.2, new Vector3(zx - 0.8, 1.0, zz + 4), "#3a5fb0");
-    makeBox("nh_plane_wing", 0.8, 0.15, 3.2, new Vector3(zx + 1, 0.7, zz + 4), "#dcdcdc");
+    makeBox("nh_plane_body", 4.0, 0.7, 0.9, new Vector3(zx - 1, 0.55, zz - 4), "#ffffff");
+    makeBox("nh_plane_tail", 0.6, 1.0, 0.2, new Vector3(zx + 0.8, 1.0, zz - 4), "#3a5fb0");
+    makeBox("nh_plane_wing", 0.8, 0.15, 3.2, new Vector3(zx - 1, 0.7, zz - 4), "#dcdcdc");
 
     // Luggage trolley with one missing suitcase
-    makeBox("nh_lug_trolley", 2.4, 0.3, 1.0, new Vector3(zx - 2, 0.25, zz + 1.5), "#7a7a7a");
-    makeBox("nh_lug_case1", 0.8, 0.5, 0.6, new Vector3(zx - 2.6, 0.7, zz + 1.5), "#b03a6f");
-    makeBox("nh_lug_case2", 0.8, 0.5, 0.6, new Vector3(zx - 1.4, 0.7, zz + 1.5), "#3a6dc4");
+    makeBox("nh_lug_trolley", 2.4, 0.3, 1.0, new Vector3(zx + 2, 0.25, zz - 1.5), "#7a7a7a");
+    makeBox("nh_lug_case1", 0.8, 0.5, 0.6, new Vector3(zx + 2.6, 0.7, zz - 1.5), "#b03a6f");
+    makeBox("nh_lug_case2", 0.8, 0.5, 0.6, new Vector3(zx + 1.4, 0.7, zz - 1.5), "#3a6dc4");
     // (third spot intentionally empty)
 
     // Lone suitcase further away — the missing one's mate
-    const lostCase = makeBox("nh_lug_lost", 0.7, 0.4, 0.5, new Vector3(zx + 5, 0.3, zz + 2), "#5a8a4a");
+    const lostCase = makeBox("nh_lug_lost", 0.7, 0.4, 0.5, new Vector3(zx - 5, 0.3, zz - 2), "#5a8a4a");
     travelSuitcase = lostCase;
     // Trolley top is the position the suitcase "starts on" before
     // tumbling off in the incident animation.
-    travelTrolleyTop = new Vector3(zx - 2, 1.0, zz + 1.5);
-    travelLostRest = new Vector3(zx + 5, 0.3, zz + 2);
+    travelTrolleyTop = new Vector3(zx + 2, 1.0, zz - 1.5);
+    travelLostRest = new Vector3(zx - 5, 0.3, zz - 2);
 
     // Worried traveller (Grace) on phone
-    makePerson(zx - 1, zz + 0.5, "customerTravel", { x: -7, z: -4 });
+    makePerson(zx + 1, zz - 0.5, "customerTravel", { x: -7, z: -4 });
 
-    makeIncidentMarker(zx - 2, 2.4, zz + 1.5, "luggage");
+    makeIncidentMarker(zx + 2, 2.4, zz - 1.5, "luggage");
 
     // Path from travel hub to office
     makePathLine(
       "nh_path_travel",
-      { x: zx + 2, z: zz - 1 },
+      { x: zx - 2, z: zz + 1 },
       { x: -7, z: 4 },
     );
 
