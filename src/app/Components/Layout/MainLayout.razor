@@ -21,3 +21,24 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@* ── Floating chatbot widget (end-user assistant). Ported from
+     forex-trading-agent/src/research-analytics _Layout.cshtml. ── *@
+<button id="chatkit-toggle" class="chatkit-float-btn" title="Ask Zava Claims Assistant" type="button">
+    <i class="fa-solid fa-comments"></i>
+</button>
+<div id="chatkit-panel" class="chatkit-float-panel">
+    <div class="chatkit-header">
+        <span>Zava Claims Assistant</span>
+    </div>
+    <div id="chatkit-messages" class="chatkit-messages"></div>
+    <div id="chatkit-prompts" class="chatkit-prompts">
+        <button class="chatkit-prompt-btn" type="button" data-prompt="How do I lodge a new claim with Zava Insurance?">Lodge a claim</button>
+        <button class="chatkit-prompt-btn" type="button" data-prompt="What evidence do I need for a home water-damage claim?">Evidence needed</button>
+        <button class="chatkit-prompt-btn" type="button" data-prompt="How long does a motor claim usually take to settle?">Settlement time</button>
+    </div>
+    <form id="chatkit-form" class="chatkit-input">
+        <input id="chatkit-input" type="text" placeholder="Ask about your claim..." autocomplete="off" />
+        <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+    </form>
+</div>

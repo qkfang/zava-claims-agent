@@ -1,0 +1,92 @@
+@page "/account"
+
+@* My Account page with the "Ask AI" document-query chatbot.
+   Ported from forex-trading-agent/src/research-analytics/Pages/Account/Index.cshtml.
+   In Zava the "references" surface relevant claims agents from the AgentCatalog. *@
+
+<PageTitle>My Account — Zava Insurance</PageTitle>
+
+<div class="account-profile-header mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="account-avatar">
+            <i class="fa-solid fa-circle-user"></i>
+        </div>
+        <div>
+            <h1 class="mb-0 fw-bold" style="font-size:1.4rem;">Welcome back</h1>
+            <div class="text-muted small mt-1">
+                Signed in as a Zava Insurance customer · Use the panel below to query your claims and policies.
+            </div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs account-tabs mb-4" id="accountTabs">
+    <li class="nav-item">
+        <button class="nav-link active" type="button">
+            <i class="fa-solid fa-comments me-1"></i> Ask AI
+        </button>
+    </li>
+</ul>
+
+<!-- ── Ask AI tab ── -->
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-chat">
+        <!-- Settings bar -->
+        <div class="d-flex align-items-center gap-3 mb-3 p-3 aichat-settings">
+            <i class="fa-solid fa-sliders text-muted"></i>
+            <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0 small fw-semibold">Temperature</label>
+                <input type="range" class="form-range aichat-temp-slider" id="aichat-temp"
+                       min="0" max="1" step="0.05" value="0.7" style="width:120px;" />
+                <span class="badge bg-secondary" id="aichat-temp-label">0.7</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 ms-3">
+                <label class="form-label mb-0 small fw-semibold">Model</label>
+                <select class="form-select form-select-sm aichat-select" id="aichat-model" style="width:auto;">
+                    <option value="zava-claims-insight">zava-claims-insight</option>
+                    <option value="zava-claims-research">zava-claims-research</option>
+                </select>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary ms-auto" id="aichat-clear" type="button" title="Clear conversation">
+                <i class="fa-solid fa-trash-can me-1"></i>Clear
+            </button>
+        </div>
+
+        <!-- Two-column layout: chat | references -->
+        <div class="d-flex gap-3" style="height:600px;">
+
+            <!-- Chat panel -->
+            <div class="d-flex flex-column flex-fill aichat-panel" style="min-width:0;">
+                <div class="aichat-messages flex-fill overflow-auto p-3" id="aichat-messages">
+                    <div class="aichat-welcome">
+                        <i class="fa-solid fa-brain fa-2x mb-2"></i>
+                        <p class="mb-1 fw-semibold">Zava Claims AI Assistant</p>
+                        <p class="small text-muted">Ask about your claim, policy coverage, or how the claims office works. Relevant claims agents will appear on the right.</p>
+                    </div>
+                </div>
+                <div class="aichat-composer p-2">
+                    <div class="input-group">
+                        <textarea class="form-control aichat-input" id="aichat-input"
+                                  placeholder="Ask about your claim..." rows="2"
+                                  style="resize:none;"></textarea>
+                        <button class="btn btn-primary aichat-send-btn" id="aichat-send" type="button">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- References panel -->
+            <div class="aichat-refs-panel d-flex flex-column" style="width:320px;flex-shrink:0;">
+                <div class="aichat-refs-header px-3 py-2">
+                    <i class="fa-solid fa-book-open me-1"></i>
+                    <span class="fw-semibold small">Related agents</span>
+                    <span class="badge bg-secondary ms-2" id="aichat-refs-count">0</span>
+                </div>
+                <div class="aichat-refs-list overflow-auto flex-fill p-2" id="aichat-refs-list">
+                    <div class="text-muted small text-center mt-4">References will appear here after your first query.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
