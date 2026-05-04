@@ -16,14 +16,14 @@ var commonTags = {
 var uniqueSuffix = substring(uniqueString(resourceGroup().id, baseName), 0, 6)
 
 // Standard Azure resource naming using the base abbreviation (e.g. "zc").
-var foundryName = 'aif-${baseName}-${uniqueSuffix}'
+var foundryName = 'aif-${baseName}'
 var logAnalyticsName = 'log-${baseName}'
 var appInsightsName = 'appi-${baseName}'
-var storageAccountName = toLower('st${baseName}${uniqueSuffix}')
-var keyVaultName = 'kv-${baseName}-${uniqueSuffix}'
+var storageAccountName = toLower('st${baseName}')
+var keyVaultName = 'kv-${baseName}'
 var appServicePlanName = 'asp-${baseName}'
-var frontendAppName = 'app-${baseName}-frontend-${uniqueSuffix}'
-var backendAppName = 'app-${baseName}-backend-${uniqueSuffix}'
+var frontendAppName = 'app-${baseName}-frontend'
+var backendAppName = 'app-${baseName}-backend'
 
 // ---------------------------------------------------------------------------
 // Monitoring (Log Analytics + Application Insights)

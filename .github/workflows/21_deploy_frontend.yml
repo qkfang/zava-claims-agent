@@ -1,11 +1,11 @@
-name: 21 Deploy UI (Vite)
+name: 21 Deploy Frontend
 
 on:
   push:
     branches: [main]
     paths:
-      - "src/ui/**"
-      - ".github/workflows/21_deploy_ui.yml"
+      - "src/frontend/**"
+      - ".github/workflows/21_deploy_frontend.yml"
   workflow_dispatch:
 
 permissions:
@@ -24,31 +24,22 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: src/ui/package-lock.json
+          cache-dependency-path: src/frontend/package-lock.json
 
       - name: Install dependencies
-        working-directory: src/ui
+        working-directory: src/frontend
         run: npm ci
 
-      - name: Resolve backend (src/app) base URL
-        id: backend
-        run: |
-          if [ -n "${{ vars.BACKEND_APP_URL }}" ]; then
-            echo "url=${{ vars.BACKEND_APP_URL }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "url=https://${{ vars.BACKEND_APP_NAME }}.azurewebsites.net" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build
-        working-directory: src/ui
+        working-directory: src/frontend
         env:
-          VITE_APP_BASE_URL: ${{ steps.backend.outputs.url }}
+          VITE_APP_BASE_URL: https://app-zc-backend-fpyajz.azurewebsites.net
         run: npm run build
 
       - name: Stage static site for Azure App Service (Linux/Node)
         run: |
           mkdir -p ./publish
-          cp -r src/ui/dist/. ./publish/
+          cp -r src/frontend/dist/. ./publish/
 
       - name: Azure CLI Login
         uses: azure/login@v1
@@ -58,5 +49,5 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ vars.FRONTEND_APP_NAME }}
+          app-name: app-zc-frontend
           package: ./publish

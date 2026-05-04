@@ -35,7 +35,7 @@ param backendLinuxFxVersion string = 'DOTNETCORE|10.0'
 param frontendAppCommandLine string = 'pm2 serve /home/site/wwwroot --no-daemon --spa'
 
 @description('Startup command for the backend Web App (.NET self-contained app entry)')
-param backendAppCommandLine string = 'dotnet app.dll'
+param backendAppCommandLine string = 'dotnet backend.dll'
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName

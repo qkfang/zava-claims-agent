@@ -1,11 +1,11 @@
-name: 20 Deploy App (Blazor)
+name: 20 Deploy Backend
 
 on:
   push:
     branches: [main]
     paths:
-      - "src/app/**"
-      - ".github/workflows/20_deploy_app.yml"
+      - "src/backend/**"
+      - ".github/workflows/20_deploy_backend.yml"
   workflow_dispatch:
 
 permissions:
@@ -26,12 +26,12 @@ jobs:
           dotnet-quality: 'preview'
 
       - name: Restore
-        working-directory: src/app
-        run: dotnet restore app.csproj
+        working-directory: src/backend
+        run: dotnet restore backend.csproj
 
       - name: Publish
-        working-directory: src/app
-        run: dotnet publish app.csproj -c Release -o ${{ github.workspace }}/publish --no-restore
+        working-directory: src/backend
+        run: dotnet publish backend.csproj -c Release -o ${{ github.workspace }}/publish --no-restore
 
       - name: Azure CLI Login
         uses: azure/login@v1
@@ -41,5 +41,5 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ vars.BACKEND_APP_NAME }}
+          app-name: app-zc-backend
           package: ${{ github.workspace }}/publish
