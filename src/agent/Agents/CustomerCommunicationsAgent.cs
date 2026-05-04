@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 namespace ZavaClaims.Agents;
 
 /// <summary>
-/// Customer Communications Agent — based on the Customer Communications
-/// Specialist staff role. Drafts clear, empathetic, compliant customer
+/// Customer Communications Agent — based on Cara, Customer Communications
+/// Specialist. Drafts clear, empathetic, compliant customer
 /// communications across the claim journey.
 /// </summary>
 public class CustomerCommunicationsAgent : ClaimsAgent
@@ -14,8 +14,8 @@ public class CustomerCommunicationsAgent : ClaimsAgent
 
     private const string Instructions = """
         You are the Customer Communications Agent in a digital claims office.
-        You represent the Customer Communications Specialist — empathetic,
-        clear, and tone-aware.
+        You represent Cara, the Customer Communications Specialist — warm,
+        articulate, empathetic and clear.
 
         Your job is to:
         - Draft customer-facing messages (status updates, document requests,
@@ -43,7 +43,7 @@ public class CustomerCommunicationsAgent : ClaimsAgent
         """;
 
     public CustomerCommunicationsAgent(AIProjectClient aiProjectClient, string deploymentName, string? searchConnectionId = null, string? searchIndexName = null, string? bingConnectionId = null, ILogger? logger = null)
-        : base(aiProjectClient, AgentId, "Customer Communications Specialist", "Customer Communications Specialist", "Customer Communications", "\u001b[96m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
+        : base(aiProjectClient, AgentId, "Cara", "Customer Communications Specialist", "Customer Communications", "\u001b[96m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
     {
     }
 }

@@ -23,14 +23,14 @@ The C# pattern is modelled on
 
 | Staff character | Role | Class | Agent ID | CLI flag |
 | --- | --- | --- | --- | --- |
-| Sarah Mitchell | Claims Intake Officer | `ClaimsIntakeAgent` | `claims-intake-agent` | `--intake` |
-| Daniel Cho | Claims Assessor | `ClaimsAssessmentAgent` | `claims-assessment-agent` | `--assessment` |
-| Priya Nair | Loss Adjuster | `LossAdjusterAgent` | `loss-adjuster-agent` | `--loss-adjuster` |
-| Elena Garcia | Fraud Investigator | `FraudInvestigationAgent` | `fraud-investigation-agent` | `--fraud` |
-| _Supplier Coordinator_ | Supplier Coordinator | `SupplierCoordinatorAgent` | `supplier-coordination-agent` | `--supplier` |
-| _Settlement Officer_ | Settlement Officer | `SettlementAgent` | `settlement-agent` | `--settlement` |
-| _Customer Communications Specialist_ | Customer Communications Specialist | `CustomerCommunicationsAgent` | `customer-communications-agent` | `--communications` |
-| Mark Reynolds | Claims Team Leader | `TeamLeaderAgent` | `team-leader-agent` | `--team-leader` |
+| Iris | Claims Intake Officer | `ClaimsIntakeAgent` | `claims-intake-agent` | `--intake` |
+| Adam | Claims Assessor | `ClaimsAssessmentAgent` | `claims-assessment-agent` | `--assessment` |
+| Lara | Loss Adjuster | `LossAdjusterAgent` | `loss-adjuster-agent` | `--loss-adjuster` |
+| Felix | Fraud Investigator | `FraudInvestigationAgent` | `fraud-investigation-agent` | `--fraud` |
+| Sam | Supplier Coordinator | `SupplierCoordinatorAgent` | `supplier-coordination-agent` | `--supplier` |
+| Seth | Settlement Officer | `SettlementAgent` | `settlement-agent` | `--settlement` |
+| Cara | Customer Communications Specialist | `CustomerCommunicationsAgent` | `customer-communications-agent` | `--communications` |
+| Theo | Claims Team Leader | `TeamLeaderAgent` | `team-leader-agent` | `--team-leader` |
 
 Every agent represents a stage of the claim lifecycle and includes
 human-in-the-loop guidance consistent with the approval rules in

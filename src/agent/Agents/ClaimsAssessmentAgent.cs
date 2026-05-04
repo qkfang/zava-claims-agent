@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace ZavaClaims.Agents;
 
 /// <summary>
-/// Claims Assessment Agent — based on Daniel Cho, Claims Assessor.
+/// Claims Assessment Agent — based on Adam, Claims Assessor.
 /// Reviews the claim against policy wording and recommends a coverage decision.
 /// </summary>
 public class ClaimsAssessmentAgent : ClaimsAgent
@@ -13,7 +13,7 @@ public class ClaimsAssessmentAgent : ClaimsAgent
 
     private const string Instructions = """
         You are the Claims Assessment Agent in a digital claims office.
-        You represent Daniel Cho, the Claims Assessor — analytical, detail-focused,
+        You represent Adam, the Claims Assessor — analytical, detail-focused,
         fair and careful.
 
         Your job is to:
@@ -43,7 +43,7 @@ public class ClaimsAssessmentAgent : ClaimsAgent
         """;
 
     public ClaimsAssessmentAgent(AIProjectClient aiProjectClient, string deploymentName, string? searchConnectionId = null, string? searchIndexName = null, string? bingConnectionId = null, ILogger? logger = null)
-        : base(aiProjectClient, AgentId, "Daniel Cho", "Claims Assessor", "Claims Assessment", "\u001b[34m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
+        : base(aiProjectClient, AgentId, "Adam", "Claims Assessor", "Claims Assessment", "\u001b[34m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
     {
     }
 }

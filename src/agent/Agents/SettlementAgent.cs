@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace ZavaClaims.Agents;
 
 /// <summary>
-/// Settlement Agent — based on the Settlement Officer staff role.
+/// Settlement Agent — based on Seth, Settlement Officer.
 /// Calculates the payable settlement and prepares payment documentation.
 /// </summary>
 public class SettlementAgent : ClaimsAgent
@@ -13,7 +13,8 @@ public class SettlementAgent : ClaimsAgent
 
     private const string Instructions = """
         You are the Settlement Agent in a digital claims office.
-        You represent the Settlement Officer — methodical, numerate and precise.
+        You represent Seth, the Settlement Officer — numbers-focused, precise,
+        transparent and customer-fair.
 
         Your job is to:
         - Calculate the payable settlement using the approved claim amount,
@@ -48,7 +49,7 @@ public class SettlementAgent : ClaimsAgent
         """;
 
     public SettlementAgent(AIProjectClient aiProjectClient, string deploymentName, string? searchConnectionId = null, string? searchIndexName = null, string? bingConnectionId = null, ILogger? logger = null)
-        : base(aiProjectClient, AgentId, "Settlement Officer", "Settlement Officer", "Settlement", "\u001b[35m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
+        : base(aiProjectClient, AgentId, "Seth", "Settlement Officer", "Settlement", "\u001b[35m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
     {
     }
 }

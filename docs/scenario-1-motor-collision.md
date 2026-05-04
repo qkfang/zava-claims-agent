@@ -32,7 +32,7 @@ Aisha lodges the claim through the customer portal on her phone, still standing 
 
 **Handoff:** Claim is created with claim number `CLM-2026-00184` and routed to assessment.
 
-> Sarah, the intake officer, reviews the agent's draft, confirms the third-party details, and releases the claim into the queue.
+> Iris, the intake officer, reviews the agent's draft, confirms the third-party details, and releases the claim into the queue.
 
 ---
 
@@ -44,7 +44,7 @@ Aisha lodges the claim through the customer portal on her phone, still standing 
 - It recommends **third-party recovery** be pursued from the at-fault driver's insurer, so Aisha's excess can be refunded later.
 - It produces a structured assessment note: "Cover confirmed. Damage consistent with statement. Approve repair, pursue recovery."
 
-> Daniel, the assessor, accepts the recommendation with one click.
+> Adam, the assessor, accepts the recommendation with one click.
 
 ---
 
@@ -55,7 +55,7 @@ Aisha lodges the claim through the customer portal on her phone, still standing 
 - It produces a **draft damage scope** and an estimated repair band of `$3,800–$5,200`.
 - It flags that a physical inspection at the repairer is needed to confirm chassis alignment.
 
-> Priya, the loss adjuster, reviews the draft scope and forwards it to the chosen repairer.
+> Lara, the loss adjuster, reviews the draft scope and forwards it to the chosen repairer.
 
 ---
 
@@ -84,7 +84,7 @@ Aisha lodges the claim through the customer portal on her phone, still standing 
 - The **Settlement AI Agent** matches the invoice to the approved scope and quote.
 - It calculates: `Approved $4,800 − $750 excess = $4,050 payable to repairer`.
 - Aisha pays her excess directly to the repairer at pickup.
-- The agent confirms the payment is within Daniel's authority limit, validates the repairer's bank details, and releases payment.
+- The agent confirms the payment is within Adam's authority limit, validates the repairer's bank details, and releases payment.
 - It records a full audit trail of the calculation.
 
 ---

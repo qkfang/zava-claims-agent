@@ -214,6 +214,212 @@ export function buildJeepMeshes(
 }
 
 /**
+ * Build a chunky voxel fire truck: long red chassis, forward cab with
+ * windscreen, blue roof light bar, side ladder and six wheels. Long
+ * axis runs along local +Z (cab forward at +Z) so the same orientation
+ * convention as {@link buildCarMeshes} / {@link buildJeepMeshes}
+ * applies.
+ */
+export function buildFireTruckMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  bodyHex: string,
+  topHex: string,
+): void {
+  const bodyMat = new StandardMaterial(`${parent.name}_body_mat`, scene);
+  bodyMat.diffuseColor = Color3.FromHexString(bodyHex);
+  bodyMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const topMat = new StandardMaterial(`${parent.name}_top_mat`, scene);
+  topMat.diffuseColor = Color3.FromHexString(topHex);
+  topMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const winMat = new StandardMaterial(`${parent.name}_win_mat`, scene);
+  winMat.diffuseColor = Color3.FromHexString("#cfe7ff");
+  const darkMat = new StandardMaterial(`${parent.name}_dark_mat`, scene);
+  darkMat.diffuseColor = Color3.FromHexString("#1c2230");
+  const ladderMat = new StandardMaterial(`${parent.name}_ladder_mat`, scene);
+  ladderMat.diffuseColor = Color3.FromHexString("#b8b0a0");
+  const lightMat = new StandardMaterial(`${parent.name}_light_mat`, scene);
+  lightMat.diffuseColor = Color3.FromHexString("#3a8fd6");
+  lightMat.emissiveColor = Color3.FromHexString("#1a4a7a");
+
+  // Pump / tank body — long red rear section.
+  const body = MeshBuilder.CreateBox(
+    `${parent.name}_body`,
+    { width: 1.5, height: 1.1, depth: 2.6 },
+    scene,
+  );
+  body.parent = parent;
+  body.position = new Vector3(0, 0.75, -0.4);
+  body.material = bodyMat;
+
+  // Forward cab (slightly narrower, taller).
+  const cab = MeshBuilder.CreateBox(
+    `${parent.name}_cab`,
+    { width: 1.4, height: 1.0, depth: 1.2 },
+    scene,
+  );
+  cab.parent = parent;
+  cab.position = new Vector3(0, 1.0, 1.3);
+  cab.material = topMat;
+
+  // Wraparound windscreen on the cab.
+  const win = MeshBuilder.CreateBox(
+    `${parent.name}_win`,
+    { width: 1.42, height: 0.45, depth: 1.15 },
+    scene,
+  );
+  win.parent = parent;
+  win.position = new Vector3(0, 1.25, 1.35);
+  win.material = winMat;
+
+  // Roof-mounted light bar.
+  const light = MeshBuilder.CreateBox(
+    `${parent.name}_light`,
+    { width: 0.9, height: 0.22, depth: 0.5 },
+    scene,
+  );
+  light.parent = parent;
+  light.position = new Vector3(0, 1.6, 1.3);
+  light.material = lightMat;
+
+  // Ladder along the roof of the rear tank.
+  const ladder = MeshBuilder.CreateBox(
+    `${parent.name}_ladder`,
+    { width: 0.4, height: 0.12, depth: 2.4 },
+    scene,
+  );
+  ladder.parent = parent;
+  ladder.position = new Vector3(0, 1.4, -0.4);
+  ladder.material = ladderMat;
+
+  // Front grille / bumper.
+  const grille = MeshBuilder.CreateBox(
+    `${parent.name}_grille`,
+    { width: 1.45, height: 0.35, depth: 0.18 },
+    scene,
+  );
+  grille.parent = parent;
+  grille.position = new Vector3(0, 0.55, 1.95);
+  grille.material = darkMat;
+
+  // Six wheels — two front (under cab) and four rear (under tank).
+  const wheelMat = new StandardMaterial(`${parent.name}_wheel_mat`, scene);
+  wheelMat.diffuseColor = Color3.FromHexString("#1c2230");
+  for (const [dx, dz] of [
+    [0.7, 1.3],
+    [-0.7, 1.3],
+    [0.7, 0.0],
+    [-0.7, 0.0],
+    [0.7, -1.3],
+    [-0.7, -1.3],
+  ] as Array<[number, number]>) {
+    const w = MeshBuilder.CreateBox(
+      `${parent.name}_wheel_${dx}_${dz}`,
+      { width: 0.28, height: 0.55, depth: 0.55 },
+      scene,
+    );
+    w.parent = parent;
+    w.position = new Vector3(dx, 0.27, dz);
+    w.material = wheelMat;
+  }
+}
+
+/**
+ * Build a chunky voxel panel van: long boxy cargo body, slightly
+ * shorter forward cab with windscreen, four wheels, and a sliding
+ * side door panel. Long axis runs along local +Z (cab at +Z front).
+ */
+export function buildVanMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  bodyHex: string,
+  topHex: string,
+): void {
+  const bodyMat = new StandardMaterial(`${parent.name}_body_mat`, scene);
+  bodyMat.diffuseColor = Color3.FromHexString(bodyHex);
+  bodyMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const topMat = new StandardMaterial(`${parent.name}_top_mat`, scene);
+  topMat.diffuseColor = Color3.FromHexString(topHex);
+  topMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const winMat = new StandardMaterial(`${parent.name}_win_mat`, scene);
+  winMat.diffuseColor = Color3.FromHexString("#cfe7ff");
+  const darkMat = new StandardMaterial(`${parent.name}_dark_mat`, scene);
+  darkMat.diffuseColor = Color3.FromHexString("#1c2230");
+
+  // Tall cargo box (rear section).
+  const body = MeshBuilder.CreateBox(
+    `${parent.name}_body`,
+    { width: 1.35, height: 1.35, depth: 1.7 },
+    scene,
+  );
+  body.parent = parent;
+  body.position = new Vector3(0, 0.85, -0.45);
+  body.material = bodyMat;
+
+  // Slightly shorter forward cab.
+  const cab = MeshBuilder.CreateBox(
+    `${parent.name}_cab`,
+    { width: 1.3, height: 1.0, depth: 1.1 },
+    scene,
+  );
+  cab.parent = parent;
+  cab.position = new Vector3(0, 1.0, 0.85);
+  cab.material = topMat;
+
+  // Windscreen.
+  const win = MeshBuilder.CreateBox(
+    `${parent.name}_win`,
+    { width: 1.32, height: 0.45, depth: 1.05 },
+    scene,
+  );
+  win.parent = parent;
+  win.position = new Vector3(0, 1.25, 0.9);
+  win.material = winMat;
+
+  // Side door panel (slightly recessed look via a darker stripe).
+  const door = MeshBuilder.CreateBox(
+    `${parent.name}_door`,
+    { width: 1.38, height: 0.7, depth: 0.7 },
+    scene,
+  );
+  door.parent = parent;
+  door.position = new Vector3(0, 0.85, -0.45);
+  const doorMat = new StandardMaterial(`${parent.name}_door_mat`, scene);
+  doorMat.diffuseColor = Color3.FromHexString(topHex);
+  doorMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  door.material = doorMat;
+
+  // Front grille / bumper.
+  const grille = MeshBuilder.CreateBox(
+    `${parent.name}_grille`,
+    { width: 1.32, height: 0.3, depth: 0.16 },
+    scene,
+  );
+  grille.parent = parent;
+  grille.position = new Vector3(0, 0.45, 1.45);
+  grille.material = darkMat;
+
+  // Four wheels.
+  const wheelMat = new StandardMaterial(`${parent.name}_wheel_mat`, scene);
+  wheelMat.diffuseColor = Color3.FromHexString("#1c2230");
+  for (const [dx, dz] of [
+    [0.6, 0.85],
+    [-0.6, 0.85],
+    [0.6, -1.0],
+    [-0.6, -1.0],
+  ] as Array<[number, number]>) {
+    const w = MeshBuilder.CreateBox(
+      `${parent.name}_wheel_${dx}_${dz}`,
+      { width: 0.25, height: 0.5, depth: 0.5 },
+      scene,
+    );
+    w.parent = parent;
+    w.position = new Vector3(dx, 0.25, dz);
+    w.material = wheelMat;
+  }
+}
+
+/**
  * Build a stubby voxel Mini Cooper-style hatchback: short, rounded
  * silhouette with a contrasting roof stripe. Long axis runs along
  * local +Z.

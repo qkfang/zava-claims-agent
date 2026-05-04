@@ -15,7 +15,7 @@ namespace ZavaClaims.Agents;
 /// </summary>
 public class ClaimsAgent : BaseAgent
 {
-    /// <summary>Display name of the staff character (e.g. "Sarah Mitchell").</summary>
+    /// <summary>Display name of the staff character (e.g. "Iris").</summary>
     public string Name { get; }
 
     /// <summary>Department / role (e.g. "Claims Intake Officer").</summary>

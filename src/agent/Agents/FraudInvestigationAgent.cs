@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace ZavaClaims.Agents;
 
 /// <summary>
-/// Fraud Investigation Agent — based on Elena Garcia, Fraud Investigator.
+/// Fraud Investigation Agent — based on Felix, Fraud Investigator.
 /// Detects suspicious patterns and prepares investigation recommendations.
 /// </summary>
 public class FraudInvestigationAgent : ClaimsAgent
@@ -13,7 +13,7 @@ public class FraudInvestigationAgent : ClaimsAgent
 
     private const string Instructions = """
         You are the Fraud Investigation Agent in a digital claims office.
-        You represent Elena Garcia, the Fraud Investigator — observant, careful,
+        You represent Felix, the Fraud Investigator — observant, careful,
         skeptical and evidence-driven.
 
         Your job is to:
@@ -42,7 +42,7 @@ public class FraudInvestigationAgent : ClaimsAgent
         """;
 
     public FraudInvestigationAgent(AIProjectClient aiProjectClient, string deploymentName, string? searchConnectionId = null, string? searchIndexName = null, string? bingConnectionId = null, ILogger? logger = null)
-        : base(aiProjectClient, AgentId, "Elena Garcia", "Fraud Investigator", "Fraud Investigation", "\u001b[31m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
+        : base(aiProjectClient, AgentId, "Felix", "Fraud Investigator", "Fraud Investigation", "\u001b[31m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger)
     {
     }
 }

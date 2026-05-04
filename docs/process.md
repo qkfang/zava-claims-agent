@@ -27,7 +27,7 @@ This document describes realistic staff-based AI agents for the **Zava Insurance
 
 ## Example AI agent behavior
 
-> “Thanks, Sarah. I’ve captured the customer’s motor claim, confirmed the policy is active, and identified that photos, the other driver’s details, and a repair estimate are required. I’ve also marked the claim as urgent because the customer relies on the vehicle for work.”
+> “Thanks, Iris. I’ve captured the customer’s motor claim, confirmed the policy is active, and identified that photos, the other driver’s details, and a repair estimate are required. I’ve also marked the claim as urgent because the customer relies on the vehicle for work.”
 
 ---
 
@@ -50,7 +50,7 @@ This document describes realistic staff-based AI agents for the **Zava Insurance
 
 ## Example AI agent behavior
 
-> “Daniel, based on the policy wording, the water damage appears covered under accidental escape of liquid. However, the file is missing the plumber’s report confirming the cause. I recommend requesting that report before final decision.”
+> “Adam, based on the policy wording, the water damage appears covered under accidental escape of liquid. However, the file is missing the plumber’s report confirming the cause. I recommend requesting that report before final decision.”
 
 ---
 
@@ -73,7 +73,7 @@ This document describes realistic staff-based AI agents for the **Zava Insurance
 
 ## Example AI agent behavior
 
-> “Priya, I’ve prepared your inspection brief. The reported cause is storm damage, but the photos show signs of pre-existing roof deterioration. I suggest asking when the roof was last maintained and whether any prior leaks occurred.”
+> “Lara, I've prepared your inspection brief. The reported cause is storm damage, but the photos show signs of pre-existing roof deterioration. I suggest asking when the roof was last maintained and whether any prior leaks occurred.”
 
 ---
 
@@ -96,7 +96,7 @@ This document describes realistic staff-based AI agents for the **Zava Insurance
 
 ## Example AI agent behavior
 
-> “Mark, there are 18 claims older than 21 days, with 6 waiting on supplier reports and 4 waiting on customer documents. I recommend prioritizing the two vulnerable-customer claims and reviewing three high-value settlement approvals today.”
+> “Theo, there are 18 claims older than 21 days, with 6 waiting on supplier reports and 4 waiting on customer documents. I recommend prioritizing the two vulnerable-customer claims and reviewing three high-value settlement approvals today.”
 
 ---
 
@@ -119,7 +119,7 @@ This document describes realistic staff-based AI agents for the **Zava Insurance
 
 ## Example AI agent behavior
 
-> “Elena, this claim has a high-risk indicator because the reported purchase receipt was created after the incident date, and the customer has lodged three similar theft claims in 18 months. I recommend requesting proof of ownership and conducting a recorded interview.”
+> “Felix, this claim has a high-risk indicator because the reported purchase receipt was created after the incident date, and the customer has lodged three similar theft claims in 18 months. I recommend requesting proof of ownership and conducting a recorded interview.”
 
 ---
 
@@ -188,7 +188,7 @@ This document describes realistic staff-based AI agents for the **Zava Insurance
 
 ## Example AI agent behavior
 
-> “The approved repair amount is $4,800. After applying the $750 excess, the payable amount is $4,050. This is within Daniel’s authority limit, and the supplier invoice matches the approved scope.”
+> “The approved repair amount is $4,800. After applying the $750 excess, the payable amount is $4,050. This is within Adam's authority limit, and the supplier invoice matches the approved scope.”
 
 ---
 
