@@ -33,7 +33,7 @@ jobs:
       - name: Build
         working-directory: src/frontend
         env:
-          VITE_APP_BASE_URL: https://app-zc-backend-fpyajz.azurewebsites.net
+          VITE_APP_BASE_URL: https://app-zc-backend.azurewebsites.net
         run: npm run build
 
       - name: Stage static site for Azure App Service (Linux/Node)

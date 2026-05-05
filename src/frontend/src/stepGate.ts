@@ -43,14 +43,18 @@ export interface StageInfo {
 }
 
 /**
- * Base URL for the companion `src/app` Blazor site that hosts the per-agent
- * walkthrough pages (`/agents/{id}`). Configurable at build time via the
- * `VITE_APP_BASE_URL` environment variable; defaults to the dev launch URL
- * from `src/app/Properties/launchSettings.json`.
+ * Base URL for the companion `src/backend` Blazor site that hosts the
+ * per-agent walkthrough pages (`/agents/{id}`).
+ *
+ * Read from the `VITE_APP_BASE_URL` Vite app setting at build time. The
+ * default value lives in `src/frontend/.env`; override it with an
+ * `.env.local` for local development, or via the
+ * `.github/workflows/21_deploy_frontend.yml` workflow for deployments.
  */
-const APP_BASE_URL: string =
-  ((import.meta as unknown as { env?: Record<string, string> }).env
-    ?.VITE_APP_BASE_URL ?? "http://localhost:5212").replace(/\/+$/, "");
+const APP_BASE_URL: string = (
+  (import.meta as unknown as { env?: Record<string, string> }).env
+    ?.VITE_APP_BASE_URL ?? ""
+).replace(/\/+$/, "");
 
 /** Stage configuration — title, AI sub-agents (from docs/characters.md), and
  * the matching `src/app` agent id used to deep-link the walkthrough page. */

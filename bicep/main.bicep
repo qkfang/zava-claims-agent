@@ -63,6 +63,18 @@ module keyVault 'keyvault.bicep' = {
 }
 
 // ---------------------------------------------------------------------------
+// Azure AI Foundry (Cognitive Services account + project + Codex deployment)
+// ---------------------------------------------------------------------------
+module foundry 'foundry.bicep' = {
+  name: 'foundryDeployment'
+  params: {
+    name: foundryName
+    location: location
+    tags: commonTags
+  }
+}
+
+// ---------------------------------------------------------------------------
 // App Service Plan (P1v3) shared by frontend and backend Web Apps
 // ---------------------------------------------------------------------------
 module appService 'appservice.bicep' = {
@@ -75,18 +87,9 @@ module appService 'appservice.bicep' = {
     tags: commonTags
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
     appInsightsInstrumentationKey: monitoring.outputs.appInsightsInstrumentationKey
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Azure AI Foundry (Cognitive Services account + project + Codex deployment)
-// ---------------------------------------------------------------------------
-module foundry 'foundry.bicep' = {
-  name: 'foundryDeployment'
-  params: {
-    name: foundryName
-    location: location
-    tags: commonTags
+    projectEndpoint: foundry.outputs.projectEndpoint
+    modelDeploymentName: foundry.outputs.deploymentName
+    bingConnectionId: foundry.outputs.bingProjectConnectionId
   }
 }
 

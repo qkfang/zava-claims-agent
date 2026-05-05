@@ -37,6 +37,24 @@ param frontendAppCommandLine string = 'pm2 serve /home/site/wwwroot --no-daemon 
 @description('Startup command for the backend Web App (.NET self-contained app entry)')
 param backendAppCommandLine string = 'dotnet backend.dll'
 
+@description('Azure AI Foundry project endpoint URL consumed by the backend ClaimsAgent factory')
+param projectEndpoint string
+
+@description('Default chat model deployment name (e.g. gpt-5.4)')
+param modelDeploymentName string
+
+@description('Tenant ID used by DefaultAzureCredential in the backend')
+param tenantId string = tenant().tenantId
+
+@description('Foundry connection ID for the claims knowledge Azure AI Search index (optional)')
+param searchConnectionId string = ''
+
+@description('Azure AI Search index name for the claims knowledge base')
+param searchIndexName string = 'claims_knowledge'
+
+@description('Foundry project Bing grounding connection ID')
+param bingConnectionId string
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName
   location: location
@@ -126,6 +144,30 @@ resource backendApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED'
           value: 'true'
+        }
+        {
+          name: 'AZURE_AI_PROJECT_ENDPOINT'
+          value: projectEndpoint
+        }
+        {
+          name: 'AZURE_AI_MODEL_DEPLOYMENT_NAME'
+          value: modelDeploymentName
+        }
+        {
+          name: 'AZURE_TENANT_ID'
+          value: tenantId
+        }
+        {
+          name: 'AZURE_AI_SEARCH_CONNECTION_ID'
+          value: searchConnectionId
+        }
+        {
+          name: 'AZURE_AI_SEARCH_INDEX_NAME'
+          value: searchIndexName
+        }
+        {
+          name: 'AZURE_BING_CONNECTION_ID'
+          value: bingConnectionId
         }
       ])
     }
