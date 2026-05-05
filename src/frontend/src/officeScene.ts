@@ -330,6 +330,11 @@ export function buildOffice(scene: Scene): OfficeLayout {
   }
 
   // ----- Front entrance (double doors) -----
+  // Doors slide horizontally apart when a character (staff or customer)
+  // walks within proximity of the entrance, and slide closed again
+  // when no-one is nearby. The base x positions below are the closed
+  // pose; openOffset is added/subtracted to slide them into the
+  // adjacent wall.
   const doorFrame = mat("doorFrame", "#7a8aa6");
   const leftDoor = MeshBuilder.CreateBox(
     "leftDoor",
@@ -340,15 +345,54 @@ export function buildOffice(scene: Scene): OfficeLayout {
   leftDoor.material = doorFrame;
   const rightDoor = leftDoor.clone("rightDoor");
   rightDoor.position.x = 0.55;
+  const doorGlassPanes: Mesh[] = [];
   for (const d of [leftDoor, rightDoor]) {
     const glass = MeshBuilder.CreateBox(
       `${d.name}_glass`,
       { width: 0.8, height: 1.6, depth: 0.05 },
       scene,
     );
-    glass.position = new Vector3(d.position.x, 1.4, -14.93);
     glass.material = windowMat;
+    // Parent the glass to the door so it slides with the frame, and
+    // express its offset in the door's local space (door origin is at
+    // y=1.2, z=-15, so y=0.2 places the pane vertically and z=0.07
+    // pushes it just outside the front face).
+    glass.parent = d;
+    glass.position = new Vector3(0, 0.2, 0.07);
+    doorGlassPanes.push(glass);
   }
+
+  // Auto-open behaviour: scan voxel character roots once per frame
+  // and ease the doors toward open/closed based on the closest
+  // character's distance to the entrance. Voxel characters are added
+  // to the scene as TransformNodes named "char_*" by VoxelCharacter,
+  // so we can detect them generically without coupling to the
+  // simulation layer.
+  const leftDoorClosedX = -0.55;
+  const rightDoorClosedX = 0.55;
+  const doorOpenOffset = 0.95; // slide each door ~0.95 units into the wall
+  const triggerRadius = 3.2; // metres around the entrance
+  const doorwayPosition = new Vector3(0, 0, -15);
+  let doorOpenAmount = 0; // 0 = closed, 1 = fully open
+  scene.onBeforeRenderObservable.add(() => {
+    const dt = Math.min(0.1, scene.getEngine().getDeltaTime() / 1000);
+    let nearest = Number.POSITIVE_INFINITY;
+    for (const node of scene.transformNodes) {
+      if (!node.name.startsWith("char_")) continue;
+      const p = node.position;
+      const dx = p.x - doorwayPosition.x;
+      const dz = p.z - doorwayPosition.z;
+      const d = Math.sqrt(dx * dx + dz * dz);
+      if (d < nearest) nearest = d;
+    }
+    const target = nearest <= triggerRadius ? 1 : 0;
+    // Ease toward target at ~4/sec so the slide feels mechanical
+    // rather than instant.
+    const rate = 4.0;
+    doorOpenAmount += (target - doorOpenAmount) * Math.min(1, dt * rate);
+    leftDoor.position.x = leftDoorClosedX - doorOpenOffset * doorOpenAmount;
+    rightDoor.position.x = rightDoorClosedX + doorOpenOffset * doorOpenAmount;
+  });
   // Welcome mat
   const mat1 = MeshBuilder.CreateBox(
     "welcomeMat",
@@ -2860,12 +2904,18 @@ function buildOfficeAmbient(scene: Scene): void {
     ],
     { type: "mini", bodyColor: "#e84b3a", topColor: "#1c1c1c", speed: 3.2 },
   );
-  // A slower jeep crossing the front of the lot along the entrance lane.
+  // A slower jeep that also loops along the car-park driving lane,
+  // staying entirely within the asphalt strip on the right side of
+  // the office. Previously this car crossed in front of the building
+  // along z = -12, which cut through the office floor (z ∈ [-15, 25])
+  // and the entrance path — visually it looked like the jeep was
+  // driving straight into the lobby. Keeping it on the lane (x ≈ 39,
+  // z ∈ carpark bounds) ensures cars never drive into buildings.
   ambient.addCar(
     "office_carpark_cross",
     [
-      [-30, -12],
-      [50, -12],
+      [39.0, -22],
+      [39.0, 24],
     ],
     { type: "jeep", bodyColor: "#5fa657", topColor: "#3a7a3a", speed: 2.8 },
   );
