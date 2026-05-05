@@ -351,11 +351,12 @@ export function buildOffice(scene: Scene): OfficeLayout {
       { width: 0.8, height: 1.6, depth: 0.05 },
       scene,
     );
-    glass.position = new Vector3(d.position.x, 1.4, -14.93);
     glass.material = windowMat;
+    // Parent the glass to the door so it slides with the frame, and
+    // express its offset in the door's local space (door origin is at
+    // y=1.2, z=-15, so y=0.2 places the pane vertically and z=0.07
+    // pushes it just outside the front face).
     glass.parent = d;
-    // Re-express glass position relative to its new parent door so
-    // that when the door slides, the glass slides with it.
     glass.position = new Vector3(0, 0.2, 0.07);
     doorGlassPanes.push(glass);
   }
@@ -370,7 +371,7 @@ export function buildOffice(scene: Scene): OfficeLayout {
   const rightDoorClosedX = 0.55;
   const doorOpenOffset = 0.95; // slide each door ~0.95 units into the wall
   const triggerRadius = 3.2; // metres around the entrance
-  const doorDoorway = new Vector3(0, 0, -15);
+  const doorwayPosition = new Vector3(0, 0, -15);
   let doorOpenAmount = 0; // 0 = closed, 1 = fully open
   scene.onBeforeRenderObservable.add(() => {
     const dt = Math.min(0.1, scene.getEngine().getDeltaTime() / 1000);
@@ -378,8 +379,8 @@ export function buildOffice(scene: Scene): OfficeLayout {
     for (const node of scene.transformNodes) {
       if (!node.name.startsWith("char_")) continue;
       const p = node.position;
-      const dx = p.x - doorDoorway.x;
-      const dz = p.z - doorDoorway.z;
+      const dx = p.x - doorwayPosition.x;
+      const dz = p.z - doorwayPosition.z;
       const d = Math.sqrt(dx * dx + dz * dz);
       if (d < nearest) nearest = d;
     }
