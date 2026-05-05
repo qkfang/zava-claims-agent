@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\agent\agent.csproj" />
+    <ProjectReference Include="..\agent\zc-agent.csproj" />
   </ItemGroup>
 
   <ItemGroup>
