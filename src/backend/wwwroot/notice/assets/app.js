@@ -231,7 +231,7 @@ function setupDocPreview({ fileInputId, previewIds }) {
   });
   const renderImage = (url, alt) => ids.forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = `<img src="${url}" alt="${esc(alt || 'document preview')}" />`;
+    if (el) el.innerHTML = `<img src="${esc(url)}" alt="${esc(alt || 'document preview')}" />`;
   });
   const renderUnsupported = (name) => ids.forEach(id => {
     const el = document.getElementById(id);
