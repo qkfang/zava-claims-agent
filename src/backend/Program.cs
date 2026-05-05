@@ -1,5 +1,10 @@
 using System.Text.Json;
+using Azure.AI.Projects;
+using OpenAI.Responses;
+using ZavaClaims.Agents;
+using ZavaClaims.App.Api;
 using ZavaClaims.App.Components;
+using ZavaClaims.App.Mcp;
 using ZavaClaims.App.Models;
 using ZavaClaims.App.Services;
 
@@ -29,6 +34,53 @@ var agentOptions = new ClaimsAgentOptions
 builder.Services.AddSingleton(agentOptions);
 builder.Services.AddSingleton<ClaimsAgentFactory>();
 
+// ── Notice intelligence integration (ported from demo-foundry-document-intelligence/agentdi)
+// Only enabled when the required Azure resources are configured. When enabled,
+// it exposes the four agentdi agents (Extract DI/CU, Notification, Correspondence)
+// over /notice/* HTTP endpoints, an MCP tool surface at /mcp, and the static
+// scenario pages under wwwroot/notice/.
+var docIntelligenceEndpoint = builder.Configuration["AZURE_DOC_INTELLIGENCE_ENDPOINT"];
+var storageAccountName = builder.Configuration["AZURE_STORAGE_ACCOUNT_NAME"];
+var noticeEnabled = !string.IsNullOrWhiteSpace(agentOptions.ProjectEndpoint)
+    && !string.IsNullOrWhiteSpace(agentOptions.ModelDeploymentName)
+    && !string.IsNullOrWhiteSpace(docIntelligenceEndpoint)
+    && !string.IsNullOrWhiteSpace(storageAccountName);
+
+Azure.Identity.DefaultAzureCredential? noticeCredential = null;
+if (noticeEnabled)
+{
+    var foundryEndpoint = builder.Configuration["AZURE_AI_FOUNDRY_ENDPOINT"]
+        ?? new Uri(agentOptions.ProjectEndpoint!).GetLeftPart(UriPartial.Authority);
+
+    noticeCredential = new Azure.Identity.DefaultAzureCredential(new Azure.Identity.DefaultAzureCredentialOptions
+    {
+        TenantId = agentOptions.TenantId,
+        ExcludeVisualStudioCodeCredential = true,
+        ExcludeSharedTokenCacheCredential = true
+    });
+
+    builder.Services.AddSingleton(sp => new DocIntelligenceService(
+        docIntelligenceEndpoint!, noticeCredential, sp.GetRequiredService<ILogger<DocIntelligenceService>>()));
+    builder.Services.AddSingleton(sp => new BlobStorageService(
+        storageAccountName!, noticeCredential, sp.GetRequiredService<ILogger<BlobStorageService>>()));
+
+    var cuGpt41Deployment = builder.Configuration["AZURE_CU_GPT41_DEPLOYMENT"] ?? "gpt-4.1";
+    var cuGpt41MiniDeployment = builder.Configuration["AZURE_CU_GPT41_MINI_DEPLOYMENT"] ?? "gpt-4.1-mini";
+    var cuEmbeddingDeployment = builder.Configuration["AZURE_CU_EMBEDDING_DEPLOYMENT"] ?? "text-embedding-3-large";
+    builder.Services.AddSingleton(sp => new ContentUnderstandingService(
+        foundryEndpoint, noticeCredential, cuGpt41Deployment, cuGpt41MiniDeployment, cuEmbeddingDeployment,
+        sp.GetRequiredService<ILogger<ContentUnderstandingService>>()));
+
+    builder.Services.AddSingleton<NotificationService>();
+    builder.Services.AddSingleton<PendingApprovalStore>();
+
+    builder.Services.AddMcpServer()
+        .WithHttpTransport(options => { options.Stateless = true; })
+        .WithTools<AgentDiMcpTools>();
+
+    builder.Services.AddCors();
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -38,6 +90,28 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseAntiforgery();
+
+if (noticeEnabled)
+{
+    app.UseCors(policy => policy
+        .AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader());
+
+    // Normalize Accept header for MCP requests from Foundry agent server
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.StartsWithSegments("/mcp"))
+        {
+            var accept = context.Request.Headers.Accept.ToString();
+            if (string.IsNullOrEmpty(accept) || !accept.Contains("text/event-stream"))
+            {
+                context.Request.Headers.Accept = "application/json, text/event-stream";
+            }
+        }
+        await next();
+    });
+}
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
@@ -92,5 +166,41 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
 
     return Results.Ok(new { response = agentResponse, references });
 });
+
+// ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
+if (noticeEnabled)
+{
+    app.MapMcp("/mcp");
+
+    var noticeLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+
+    var aiProjectClient = new AIProjectClient(new Uri(agentOptions.ProjectEndpoint!), noticeCredential!);
+    var appMcpUrl = app.Configuration["APP_MCP_URL"] ?? "http://localhost:5000";
+    var appMcpTool = ResponseTool.CreateMcpTool(
+        serverLabel: "agentdi-mcp",
+        serverUri: new Uri($"{appMcpUrl}/mcp"),
+        toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.NeverRequireApproval));
+    var appMcpToolWithApproval = ResponseTool.CreateMcpTool(
+        serverLabel: "agentdi-mcp",
+        serverUri: new Uri($"{appMcpUrl}/mcp"),
+        toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.AlwaysRequireApproval));
+
+    var deployment = agentOptions.ModelDeploymentName!;
+    var notificationAgent = new CtAgNotification(aiProjectClient, deployment, [appMcpTool], loggerFactory.CreateLogger<CtAgNotification>());
+    var correspondenceAgent = new CtAgCorrespondence(aiProjectClient, deployment, [appMcpToolWithApproval], loggerFactory.CreateLogger<CtAgCorrespondence>());
+    var extractDiAgent = new CtAgExtractDI(aiProjectClient, deployment, [appMcpTool], loggerFactory.CreateLogger<CtAgExtractDI>());
+    var extractCuAgent = new CtAgExtractCU(aiProjectClient, deployment, loggerFactory.CreateLogger<CtAgExtractCU>());
+
+    var docService = app.Services.GetRequiredService<DocIntelligenceService>();
+    var cuService = app.Services.GetRequiredService<ContentUnderstandingService>();
+    await cuService.InitializeAsync();
+    var blobStorage = app.Services.GetRequiredService<BlobStorageService>();
+    var notificationService = app.Services.GetRequiredService<NotificationService>();
+    var approvalStore = app.Services.GetRequiredService<PendingApprovalStore>();
+
+    app.MapNoticeEndpoints(notificationAgent, correspondenceAgent, extractDiAgent, extractCuAgent,
+        docService, cuService, blobStorage, notificationService, approvalStore, noticeLogger);
+}
 
 app.Run();

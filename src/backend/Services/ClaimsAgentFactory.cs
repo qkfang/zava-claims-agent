@@ -75,12 +75,12 @@ public class ClaimsAgentFactory
 
     private AIProjectClient CreateAIProjectClient()
     {
-        var credentialOptions = new DefaultAzureCredentialOptions();
+        var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
         if (!string.IsNullOrWhiteSpace(_options.TenantId))
         {
             credentialOptions.TenantId = _options.TenantId;
         }
-        var credential = new DefaultAzureCredential(credentialOptions);
+        var credential = new Azure.Identity.DefaultAzureCredential(credentialOptions);
         return new AIProjectClient(new Uri(_options.ProjectEndpoint!), credential);
     }
 }

@@ -13,6 +13,20 @@ public record SearchCitation(string Title, string Url);
 public record AgentResult(string Text, IReadOnlyList<SearchCitation> Citations);
 
 /// <summary>
+/// Tracks an MCP tool call that is awaiting human approval before it can run.
+/// Used by the step-style <see cref="BaseAgent.StartRunAsync"/> / <see cref="BaseAgent.ChatAsync"/>
+/// / <see cref="BaseAgent.ContinueRunAsync"/> flow ported from the
+/// demo-foundry-document-intelligence repo.
+/// </summary>
+public record PendingToolApproval(string ResponseId, string ApprovalItemId, string ServerLabel);
+
+/// <summary>
+/// Result of a single agent step. Either contains the assistant's text result
+/// or a pending MCP tool-call approval that must be resolved by the caller.
+/// </summary>
+public record AgentStepResult(string? Result, PendingToolApproval? Pending, string? ResponseId);
+
+/// <summary>
 /// Base wrapper around an Azure AI Foundry declarative agent. Each claims-office
 /// staff character is implemented as a subclass of <see cref="ClaimsAgent"/>
 /// (which in turn inherits from this <see cref="BaseAgent"/>) so that every
@@ -27,6 +41,12 @@ public abstract class BaseAgent
     protected readonly ILogger _logger;
     protected readonly string _agentId;
 
+    /// <summary>The Foundry agent id used to create this agent version.</summary>
+    public string AgentId => _agentId;
+
+    /// <summary>The system instructions/prompt the agent was created with.</summary>
+    public string Instructions { get; }
+
     protected BaseAgent(AIProjectClient aiProjectClient, string agentId, string deploymentName, string instructions, IList<ResponseTool>? tools = null, ILogger? logger = null)
         : this(aiProjectClient, agentId, deploymentName, instructions, tools, null, logger)
     {
@@ -35,6 +55,7 @@ public abstract class BaseAgent
     protected BaseAgent(AIProjectClient aiProjectClient, string agentId, string deploymentName, string instructions, IList<ResponseTool>? tools = null, Action<DeclarativeAgentDefinition>? configureAgent = null, ILogger? logger = null)
     {
         _agentId = agentId;
+        Instructions = instructions;
         _logger = logger ?? LoggerFactory.Create(b => b.AddConsole()).CreateLogger(agentId);
 
         var agentDefinition = new DeclarativeAgentDefinition(model: deploymentName)
@@ -145,6 +166,64 @@ public abstract class BaseAgent
             foreach (var citation in ExtractCitations(completedResponse))
                 citationsOutput.Add(citation);
         }
+    }
+
+    /// <summary>
+    /// Starts a step-style run where the caller is expected to handle MCP tool
+    /// approval requests externally (e.g. surface them to a human reviewer in a UI).
+    /// Mirrors the StartRunAsync / ChatAsync / ContinueRunAsync flow from the
+    /// demo-foundry-document-intelligence repo's BaseAgent.
+    /// </summary>
+    public Task<AgentStepResult> StartRunAsync(string message)
+    {
+        var options = new CreateResponseOptions
+        {
+            InputItems = { ResponseItem.CreateUserMessageItem(message) }
+        };
+        return StepAsync(options);
+    }
+
+    /// <summary>
+    /// Continues a chat after a previous response, sending a new user message.
+    /// </summary>
+    public Task<AgentStepResult> ChatAsync(string previousResponseId, string message)
+    {
+        var options = new CreateResponseOptions
+        {
+            PreviousResponseId = previousResponseId,
+            InputItems = { ResponseItem.CreateUserMessageItem(message) }
+        };
+        return StepAsync(options);
+    }
+
+    /// <summary>
+    /// Continues a previously-paused run by responding to a pending MCP tool-call approval.
+    /// </summary>
+    public Task<AgentStepResult> ContinueRunAsync(string previousResponseId, string approvalItemId, bool approved)
+    {
+        var options = new CreateResponseOptions
+        {
+            PreviousResponseId = previousResponseId,
+            InputItems = { ResponseItem.CreateMcpApprovalResponseItem(approvalItemId, approved) }
+        };
+        return StepAsync(options);
+    }
+
+    private async Task<AgentStepResult> StepAsync(CreateResponseOptions options)
+    {
+        ResponseResult result = await _responseClient.CreateResponseAsync(options);
+
+        foreach (var item in result.OutputItems)
+        {
+            if (item is McpToolCallApprovalRequestItem mcpCall)
+            {
+                _logger.LogInformation("Awaiting user approval for MCP tool call on {ServerLabel}", mcpCall.ServerLabel);
+                return new AgentStepResult(null, new PendingToolApproval(result.Id, mcpCall.Id, mcpCall.ServerLabel), result.Id);
+            }
+        }
+
+        _logger.LogInformation("Agent {AgentId} step completed", _agentId);
+        return new AgentStepResult(result.GetOutputText(), null, result.Id);
     }
 
     private IReadOnlyList<SearchCitation> ExtractCitations(ResponseResult? result)

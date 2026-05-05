@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extract (CU)</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <style>
+    .field-grid { display: grid; grid-template-columns: 200px 1fr; gap: 8px 14px; font-size: 0.9rem; }
+    .field-grid .k { color: var(--muted); font-weight: 600; word-break: break-word; }
+    .field-grid .v { word-break: break-word; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.5); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .schema-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .schema-table th { background: #f8fafc; color: #555; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.04em; padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    .schema-table td { padding: 6px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .schema-table input[type=text], .schema-table textarea, .schema-table select {
+      padding: 6px 8px; font-size: 0.85rem; border-radius: 5px;
+    }
+    .schema-table textarea { min-height: 38px; resize: vertical; }
+    .schema-table .col-name { width: 18%; }
+    .schema-table .col-type { width: 110px; }
+    .schema-table .col-method { width: 110px; }
+    .schema-table .col-actions { width: 36px; text-align: center; }
+    .icon-btn { background: transparent; color: #b91c1c; padding: 4px 8px; font-size: 1rem; }
+    .icon-btn:hover:not(:disabled) { background: #fee2e2; }
+    .schema-actions { margin-top: 10px; display: flex; gap: 8px; }
+    .schema-help { color: var(--muted); font-size: 0.8rem; margin-bottom: 10px; }
+    .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; background: #eef2ff; color: var(--primary); margin-left: 6px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Extract (CU) <span id="agent-info-host"></span></h1>
+    <div class="subtitle">Define fields in plain language and Content Understanding will extract them from your document.</div>
+
+    <div class="card">
+      <h2>Field Schema</h2>
+      <div class="schema-help">Describe each field you want extracted. The description is sent to the model as a natural-language hint, so be specific about where the value appears and how to interpret it.</div>
+      <table class="schema-table">
+        <thead>
+          <tr>
+            <th class="col-name">Field name</th>
+            <th>Description (natural language)</th>
+            <th class="col-type">Type</th>
+            <th class="col-method">Method</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="schema-body"></tbody>
+      </table>
+      <div class="schema-actions">
+        <button id="btn-add-field" class="btn-secondary" type="button">+ Add field</button>
+        <button id="btn-reset-fields" class="btn-secondary" type="button">Reset to defaults</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2>Upload Document</h2>
+        <div class="row">
+          <label>File (PDF, image, or Word document)</label>
+          <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.doc,.docx" />
+        </div>
+        <button id="btn-upload">Extract</button>
+        <span id="sample-docs-host"></span>
+        <div id="sample-selected" class="sample-selected" style="display:none;"></div>
+      </div>
+
+      <div class="card">
+        <h2>Extracted Fields</h2>
+        <div id="result-area">
+          <div class="empty">No document processed yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Content Understanding Output</h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="view">View</button>
+        <button class="tab" data-tab="markdown">Markdown</button>
+        <button class="tab" data-tab="json">JSON</button>
+      </div>
+      <div class="tab-panel active" data-panel="view">
+        <div class="output-split">
+          <div id="doc-preview-view" class="doc-preview"></div>
+          <div id="md-render" class="md-render"><div class="empty">No document processed yet.</div></div>
+        </div>
+      </div>
+      <div class="tab-panel" data-panel="markdown">
+        <div class="output-split">
+          <div id="doc-preview-md" class="doc-preview"></div>
+          <pre id="raw-markdown">—</pre>
+        </div>
+      </div>
+      <div class="tab-panel" data-panel="json">
+        <pre id="raw-json">—</pre>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
+  <script src="../assets/app.js?v=20260506"></script>
+  <script>
+    renderHeader('Extract (CU)');
+
+    const docPreview = setupDocPreview({ fileInputId: 'file-input', previewIds: ['doc-preview-view', 'doc-preview-md'] });
+
+    let pickedSample = null;
+    const samplePicker = mountSampleDocsPopover('sample-docs-host', {
+      onPick: s => {
+        pickedSample = s;
+        document.getElementById('file-input').value = '';
+        const el = document.getElementById('sample-selected');
+        el.textContent = `Selected sample: ${s.label}`;
+        el.style.display = 'block';
+        docPreview.setSample(s);
+      }
+    });
+    document.getElementById('file-input').addEventListener('change', () => {
+      pickedSample = null;
+      samplePicker && samplePicker.clearSelection();
+      document.getElementById('sample-selected').style.display = 'none';
+    });
+
+    document.querySelectorAll('.tabs .tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        document.querySelectorAll('.tabs .tab').forEach(t => t.classList.toggle('active', t === btn));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === target));
+      });
+    });
+
+    const TYPES = ['string', 'number', 'integer', 'boolean', 'date', 'time'];
+    const METHODS = ['', 'extract', 'generate', 'classify'];
+    const DEFAULT_FIELDS = [
+      { name: 'documentTitle', description: 'The title or main heading of the document.', type: 'string', method: 'extract' },
+      { name: 'issuerName', description: 'The name of the organization or person that issued or sent the document.', type: 'string', method: 'extract' },
+      { name: 'recipientName', description: 'The name of the person or organization that the document is addressed to.', type: 'string', method: 'extract' },
+      { name: 'documentDate', description: 'The date the document was issued, in ISO 8601 format.', type: 'date', method: 'extract' },
+      { name: 'totalAmount', description: 'The total monetary amount stated in the document, if any. Numeric only, no currency symbol.', type: 'number', method: 'extract' },
+      { name: 'summary', description: 'A concise one or two sentence summary capturing the purpose of the document.', type: 'string', method: 'generate' }
+    ];
+
+    function buildRow(field) {
+      const tr = document.createElement('tr');
+      const typeOpts = TYPES.map(t => `<option value="${t}" ${field.type === t ? 'selected' : ''}>${t}</option>`).join('');
+      const methodOpts = METHODS.map(m => `<option value="${m}" ${field.method === m ? 'selected' : ''}>${m || 'auto'}</option>`).join('');
+      tr.innerHTML = `
+        <td><input type="text" class="f-name" value="${esc(field.name || '')}" placeholder="fieldName" /></td>
+        <td><textarea class="f-desc" placeholder="Describe the field in natural language">${esc(field.description || '')}</textarea></td>
+        <td><select class="f-type">${typeOpts}</select></td>
+        <td><select class="f-method">${methodOpts}</select></td>
+        <td><button type="button" class="icon-btn f-remove" title="Remove">✕</button></td>`;
+      tr.querySelector('.f-remove').addEventListener('click', () => tr.remove());
+      return tr;
+    }
+
+    function loadFields(fields) {
+      const tbody = document.getElementById('schema-body');
+      tbody.innerHTML = '';
+      fields.forEach(f => tbody.appendChild(buildRow(f)));
+    }
+
+    function readFields() {
+      return Array.from(document.querySelectorAll('#schema-body tr')).map(tr => ({
+        name: tr.querySelector('.f-name').value.trim(),
+        description: tr.querySelector('.f-desc').value.trim(),
+        type: tr.querySelector('.f-type').value,
+        method: tr.querySelector('.f-method').value || null
+      })).filter(f => f.name && f.description);
+    }
+
+    document.getElementById('btn-add-field').addEventListener('click', () => {
+      document.getElementById('schema-body').appendChild(buildRow({ type: 'string', method: '' }));
+    });
+    document.getElementById('btn-reset-fields').addEventListener('click', () => loadFields(DEFAULT_FIELDS));
+    loadFields(DEFAULT_FIELDS);
+
+    function setLoading(loading) {
+      const b = document.getElementById('btn-upload');
+      b.disabled = loading;
+      b.innerHTML = loading ? '<span class="spinner"></span>Extracting...' : 'Extract';
+    }
+
+    document.getElementById('btn-upload').addEventListener('click', async () => {
+      let f = document.getElementById('file-input').files[0];
+      if (!f && pickedSample) {
+        try { f = await fetchSampleAsFile(pickedSample); }
+        catch (err) { renderError(err.message); return; }
+      }
+      if (!f) return;
+      const fields = readFields();
+      setLoading(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', f);
+        fd.append('fields', JSON.stringify(fields));
+        const res = await fetch('/notice/extract/cu/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        render(data);
+      } catch (err) {
+        renderError(err.message);
+      }
+      setLoading(false);
+    });
+
+    function renderError(msg) {
+      document.getElementById('result-area').innerHTML = `<div class="empty error">Error: ${esc(msg)}</div>`;
+      document.getElementById('raw-markdown').textContent = '—';
+      document.getElementById('raw-json').textContent = '—';
+      document.getElementById('md-render').innerHTML = `<div class="empty error">Error: ${esc(msg)}</div>`;
+    }
+
+    function formatValue(v) {
+      if (v === null || v === undefined) return '—';
+      if (typeof v === 'object') return JSON.stringify(v, null, 2);
+      return String(v);
+    }
+
+    function render(data) {
+      document.getElementById('raw-markdown').textContent = data.markdown ?? '—';
+      document.getElementById('raw-json').textContent = data.json ?? '—';
+      document.getElementById('md-render').innerHTML = renderMarkdown(data.markdown ?? '');
+
+      const fields = data.fields || {};
+      const keys = Object.keys(fields);
+      if (keys.length === 0) {
+        document.getElementById('result-area').innerHTML = `<div class="empty">No fields returned. Add a field schema above and try again.</div>`;
+        return;
+      }
+      const rows = keys.map(k => {
+        const f = fields[k] || {};
+        return `<div class="k">${esc(k)}<span class="pill">${esc(f.type || 'string')}</span></div><div class="v">${esc(formatValue(f.value))}</div>`;
+      }).join('');
+      document.getElementById('result-area').innerHTML = `<div class="field-grid">${rows}</div>`;
+    }
+  </script>
+</body>
+</html>

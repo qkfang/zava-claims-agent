@@ -7,6 +7,7 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <RootNamespace>ZavaClaims.App</RootNamespace>
     <AssemblyName>zc-backend</AssemblyName>
+    <NoWarn>$(NoWarn);OPENAI001;SCME0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,8 +15,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.AI.ContentUnderstanding" Version="1.1.0" />
+    <PackageReference Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
+    <PackageReference Include="Azure.AI.Extensions.OpenAI" Version="2.0.0" />
     <PackageReference Include="Azure.AI.Projects" Version="2.0.0" />
-    <PackageReference Include="Azure.Identity" Version="1.20.0" />
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.2.0" />
   </ItemGroup>
 
 </Project>
