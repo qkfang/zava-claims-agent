@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <RootNamespace>ZavaClaims.App</RootNamespace>
-    <AssemblyName>app</AssemblyName>
+    <AssemblyName>zc-backend</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

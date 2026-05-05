@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <NoWarn>$(NoWarn);OPENAI001</NoWarn>
     <RootNamespace>ZavaClaims</RootNamespace>
-    <AssemblyName>agent</AssemblyName>
+    <AssemblyName>zc-agent</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
