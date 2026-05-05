@@ -1228,8 +1228,8 @@ export class NeighbourhoodAmbient {
     paletteKey: keyof typeof PALETTES,
     waypoints: Array<[number, number]>,
     speed = 1.6,
-  ): void {
-    if (waypoints.length < 2) return;
+  ): VoxelCharacter | null {
+    if (waypoints.length < 2) return null;
     const palette = PALETTES[paletteKey];
     const ch = new VoxelCharacter(this.scene, `nh_amb_${id}`, palette);
     ch.root.parent = this.root;
@@ -1256,6 +1256,7 @@ export class NeighbourhoodAmbient {
         }
       },
     });
+    return ch;
   }
 
   /**

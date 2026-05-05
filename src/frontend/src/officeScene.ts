@@ -9,6 +9,7 @@ import {
   Vector3,
 } from "@babylonjs/core";
 import { NeighbourhoodAmbient } from "./neighbourhoodAmbient";
+import { VoxelCharacter } from "./voxelCharacter";
 
 /**
  * Anchor points used by the simulation. Coordinates are in scene units.
@@ -729,22 +730,35 @@ function buildCubicle(
   const topStripeRight = topStripeLeft.clone(`cubRightStripe_${label}`);
   topStripeRight.position.x = cx + 2.95;
 
-  // Sign on the back partition
+  // Sign mounted ABOVE the back partition (top of partition is at y≈1.8;
+  // the sign sits with its bottom edge resting on that lip and reads from
+  // a distance). Larger mesh + larger texture so the department label is
+  // legible from the orbit camera.
   const sign = MeshBuilder.CreateBox(
     `cubSign_${label}`,
-    { width: 4.4, height: 0.7, depth: 0.05 },
+    { width: 5.6, height: 1.05, depth: 0.08 },
     scene,
   );
-  sign.position = new Vector3(cx, 1.45, cz + 2.52);
-  drawSignTexture(scene, sign, 768, 128, (ctx) => {
+  sign.position = new Vector3(cx, 2.45, cz + 2.55);
+  drawSignTexture(scene, sign, 1280, 240, (ctx) => {
     ctx.fillStyle = "#3a5fb0";
-    ctx.fillRect(0, 0, 768, 128);
+    ctx.fillRect(0, 0, 1280, 240);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 56px sans-serif";
+    ctx.font = "bold 110px sans-serif";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    ctx.fillText(signText, 384, 70);
+    ctx.fillText(signText, 640, 130);
   });
+
+  // Slim accent strip directly under the sign so the larger sign visually
+  // ties back to the cubicle's accent colour.
+  const signUnderline = MeshBuilder.CreateBox(
+    `cubSignAccent_${label}`,
+    { width: 5.6, height: 0.08, depth: 0.1 },
+    scene,
+  );
+  signUnderline.position = new Vector3(cx, 1.88, cz + 2.55);
+  signUnderline.material = accentMat;
 
   // Desk against the back partition
   const desk = MeshBuilder.CreateBox(
@@ -2856,6 +2870,70 @@ function buildOfficeAmbient(scene: Scene): void {
     { type: "jeep", bodyColor: "#5fa657", topColor: "#3a7a3a", speed: 2.8 },
   );
 
+  // ----- Ambient lobby cast -----
+  // Three voxel staff wander inside the office to bring the space to life:
+  //   • a Reception Greeter loops behind the lobby reception desk,
+  //   • a Cleaner walks the central aisle between the front and back row
+  //     of cubicles (z ≈ 5, well clear of all partition walls), and
+  //   • a Parcel Courier paces the front aisle in front of the cubicles
+  //     (z ≈ -5, between the cubicle openings and the lobby furniture).
+  //
+  // Routes were chosen so the walkers never cross any of:
+  //   - outer walls (x = ±30, z = +25, front low walls at z = -15),
+  //   - cubicle screen partitions (front row: z ∈ [-2.4, 2.6]; back row:
+  //     z ∈ [7.6, 12.6]; side walls at cx ± 2.95 for each cubicle), or
+  //   - the team-leader glass partition (z = 7.6, x ∈ [-24.25, -17.75]).
+  // Each route stays inside an open corridor between those obstacles.
+  const greeter = ambient.addPedestrian(
+    "office_reception_greeter",
+    "receptionGreeter",
+    [
+      [-17, -9.0],
+      [-13, -9.0],
+      [-13, -9.0],
+      [-17, -9.0],
+    ],
+    1.1,
+  );
+  const cleaner = ambient.addPedestrian(
+    "office_cleaner",
+    "cleaner",
+    [
+      // Central aisle between front-row (z=0) and back-row (z=10) cubicles.
+      // x stays inside [-24, 4] so we miss the team leader office partition
+      // (x ≤ -17.75 at z=7.6) and the rightmost cubicle (cx=3, side wall at x=5.95).
+      [-24, 5.0],
+      [4, 5.0],
+      [4, 5.0],
+      [-24, 5.0],
+    ],
+    1.0,
+  );
+  const courier = ambient.addPedestrian(
+    "office_parcel_courier",
+    "parcelCourier",
+    [
+      // Front aisle between cubicles (front opening at z=-2.4) and lobby
+      // furniture (sofas at z≈-12). z=-5 keeps clear of both.
+      [-20, -5.0],
+      [4, -5.0],
+      [4, -5.0],
+      [-20, -5.0],
+    ],
+    1.3,
+  );
+
+  // Visual props in their hands so each role reads at a glance.
+  if (cleaner) {
+    attachMop(scene, cleaner);
+  }
+  if (courier) {
+    attachParcel(scene, courier);
+  }
+  if (greeter) {
+    attachClipboard(scene, greeter);
+  }
+
   // Tick the ambient movers each frame the office scene renders. We
   // use the engine's wall-clock delta (capped) so cars move at a
   // sensible speed regardless of frame rate. This intentionally is
@@ -2865,4 +2943,104 @@ function buildOfficeAmbient(scene: Scene): void {
     const dt = Math.min(0.1, scene.getEngine().getDeltaTime() / 1000);
     ambient.update(dt);
   });
+}
+
+/**
+ * Attach a tiny voxel mop to the cleaner's right-hand anchor: a long pale
+ * pole with a cube of mop "strands" at the bottom. Parented to the held-
+ * item anchor so it walks with the cleaner.
+ */
+function attachMop(scene: Scene, ch: VoxelCharacter): void {
+  const anchor = ch.getHandAnchor();
+  const tag = ch.id;
+  const poleMat = new StandardMaterial(`mopPole_${tag}`, scene);
+  poleMat.diffuseColor = Color3.FromHexString("#cdb497");
+  poleMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const pole = MeshBuilder.CreateBox(
+    `mopPole_${tag}`,
+    { width: 0.07, height: 1.4, depth: 0.07 },
+    scene,
+  );
+  pole.parent = anchor;
+  pole.position = new Vector3(0.05, 0.7, 0);
+  pole.material = poleMat;
+
+  const headMat = new StandardMaterial(`mopHead_${tag}`, scene);
+  headMat.diffuseColor = Color3.FromHexString("#f0e6c8");
+  headMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const head = MeshBuilder.CreateBox(
+    `mopHead_${tag}`,
+    { width: 0.45, height: 0.18, depth: 0.25 },
+    scene,
+  );
+  head.parent = anchor;
+  head.position = new Vector3(0.05, 0.05, 0);
+  head.material = headMat;
+}
+
+/** Attach a brown cardboard parcel to the courier's right-hand anchor. */
+function attachParcel(scene: Scene, ch: VoxelCharacter): void {
+  const anchor = ch.getHandAnchor();
+  const tag = ch.id;
+  const boxMat = new StandardMaterial(`parcelBox_${tag}`, scene);
+  boxMat.diffuseColor = Color3.FromHexString("#b88a64");
+  boxMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const box = MeshBuilder.CreateBox(
+    `parcelBox_${tag}`,
+    { width: 0.55, height: 0.45, depth: 0.5 },
+    scene,
+  );
+  box.parent = anchor;
+  box.position = new Vector3(0.0, 0.25, 0.05);
+  box.material = boxMat;
+
+  // Cross of packing tape on top.
+  const tapeMat = new StandardMaterial(`parcelTape_${tag}`, scene);
+  tapeMat.diffuseColor = Color3.FromHexString("#f4ecdb");
+  tapeMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const tapeX = MeshBuilder.CreateBox(
+    `parcelTapeX_${tag}`,
+    { width: 0.6, height: 0.02, depth: 0.08 },
+    scene,
+  );
+  tapeX.parent = anchor;
+  tapeX.position = new Vector3(0.0, 0.48, 0.05);
+  tapeX.material = tapeMat;
+  const tapeZ = MeshBuilder.CreateBox(
+    `parcelTapeZ_${tag}`,
+    { width: 0.08, height: 0.02, depth: 0.55 },
+    scene,
+  );
+  tapeZ.parent = anchor;
+  tapeZ.position = new Vector3(0.0, 0.48, 0.05);
+  tapeZ.material = tapeMat;
+}
+
+/** Attach a small clipboard to the reception greeter's right-hand anchor. */
+function attachClipboard(scene: Scene, ch: VoxelCharacter): void {
+  const anchor = ch.getHandAnchor();
+  const tag = ch.id;
+  const boardMat = new StandardMaterial(`clipBoard_${tag}`, scene);
+  boardMat.diffuseColor = Color3.FromHexString("#7a4f2a");
+  boardMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const board = MeshBuilder.CreateBox(
+    `clipBoard_${tag}`,
+    { width: 0.35, height: 0.05, depth: 0.45 },
+    scene,
+  );
+  board.parent = anchor;
+  board.position = new Vector3(0.05, 0.2, 0.05);
+  board.material = boardMat;
+
+  const paperMat = new StandardMaterial(`clipPaper_${tag}`, scene);
+  paperMat.diffuseColor = Color3.FromHexString("#f4ecdb");
+  paperMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const paper = MeshBuilder.CreateBox(
+    `clipPaper_${tag}`,
+    { width: 0.3, height: 0.02, depth: 0.4 },
+    scene,
+  );
+  paper.parent = anchor;
+  paper.position = new Vector3(0.05, 0.235, 0.05);
+  paper.material = paperMat;
 }
