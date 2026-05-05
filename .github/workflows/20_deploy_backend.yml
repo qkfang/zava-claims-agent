@@ -27,11 +27,11 @@ jobs:
 
       - name: Restore
         working-directory: src/backend
-        run: dotnet restore backend.csproj
+        run: dotnet restore zc-backend.csproj
 
       - name: Publish
         working-directory: src/backend
-        run: dotnet publish backend.csproj -c Release -o ${{ github.workspace }}/publish --no-restore
+        run: dotnet publish zc-backend.csproj -c Release -o ${{ github.workspace }}/publish --no-restore
 
       - name: Azure CLI Login
         uses: azure/login@v1
