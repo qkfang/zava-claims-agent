@@ -26,7 +26,7 @@
   "beats": [
     { "at": "customer", "action": "arrive-at-zone",       "narration": "Michael discovers a burst pipe has flooded the kitchen and calls Zava Insurance.", "duration": 2.0 },
     { "at": "customer", "action": "walk-to-office",       "narration": "Michael leaves the residential street and heads through the neighbourhood toward the Zava Insurance Claims Office." },
-    { "at": "customer", "action": "enter-office",         "narration": "Michael steps inside the Zava Insurance building and joins the reception queue." },
+    { "at": "customer", "action": "enter-office",         "narration": "Michael steps inside the Zava Claims building and joins the reception queue." },
     { "at": "customer", "action": "lodge-at-reception",   "narration": "Michael lodges his Home — burst pipe damage claim at the Zava Insurance reception." },
     { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris picks up the claim and confirms next steps." },
     { "at": "Claims Intake Officer", "action": "intake-route",  "narration": "Iris routes the claim to the Claims Assessor." },

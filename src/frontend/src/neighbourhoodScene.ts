@@ -1487,7 +1487,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   sctx.fillText("Z", 70, 105);
   sctx.fillStyle = "#ffffff";
   sctx.font = "bold 90px sans-serif";
-  sctx.fillText("ZAVA Calims", 200, 110);
+  sctx.fillText("ZAVA Claims", 200, 110);
   signTex.update();
 
   const signMat = new StandardMaterial("nh_office_sign_mat", scene);
@@ -2472,7 +2472,9 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   const lampMat = mat("lamp", "#3a3a3a");
   const lampHead = mat("lampHead", "#fff5d6");
   const lampPositions: Array<[number, number]> = [
-    [-12, 3],
+    // Lamp in front of the Zava Claims office shifted left by 10 units
+    // so it no longer sits directly in front of the entrance/sign.
+    [-22, 3],
     [12, 3],
     [-12, -3],
     [12, -3],
