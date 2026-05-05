@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extract</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <style>
+    .tabs { display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+    .tab { padding: 8px 14px; cursor: pointer; font-size: 0.9rem; color: var(--muted); border-bottom: 2px solid transparent; }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+    .pane { display: none; }
+    .pane.active { display: block; }
+    .field-grid { display: grid; grid-template-columns: 160px 1fr; gap: 8px 14px; font-size: 0.9rem; }
+    .field-grid .k { color: var(--muted); font-weight: 600; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.5); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Extract <span id="agent-info-host"></span></h1>
+    <div class="subtitle">Extract structured fields from a tax or government notice using Document Intelligence and a Foundry agent.</div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2>Input</h2>
+        <div class="tabs">
+          <div class="tab active" data-tab="url">URL</div>
+          <div class="tab" data-tab="upload">Upload</div>
+          <div class="tab" data-tab="text">Text</div>
+        </div>
+
+        <div class="pane active" id="pane-url">
+          <div class="row">
+            <label>Document URL (PDF / image)</label>
+            <input type="text" id="url-input" placeholder="https://..." />
+          </div>
+          <button id="btn-url">Extract</button>
+        </div>
+
+        <div class="pane" id="pane-upload">
+          <div class="row">
+            <label>Upload notice file</label>
+            <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp" />
+          </div>
+          <button id="btn-upload">Extract</button>
+          <span id="sample-docs-host"></span>
+          <div id="sample-selected" class="sample-selected" style="display:none;"></div>
+        </div>
+
+        <div class="pane" id="pane-text">
+          <div class="row">
+            <label>Paste notice text</label>
+            <textarea id="text-input" placeholder="Paste raw notice text here..."></textarea>
+          </div>
+          <button id="btn-text">Extract</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Extracted Fields</h2>
+        <div id="result-area">
+          <div class="empty">No notice processed yet.</div>
+        </div>
+        <div id="notify-action" style="display:none; margin-top:12px;">
+          <button id="btn-notify">Run Notification Agent</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2>Document Intelligence Output</h2>
+        <pre id="raw-text">—</pre>
+      </div>
+      <div class="card">
+        <h2>Agent Raw Response</h2>
+        <pre id="raw-response">—</pre>
+      </div>
+    </div>
+  </main>
+
+  <script src="../assets/app.js?v=20260506"></script>
+  <script>
+    renderHeader('Extract');
+    mountAgentInstructionsPanel('agent-info-host', ['ct-ag-extract-cu', 'ct-ag-notification']);
+
+    let lastExtractedJson = null;
+    let pickedSample = null;
+
+    const samplePicker = mountSampleDocsPopover('sample-docs-host', {
+      onPick: s => {
+        pickedSample = s;
+        document.getElementById('file-input').value = '';
+        const el = document.getElementById('sample-selected');
+        el.textContent = `Selected sample: ${s.label}`;
+        el.style.display = 'block';
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.pane').forEach(x => x.classList.remove('active'));
+        document.querySelector('.tab[data-tab="upload"]').classList.add('active');
+        document.getElementById('pane-upload').classList.add('active');
+      }
+    });
+    document.getElementById('file-input').addEventListener('change', () => {
+      pickedSample = null;
+      samplePicker && samplePicker.clearSelection();
+      document.getElementById('sample-selected').style.display = 'none';
+    });
+
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.pane').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('pane-' + t.dataset.tab).classList.add('active');
+    }));
+
+    function setLoading(btnId, loading) {
+      const b = document.getElementById(btnId);
+      b.disabled = loading;
+      b.innerHTML = loading ? '<span class="spinner"></span>Extracting...' : 'Extract';
+    }
+
+    document.getElementById('btn-url').addEventListener('click', async () => {
+      const url = document.getElementById('url-input').value.trim();
+      if (!url) return;
+      setLoading('btn-url', true);
+      await postJson('/notice/url', { url });
+      setLoading('btn-url', false);
+    });
+
+    document.getElementById('btn-text').addEventListener('click', async () => {
+      const text = document.getElementById('text-input').value.trim();
+      if (!text) return;
+      setLoading('btn-text', true);
+      await postJson('/notice/text', { text });
+      setLoading('btn-text', false);
+    });
+
+    document.getElementById('btn-upload').addEventListener('click', async () => {
+      let f = document.getElementById('file-input').files[0];
+      if (!f && pickedSample) {
+        try { f = await fetchSampleAsFile(pickedSample); }
+        catch (err) { renderError(err.message); return; }
+      }
+      if (!f) return;
+      setLoading('btn-upload', true);
+      const fd = new FormData();
+      fd.append('file', f);
+      try {
+        const res = await fetch('/notice/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        render(data);
+      } catch (err) {
+        renderError(err.message);
+      }
+      setLoading('btn-upload', false);
+    });
+
+    async function postJson(path, body) {
+      try {
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        render(data);
+      } catch (err) {
+        renderError(err.message);
+      }
+    }
+
+    function renderError(msg) {
+      document.getElementById('result-area').innerHTML = `<div class="empty error">Error: ${esc(msg)}</div>`;
+      document.getElementById('raw-text').textContent = '—';
+      document.getElementById('raw-response').textContent = '—';
+    }
+
+    function render(data) {
+      document.getElementById('raw-text').textContent = data.extractedText ?? '—';
+      document.getElementById('raw-response').textContent = data.response ?? '—';
+
+      const parsed = tryParseJson(data.response);
+      if (!parsed) {
+        document.getElementById('result-area').innerHTML = `<div class="empty">Agent did not return structured JSON.</div>`;
+        document.getElementById('notify-action').style.display = 'none';
+        return;
+      }
+
+      const urgency = (parsed.urgency || '').toLowerCase();
+      const urgencyBadge = ['high','medium','low'].includes(urgency)
+        ? `<span class="badge ${urgency}">${urgency.toUpperCase()}</span>` : '—';
+      const actionBadge = parsed.actionRequired
+        ? `<span class="badge action">ACTION REQUIRED</span>`
+        : `<span class="badge info">INFORMATIONAL</span>`;
+
+      const amount = parsed.amountDue != null
+        ? `${parsed.amountDue}${parsed.currency ? ' ' + parsed.currency : ''}`
+        : '—';
+
+      document.getElementById('result-area').innerHTML = `
+        <div class="field-grid">
+          <div class="k">Entity</div><div>${esc(parsed.entityName)}</div>
+          <div class="k">Jurisdiction</div><div>${esc(parsed.jurisdiction)}</div>
+          <div class="k">Notice Date</div><div>${esc(parsed.noticeDate)}</div>
+          <div class="k">Due Date</div><div>${esc(parsed.dueDate)}</div>
+          <div class="k">Amount Due</div><div>${esc(amount)}</div>
+          <div class="k">Tax Type</div><div>${esc(parsed.taxType)}</div>
+          <div class="k">Status</div><div>${actionBadge} ${urgencyBadge}</div>
+        </div>
+        ${parsed.summary ? `<div class="summary">${esc(parsed.summary)}</div>` : ''}
+      `;
+
+      lastExtractedJson = data.response;
+      document.getElementById('notify-action').style.display = 'block';
+    }
+
+    function tryParseJson(s) {
+      if (!s) return null;
+      const m = s.match(/\{[\s\S]*\}/);
+      if (!m) return null;
+      try { return JSON.parse(m[0]); } catch { return null; }
+    }
+
+    document.getElementById('btn-notify').addEventListener('click', async () => {
+      if (!lastExtractedJson) return;
+      const b = document.getElementById('btn-notify');
+      b.disabled = true;
+      b.innerHTML = '<span class="spinner"></span>Running...';
+      try {
+        const res = await fetch('/notification/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ json: lastExtractedJson })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        sessionStorage.setItem('notificationPlan', data.response);
+        sessionStorage.setItem('noticeJson', lastExtractedJson);
+        window.location.href = 'notification.html';
+      } catch (err) {
+        alert('Notification agent error: ' + err.message);
+      }
+      b.disabled = false;
+      b.textContent = 'Run Notification Agent';
+    });
+  </script>
+</body>
+</html>

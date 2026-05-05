@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extract (DI)</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <style>
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.5); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Extract (DI)</h1>
+    <div class="subtitle">Upload a document and extract raw text directly using Azure Document Intelligence (no agent).</div>
+
+    <div class="card">
+      <h2>Upload Document</h2>
+      <div class="row">
+        <label>File (PDF, image, or Word document)</label>
+        <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.doc,.docx" />
+      </div>
+      <button id="btn-upload">Extract</button>
+      <span id="sample-docs-host"></span>
+      <div id="sample-selected" class="sample-selected" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Document Intelligence Output</h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="view">View</button>
+        <button class="tab" data-tab="markdown">Markdown</button>
+        <button class="tab" data-tab="json">JSON</button>
+      </div>
+      <div class="tab-panel active" data-panel="view">
+        <div class="output-split">
+          <div id="doc-preview-view" class="doc-preview"></div>
+          <div id="md-render" class="md-render"><div class="empty">No document processed yet.</div></div>
+        </div>
+      </div>
+      <div class="tab-panel" data-panel="markdown">
+        <div class="output-split">
+          <div id="doc-preview-md" class="doc-preview"></div>
+          <pre id="raw-markdown">—</pre>
+        </div>
+      </div>
+      <div class="tab-panel" data-panel="json">
+        <pre id="raw-json">—</pre>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
+  <script src="../assets/app.js?v=20260506"></script>
+  <script>
+    renderHeader('Extract (DI)');
+
+    const docPreview = setupDocPreview({ fileInputId: 'file-input', previewIds: ['doc-preview-view', 'doc-preview-md'] });
+
+    let pickedSample = null;
+    const samplePicker = mountSampleDocsPopover('sample-docs-host', {
+      onPick: s => {
+        pickedSample = s;
+        document.getElementById('file-input').value = '';
+        const el = document.getElementById('sample-selected');
+        el.textContent = `Selected sample: ${s.label}`;
+        el.style.display = 'block';
+        docPreview.setSample(s);
+      }
+    });
+    document.getElementById('file-input').addEventListener('change', () => {
+      pickedSample = null;
+      samplePicker && samplePicker.clearSelection();
+      document.getElementById('sample-selected').style.display = 'none';
+    });
+
+    document.querySelectorAll('.tabs .tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        document.querySelectorAll('.tabs .tab').forEach(t => t.classList.toggle('active', t === btn));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === target));
+      });
+    });
+
+    function setLoading(loading) {
+      const b = document.getElementById('btn-upload');
+      b.disabled = loading;
+      b.innerHTML = loading ? '<span class="spinner"></span>Extracting...' : 'Extract';
+    }
+
+    document.getElementById('btn-upload').addEventListener('click', async () => {
+      let f = document.getElementById('file-input').files[0];
+      if (!f && pickedSample) {
+        try { f = await fetchSampleAsFile(pickedSample); }
+        catch (err) { document.getElementById('raw-markdown').textContent = `Error: ${err.message}`; return; }
+      }
+      if (!f) return;
+      setLoading(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', f);
+        const res = await fetch('/notice/extract/di/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        document.getElementById('raw-markdown').textContent = data.markdown || '(no content extracted)';
+        document.getElementById('raw-json').textContent = data.json || '(no json available)';
+        document.getElementById('md-render').innerHTML = renderMarkdown(data.markdown || '');
+      } catch (err) {
+        document.getElementById('raw-markdown').textContent = `Error: ${err.message}`;
+        document.getElementById('raw-json').textContent = '—';
+        document.getElementById('md-render').innerHTML = `<div class="empty error">Error: ${esc(err.message)}</div>`;
+      }
+      setLoading(false);
+    });
+  </script>
+</body>
+</html>
