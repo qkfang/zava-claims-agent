@@ -21,7 +21,7 @@
   "beats": [
     { "at": "customer", "action": "arrive-at-zone",     "narration": "Robert prepares the bereavement paperwork after losing a family member.", "duration": 2.0 },
     { "at": "customer", "action": "walk-to-office",     "narration": "Robert travels through the quiet suburb to the Zava Insurance Claims Office to lodge the claim." },
-    { "at": "customer", "action": "enter-office",       "narration": "Robert walks into the Zava Insurance building and is welcomed at reception." },
+    { "at": "customer", "action": "enter-office",       "narration": "Robert walks into the Zava Claims building and is welcomed at reception." },
     { "at": "customer", "action": "lodge-at-reception", "narration": "Robert lodges the Life — beneficiary claim at the Zava Insurance reception." },
     { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris handles the lodgement with care and patience." },
     { "at": "Claims Team Leader","action": "team-leader-review","narration": "Theo personally oversees the bereavement claim for compassionate handling.", "duration": 2.5 },

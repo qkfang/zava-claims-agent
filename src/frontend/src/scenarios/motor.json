@@ -21,7 +21,7 @@
   "beats": [
     { "at": "customer", "action": "arrive-at-zone",     "narration": "Aisha is rear-ended at an intersection and calls Zava Insurance.", "duration": 2.0 },
     { "at": "customer", "action": "walk-to-office",     "narration": "Aisha drives across the neighbourhood to the Zava Insurance Claims Office to lodge her claim." },
-    { "at": "customer", "action": "enter-office",       "narration": "Aisha walks into the Zava Insurance building and approaches reception." },
+    { "at": "customer", "action": "enter-office",       "narration": "Aisha walks into the Zava Claims building and approaches reception." },
     { "at": "customer", "action": "lodge-at-reception", "narration": "Aisha lodges her Motor — rear-end collision claim at the Zava Insurance reception." },
     { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris captures the at-fault details and photos." },
     { "at": "Claims Intake Officer", "action": "intake-route",  "narration": "Iris routes the claim to the Claims Assessor." },

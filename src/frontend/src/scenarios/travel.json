@@ -21,7 +21,7 @@
   "beats": [
     { "at": "customer", "action": "arrive-at-zone",     "narration": "Grace realises her luggage didn't arrive and contacts Zava Insurance.", "duration": 2.0 },
     { "at": "customer", "action": "walk-to-office",     "narration": "Grace heads from the travel hub through the neighbourhood to the Zava Insurance Claims Office to lodge her claim." },
-    { "at": "customer", "action": "enter-office",       "narration": "Grace walks into the Zava Insurance building and approaches reception." },
+    { "at": "customer", "action": "enter-office",       "narration": "Grace walks into the Zava Claims building and approaches reception." },
     { "at": "customer", "action": "lodge-at-reception", "narration": "Grace lodges her Travel — lost luggage claim at the Zava Insurance reception." },
     { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris captures the airline reference and items list." },
     { "at": "Claims Intake Officer", "action": "intake-route",  "narration": "Iris routes the claim to the Claims Assessor." },

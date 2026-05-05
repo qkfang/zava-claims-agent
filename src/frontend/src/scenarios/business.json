@@ -31,7 +31,7 @@
   "beats": [
     { "at": "customer", "action": "arrive-at-zone",     "narration": "Tom assesses the smoke damage to his café after the electrical fire.", "duration": 2.0 },
     { "at": "customer", "action": "walk-to-office",     "narration": "Tom leaves the high street and heads to the Zava Insurance Claims Office to lodge his claim." },
-    { "at": "customer", "action": "enter-office",       "narration": "Tom walks into the Zava Insurance building and approaches reception." },
+    { "at": "customer", "action": "enter-office",       "narration": "Tom walks into the Zava Claims building and approaches reception." },
     { "at": "customer", "action": "lodge-at-reception", "narration": "Tom lodges his Business — café smoke damage claim at the Zava Insurance reception." },
     { "at": "Claims Intake Officer", "action": "intake-pickup", "narration": "Iris captures the property and business-interruption details." },
     { "at": "Claims Intake Officer", "action": "intake-route",  "narration": "Iris routes the claim to the Claims Assessor." },
