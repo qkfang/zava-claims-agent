@@ -8,8 +8,7 @@ param location string = 'eastus2'
 param principals array = []
 
 var commonTags = {
-  workload: 'zava-claims-agent'
-  demo: 'claims-office'
+  SecurityControl: 'Ignore'
 }
 
 // Short, deterministic suffix for globally-unique resource names (storage, key vault).
