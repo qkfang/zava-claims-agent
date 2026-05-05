@@ -55,6 +55,9 @@ param searchIndexName string = 'claims_knowledge'
 @description('Foundry project Bing grounding connection ID')
 param bingConnectionId string
 
+@description('Azure AI Document Intelligence (Form Recognizer) endpoint URL consumed by the backend')
+param docIntelligenceEndpoint string = ''
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName
   location: location
@@ -168,6 +171,10 @@ resource backendApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'AZURE_BING_CONNECTION_ID'
           value: bingConnectionId
+        }
+        {
+          name: 'AZURE_DOC_INTELLIGENCE_ENDPOINT'
+          value: docIntelligenceEndpoint
         }
       ])
     }
