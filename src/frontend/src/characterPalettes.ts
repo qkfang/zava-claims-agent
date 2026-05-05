@@ -129,4 +129,25 @@ export const PALETTES: Record<string, VoxelCharacterPalette> = {
     skin: "#c69770", hair: "#1a1a1a", shirt: "#7a6a8a", pants: "#2a2a32",
     shoes: "#1a1a1a", accent: "#cfcfcf", hairStyle: "short", facial: "stubble",
   },
+
+  // ----- Ambient lobby cast (visual-only background staff) -----
+  // Reception greeter — front-of-house in the lobby, smart navy dress,
+  // long hair, friendly accent scarf. Distinct from intakeOfficer so the
+  // two read as different roles when visible together.
+  receptionGreeter: {
+    skin: "#f0c8a4", hair: "#2a1a12", shirt: "#2a3a5c", pants: "#2a3a5c",
+    shoes: "#1a1a1a", accent: "#ffd166", hairStyle: "long",
+    lowerBody: "dress", shirtLogo: true,
+  },
+  // Cleaner — teal cleaner's smock, hair tied up in a bun, sturdy shoes.
+  cleaner: {
+    skin: "#e8b48a", hair: "#3a2418", shirt: "#2e8a6e", pants: "#3a3a44",
+    shoes: "#5a3a25", accent: "#ffd166", hairStyle: "bun",
+  },
+  // Parcel courier — brown delivery uniform, cap, short beard.
+  parcelCourier: {
+    skin: "#d9a37e", hair: "#3a2418", shirt: "#7a4f2a", pants: "#3a2a20",
+    shoes: "#1a1a1a", accent: "#ffb347", hairStyle: "cap", facial: "beard",
+    shirtLogo: true,
+  },
 };
