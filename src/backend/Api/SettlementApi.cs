@@ -1,4 +1,5 @@
 using System.Globalization;
+using OpenAI.Responses;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -10,6 +11,8 @@ record SettlementProcessRequest(
     decimal? Excess,
     decimal? Depreciation,
     decimal? PriorPayments);
+
+record SettlementApprovalDecisionRequest(string? DecidedBy, string? Comment);
 
 /// <summary>
 /// HTTP endpoints that back the "Try It Out" tab on the Settlement agent
@@ -30,6 +33,30 @@ public static class SettlementApi
         ClaimsAgentFactory agentFactory,
         ILogger logger)
     {
+        // Resolve services used by both the agent invocation and the
+        // payment-approval HTTP endpoints. These are always registered
+        // (TeamsNotificationService degrades gracefully when no webhook
+        // URL is configured).
+        var paymentStore = app.Services.GetRequiredService<PaymentApprovalStore>();
+        var teamsService = app.Services.GetRequiredService<TeamsNotificationService>();
+
+        // Build the MCP ResponseTool that points the Settlement Agent at
+        // the SettlementMcpTools served from /mcp on this app. We always
+        // require human approval for every tool call so the operator sees
+        // and authorises every payment-flow action the agent attempts.
+        var mcpUrlBase = (app.Configuration["APP_MCP_URL"] ?? "http://localhost:5000").TrimEnd('/');
+        ResponseTool? settlementMcpTool = null;
+        try
+        {
+            settlementMcpTool = ResponseTool.CreateMcpTool(
+                serverLabel: "settlement-mcp",
+                serverUri: new Uri($"{mcpUrlBase}/mcp"),
+                toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.AlwaysRequireApproval));
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to construct settlement MCP tool descriptor; agent will run without it.");
+        }
         // List the claims currently held in memory by the intake demo,
         // newest first. The shape is intentionally compact — just what
         // the dropdown on the Try It Out tab needs.
@@ -141,11 +168,23 @@ public static class SettlementApi
                         $"Excess / deductible: {FormatMoney(excess)}\n" +
                         $"Depreciation: {FormatMoney(depreciation)}\n" +
                         $"Prior payments: {FormatMoney(priorPayments)}\n\n" +
-                        "Please produce the standard settlement output (calculation, " +
-                        "options, payment approval request, settlement letter draft, " +
-                        "and human-approval decision).";
+                        "Use the settlement_* MCP tools to cross-check the payee, " +
+                        "match the invoice if applicable, run the calculation, " +
+                        "check the authority limit, and finally call " +
+                        "settlement_requestPaymentApproval so a human approver " +
+                        "is notified in Microsoft Teams. Do NOT call " +
+                        "settlement_releasePayment in this run — stop after " +
+                        "raising the approval request and ask the human to " +
+                        "approve in Teams.\n\n" +
+                        "Then produce the standard settlement output " +
+                        "(calculation, cross-checks, options, payment approval " +
+                        "request, settlement letter draft, and human-approval " +
+                        "decision).";
 
-                    var agent = agentFactory.Create("settlement");
+                    var extraTools = settlementMcpTool != null
+                        ? new List<ResponseTool> { settlementMcpTool }
+                        : null;
+                    var agent = agentFactory.Create("settlement", extraTools);
                     var result = await agent.RunWithTraceAsync(prompt);
                     agentNotes = result.Text;
                     agentInput = result.Input;
@@ -164,8 +203,43 @@ public static class SettlementApi
                 }
             }
 
-            logger.LogInformation("Settlement process: claim={ClaimNumber} payable={Payable}",
-                Sanitize(record.ClaimNumber), payable);
+            // Always create a Pending payment-approval record + send the
+            // Teams Adaptive Card from the API layer, so the demo flow
+            // works end-to-end even when the Foundry agent (and therefore
+            // the MCP-driven path) isn't configured. When the agent IS
+            // configured it will also raise its own approval via the MCP
+            // tool — that record lives in the same store and is surfaced
+            // by /settlement/payment endpoints.
+            var apiApproval = new PaymentApprovalRecord
+            {
+                ApprovalId = "PAY-" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(),
+                ClaimNumber = record.ClaimNumber,
+                CustomerName = record.CustomerName,
+                PolicyNumber = record.PolicyNumber,
+                ClaimType = record.ClaimType,
+                PayableAmount = payable,
+                PayeeName = record.CustomerName,
+                PayeeAccount = null,
+                Reason = humanApprovalReason,
+                Status = PaymentApprovalStatus.Pending
+            };
+            paymentStore.Add(apiApproval);
+            var teamsResult = await teamsService.SendPaymentApprovalAsync(new PaymentApprovalRequest(
+                ApprovalId: apiApproval.ApprovalId,
+                ClaimNumber: apiApproval.ClaimNumber,
+                CustomerName: apiApproval.CustomerName,
+                PolicyNumber: apiApproval.PolicyNumber,
+                ClaimType: apiApproval.ClaimType,
+                PayableAmount: apiApproval.PayableAmount,
+                PayeeName: apiApproval.PayeeName,
+                PayeeAccount: apiApproval.PayeeAccount,
+                Reason: apiApproval.Reason));
+            apiApproval.TeamsChannel = teamsResult.Channel;
+            apiApproval.TeamsMessage = teamsResult.Message;
+            apiApproval.ApprovalUrl = teamsResult.ApprovalUrl;
+
+            logger.LogInformation("Settlement process: claim={ClaimNumber} payable={Payable} approvalId={ApprovalId}",
+                Sanitize(record.ClaimNumber), payable, Sanitize(apiApproval.ApprovalId));
 
             return Results.Ok(new
             {
@@ -190,10 +264,116 @@ public static class SettlementApi
                 agentNotes,
                 agentConfigured = agentFactory.IsConfigured,
                 agentInput,
-                agentRawOutput
+                agentRawOutput,
+                paymentApproval = new
+                {
+                    approvalId = apiApproval.ApprovalId,
+                    status = apiApproval.Status.ToString().ToLowerInvariant(),
+                    teamsSent = teamsResult.Sent,
+                    teamsChannel = teamsResult.Channel,
+                    teamsConfigured = teamsService.IsConfigured,
+                    approvalUrl = teamsResult.ApprovalUrl,
+                    teamsMessage = teamsResult.Message
+                },
+                mcpConfigured = settlementMcpTool != null
             });
         });
+
+        // ── Payment-approval endpoints ──────────────────────────────────
+        // Used by both the Settlement page UI and (where supported) the
+        // Approve/Reject buttons inside the Microsoft Teams Adaptive Card.
+
+        app.MapGet("/settlement/payment/{approvalId}", (string approvalId) =>
+        {
+            var record = paymentStore.Get(approvalId);
+            return record is null
+                ? Results.NotFound(new { error = $"approval '{approvalId}' not found" })
+                : Results.Ok(SerializeApproval(record));
+        });
+
+        app.MapGet("/settlement/payments", () =>
+        {
+            return Results.Ok(paymentStore.All().Select(SerializeApproval));
+        });
+
+        app.MapPost("/settlement/payment/{approvalId}/approve",
+            (string approvalId, SettlementApprovalDecisionRequest? body) =>
+        {
+            var record = paymentStore.Get(approvalId);
+            if (record is null)
+                return Results.NotFound(new { error = $"approval '{approvalId}' not found" });
+            if (record.Status == PaymentApprovalStatus.Released)
+                return Results.Conflict(new { error = "payment already released" });
+            if (record.Status == PaymentApprovalStatus.Rejected)
+                return Results.Conflict(new { error = "payment already rejected" });
+
+            record.Status = PaymentApprovalStatus.Approved;
+            record.Decision = "approved";
+            record.DecidedBy = string.IsNullOrWhiteSpace(body?.DecidedBy) ? "Teams approver" : body!.DecidedBy;
+            record.DecidedAt = DateTimeOffset.UtcNow;
+            logger.LogInformation("Settlement approval granted: {ApprovalId} by {By}",
+                Sanitize(record.ApprovalId), Sanitize(record.DecidedBy ?? string.Empty));
+            return Results.Ok(SerializeApproval(record));
+        });
+
+        app.MapPost("/settlement/payment/{approvalId}/reject",
+            (string approvalId, SettlementApprovalDecisionRequest? body) =>
+        {
+            var record = paymentStore.Get(approvalId);
+            if (record is null)
+                return Results.NotFound(new { error = $"approval '{approvalId}' not found" });
+            if (record.Status == PaymentApprovalStatus.Released)
+                return Results.Conflict(new { error = "payment already released" });
+
+            record.Status = PaymentApprovalStatus.Rejected;
+            record.Decision = "rejected";
+            record.DecidedBy = string.IsNullOrWhiteSpace(body?.DecidedBy) ? "Teams approver" : body!.DecidedBy;
+            record.DecidedAt = DateTimeOffset.UtcNow;
+            logger.LogInformation("Settlement approval rejected: {ApprovalId} by {By}",
+                Sanitize(record.ApprovalId), Sanitize(record.DecidedBy ?? string.Empty));
+            return Results.Ok(SerializeApproval(record));
+        });
+
+        app.MapPost("/settlement/payment/{approvalId}/release", (string approvalId) =>
+        {
+            var record = paymentStore.Get(approvalId);
+            if (record is null)
+                return Results.NotFound(new { error = $"approval '{approvalId}' not found" });
+            if (record.Status != PaymentApprovalStatus.Approved)
+                return Results.Conflict(new { error = $"approval is in status '{record.Status}'; must be Approved before release" });
+
+            record.Status = PaymentApprovalStatus.Released;
+            record.PaymentReference = "PMT-" + DateTimeOffset.UtcNow.ToString("yyyyMMdd") + "-" + record.ApprovalId[^6..];
+            record.ReleasedAt = DateTimeOffset.UtcNow;
+            logger.LogInformation("Settlement payment released: {ApprovalId} ref={Ref}",
+                Sanitize(record.ApprovalId), Sanitize(record.PaymentReference));
+            return Results.Ok(SerializeApproval(record));
+        });
     }
+
+    private static object SerializeApproval(PaymentApprovalRecord r) => new
+    {
+        approvalId = r.ApprovalId,
+        claimNumber = r.ClaimNumber,
+        customerName = r.CustomerName,
+        policyNumber = r.PolicyNumber,
+        claimType = r.ClaimType,
+        payableAmount = r.PayableAmount,
+        payableAmountFormatted = r.PayableAmount.ToString("C0", CultureInfo.GetCultureInfo("en-AU")),
+        payeeName = r.PayeeName,
+        payeeAccount = r.PayeeAccount,
+        reason = r.Reason,
+        status = r.Status.ToString().ToLowerInvariant(),
+        decision = r.Decision,
+        decidedBy = r.DecidedBy,
+        decidedAt = r.DecidedAt,
+        paymentReference = r.PaymentReference,
+        releasedAt = r.ReleasedAt,
+        teamsChannel = r.TeamsChannel,
+        teamsMessage = r.TeamsMessage,
+        approvalUrl = r.ApprovalUrl,
+        createdAt = r.CreatedAt
+    };
 
     private static decimal? ParseMoney(string? value)
     {

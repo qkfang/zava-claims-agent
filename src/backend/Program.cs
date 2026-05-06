@@ -39,6 +39,15 @@ builder.Services.AddSingleton<ClaimsAgentFactory>();
 // by claim number.
 builder.Services.AddSingleton<IntakeClaimStore>();
 
+// ── MCP server bring-up ─────────────────────────────────────────────────────
+// The MCP server is enabled whenever the Foundry agent is configured. It
+// always exposes the Settlement payment-flow tools (used by the Settlement
+// Agent to automate cross-checks, raise approvals to Microsoft Teams, and
+// release payments). When the optional notice-intelligence resources are
+// also configured, the AgentDi tools are registered on the same server.
+var mcpEnabled = !string.IsNullOrWhiteSpace(agentOptions.ProjectEndpoint)
+    && !string.IsNullOrWhiteSpace(agentOptions.ModelDeploymentName);
+
 // ── Notice intelligence integration (ported from demo-foundry-document-intelligence/agentdi)
 // Only enabled when the required Azure resources are configured. When enabled,
 // it exposes the four agentdi agents (Extract DI/CU, Notification, Correspondence)
@@ -46,10 +55,19 @@ builder.Services.AddSingleton<IntakeClaimStore>();
 // scenario pages under wwwroot/notice/.
 var docIntelligenceEndpoint = builder.Configuration["AZURE_DOC_INTELLIGENCE_ENDPOINT"];
 var storageAccountName = builder.Configuration["AZURE_STORAGE_ACCOUNT_NAME"];
-var noticeEnabled = !string.IsNullOrWhiteSpace(agentOptions.ProjectEndpoint)
-    && !string.IsNullOrWhiteSpace(agentOptions.ModelDeploymentName)
+var noticeEnabled = mcpEnabled
     && !string.IsNullOrWhiteSpace(docIntelligenceEndpoint)
     && !string.IsNullOrWhiteSpace(storageAccountName);
+
+// Settlement payment-flow services are always registered (they have no
+// external infra requirements beyond optional SMTP / Teams webhook config
+// which they degrade gracefully without).
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<PaymentApprovalStore>();
+builder.Services.AddSingleton<TeamsNotificationService>();
+// NotificationService is shared with the notice flow but is harmless when
+// SMTP isn't configured (it just logs); register it once at the top level.
+builder.Services.AddSingleton<NotificationService>();
 
 Azure.Identity.DefaultAzureCredential? noticeCredential = null;
 if (noticeEnabled)
@@ -76,12 +94,17 @@ if (noticeEnabled)
         foundryEndpoint, noticeCredential, cuGpt41Deployment, cuGpt41MiniDeployment, cuEmbeddingDeployment,
         sp.GetRequiredService<ILogger<ContentUnderstandingService>>()));
 
-    builder.Services.AddSingleton<NotificationService>();
     builder.Services.AddSingleton<PendingApprovalStore>();
+}
 
-    builder.Services.AddMcpServer()
+if (mcpEnabled)
+{
+    var mcpBuilder = builder.Services.AddMcpServer()
         .WithHttpTransport(options => { options.Stateless = true; })
-        .WithTools<AgentDiMcpTools>();
+        .WithTools<SettlementMcpTools>();
+
+    if (noticeEnabled)
+        mcpBuilder.WithTools<AgentDiMcpTools>();
 
     builder.Services.AddCors();
 }
@@ -96,7 +119,7 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseAntiforgery();
 
-if (noticeEnabled)
+if (mcpEnabled)
 {
     app.UseCors(policy => policy
         .AllowAnyOrigin()
@@ -239,11 +262,15 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     app.MapAgentMetadataEndpoints(metadataOptions);
 }
 
+// ── MCP transport mapping (settlement payment-flow tools + optional agentdi tools) ──
+if (mcpEnabled)
+{
+    app.MapMcp("/mcp");
+}
+
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
 if (noticeEnabled)
 {
-    app.MapMcp("/mcp");
-
     var noticeLogger = app.Services.GetRequiredService<ILogger<Program>>();
     var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 

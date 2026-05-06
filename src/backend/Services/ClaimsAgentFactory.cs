@@ -1,6 +1,7 @@
 using Azure.AI.Projects;
 using Azure.Identity;
 using Microsoft.Extensions.Logging;
+using OpenAI.Responses;
 using ZavaClaims.Agents;
 
 namespace ZavaClaims.App.Services;
@@ -36,7 +37,11 @@ public class ClaimsAgentFactory
     /// <c>fraud</c>, <c>supplier</c>, <c>settlement</c>,
     /// <c>communications</c>, <c>team-leader</c>).
     /// </summary>
-    public ClaimsAgent Create(string role)
+    /// <param name="role">Kebab-case role identifier.</param>
+    /// <param name="extraTools">Optional Foundry response tools (e.g. an
+    /// MCP tool surface) to wire onto the agent in addition to the default
+    /// Azure AI Search and Bing tools.</param>
+    public ClaimsAgent Create(string role, IList<ResponseTool>? extraTools = null)
     {
         if (!IsConfigured)
         {
@@ -64,7 +69,7 @@ public class ClaimsAgentFactory
             "supplier" or "supplier-coordination"
                 => new SupplierCoordinatorAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<SupplierCoordinatorAgent>()),
             "settlement"
-                => new SettlementAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<SettlementAgent>()),
+                => new SettlementAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<SettlementAgent>(), extraTools),
             "communications" or "customer-communications"
                 => new CustomerCommunicationsAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<CustomerCommunicationsAgent>()),
             "team-leader" or "leader"

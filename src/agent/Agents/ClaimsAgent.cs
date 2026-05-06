@@ -1,6 +1,7 @@
 using Azure.AI.Projects;
 using Azure.AI.Projects.Agents;
 using Microsoft.Extensions.Logging;
+using OpenAI.Responses;
 
 namespace ZavaClaims.Agents;
 
@@ -46,7 +47,8 @@ public class ClaimsAgent : BaseAgent
         string? searchConnectionId = null,
         string? searchIndexName = null,
         string? bingConnectionId = null,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        IList<ResponseTool>? extraTools = null)
         : base(aiProjectClient, agentId, deploymentName, instructions, null,
             agentDef =>
             {
@@ -59,6 +61,14 @@ public class ClaimsAgent : BaseAgent
                     agentDef.Tools.Add(new BingGroundingTool(new BingGroundingSearchToolOptions([
                         new BingGroundingSearchConfiguration(bingConnectionId)
                     ])));
+
+                if (extraTools != null)
+                {
+                    foreach (var tool in extraTools)
+                    {
+                        if (tool != null) agentDef.Tools.Add(tool);
+                    }
+                }
             },
             logger)
     {
@@ -72,6 +82,8 @@ public class ClaimsAgent : BaseAgent
             tools.Add($"Azure AI Search — index '{searchIndexName}'");
         if (!string.IsNullOrWhiteSpace(bingConnectionId))
             tools.Add("Bing Grounding (web)");
+        if (extraTools != null && extraTools.Count > 0)
+            tools.Add($"MCP tool surface ({extraTools.Count} tool{(extraTools.Count == 1 ? "" : "s")})");
         ConfiguredTools = tools;
     }
 }
