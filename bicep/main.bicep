@@ -150,6 +150,46 @@ resource principalAIDeveloperRole 'Microsoft.Authorization/roleAssignments@2022-
 }]
 
 // ---------------------------------------------------------------------------
+// Backend App Service managed identity → Foundry roles
+//
+// The backend Web App is the identity that signs Voice Live WebSocket
+// upgrades (CommunicationsVoiceLiveProxy.cs) and that drives the
+// ClaimsAgent factory + Foundry agent CRUD. Without these roles Voice
+// Live accepts the bearer token but rejects the agent attach with
+// "Failed to initialize AI agent, check connection string and the
+// identity permissions".
+// ---------------------------------------------------------------------------
+resource backendOpenAIUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(foundryAccount.id, backendAppName, cognitiveServicesOpenAIUserRoleId)
+  scope: foundryAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesOpenAIUserRoleId)
+    principalId: appService.outputs.backendPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource backendAIUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(foundryAccount.id, backendAppName, azureAIUserRoleId)
+  scope: foundryAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', azureAIUserRoleId)
+    principalId: appService.outputs.backendPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource backendAIDeveloperRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(foundryAccount.id, backendAppName, azureAIDeveloperRoleId)
+  scope: foundryAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', azureAIDeveloperRoleId)
+    principalId: appService.outputs.backendPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Role assignments for Azure AI Search access
 //
 // Web App (frontend + backend) → Search Index Data Contributor (so the apps
