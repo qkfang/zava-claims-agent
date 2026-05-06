@@ -75,6 +75,62 @@ public class IntakeClaimStore
         _records.Values.OrderByDescending(r => r.CreatedAt).ToList();
 
     /// <summary>
+    /// Pre-populate the store with one claim record per persona in
+    /// <see cref="IntakeSampleCatalog"/> so the downstream demo pages
+    /// (Assessment, Loss Adjuster, Fraud, Supplier Coordination,
+    /// Settlement, Customer Communications) all have claims to pick from
+    /// the moment the app starts — without requiring the user to lodge
+    /// one through the Claims Intake demo first.
+    ///
+    /// No-op if the store already contains records, so it's safe to call
+    /// at startup.
+    /// </summary>
+    public void SeedDefaults()
+    {
+        if (!_records.IsEmpty) return;
+
+        var samples = IntakeSampleCatalog.All;
+        var now = DateTimeOffset.UtcNow;
+        var index = 0;
+
+        foreach (var sample in samples)
+        {
+            index++;
+
+            // Use a deterministic, demo-flavoured claim number so the
+            // seeded entries are easy to spot in logs and UI, while still
+            // following the CLM-YYYYMMDD-XXXXXX shape used by Add().
+            var stamp = sample.ExpectedFields.IncidentDate.Replace("-", string.Empty);
+            if (stamp.Length != 8)
+            {
+                stamp = now.ToString("yyyyMMdd");
+            }
+            var claimNumber = $"CLM-{stamp}-DEMO{index:00}";
+
+            var record = new IntakeClaimRecord(
+                ClaimNumber: claimNumber,
+                SampleId: sample.Id,
+                CustomerName: sample.ExpectedFields.CustomerName,
+                CustomerEmail: sample.ExpectedFields.CustomerEmail,
+                CustomerPhone: sample.ExpectedFields.CustomerPhone,
+                PolicyNumber: sample.ExpectedFields.PolicyNumber,
+                ClaimType: sample.ExpectedFields.ClaimType,
+                IncidentDate: sample.ExpectedFields.IncidentDate,
+                IncidentLocation: sample.ExpectedFields.IncidentLocation,
+                IncidentDescription: sample.ExpectedFields.IncidentDescription,
+                EstimatedLoss: sample.ExpectedFields.EstimatedLoss,
+                PreferredContact: sample.ExpectedFields.PreferredContact,
+                Urgency: sample.ExpectedUrgency,
+                UrgencyReason: sample.ExpectedUrgencyReason,
+                // Stagger CreatedAt so All()'s ordering is stable and the
+                // first persona (Michael) shows at the top of the dropdown.
+                CreatedAt: now.AddMinutes(-index));
+
+            _records[claimNumber] = record;
+        }
+    }
+
+    /// <summary>
     /// Generate a claim number of the form <c>CLM-YYYYMMDD-XXXXXX</c>.
     /// The 6-character suffix uses cryptographically-strong randomness so
     /// two near-simultaneous submissions cannot collide.

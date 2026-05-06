@@ -177,6 +177,12 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     var intakeLogger = app.Services.GetRequiredService<ILogger<Program>>();
     var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
     var intakeFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
+
+    // Pre-populate the in-memory claim store with one record per persona in
+    // IntakeSampleCatalog so every "Try It Out" demo page has claims to pick
+    // from straight away, without first lodging one in Claims Intake.
+    intakeStore.SeedDefaults();
+
     app.MapIntakeEndpoints(intakeStore, intakeFactory, intakeLogger);
     app.MapLossAdjusterEndpoints(intakeStore, intakeFactory, intakeLogger);
     app.MapTeamLeaderEndpoints(intakeStore, intakeFactory, intakeLogger);
