@@ -246,3 +246,4 @@ public static class SupplierApi
     private static string Sanitize(string value) =>
         value.Replace('\r', ' ').Replace('\n', ' ');
 }
+
