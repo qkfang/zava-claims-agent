@@ -38,6 +38,7 @@ builder.Services.AddSingleton<ClaimsAgentFactory>();
 // "Try It Out" tab. Lets later agents in the demo flow look the case up
 // by claim number.
 builder.Services.AddSingleton<IntakeClaimStore>();
+builder.Services.AddSingleton<TeamLeaderGroupChatService>();
 
 // ── Notice intelligence integration (ported from demo-foundry-document-intelligence/agentdi)
 // Only enabled when the required Azure resources are configured. When enabled,
@@ -189,6 +190,9 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     app.MapIntakeEndpoints(intakeStore, intakeFactory, intakeLogger);
     app.MapLossAdjusterEndpoints(intakeStore, intakeFactory, intakeLogger);
     app.MapTeamLeaderEndpoints(intakeStore, intakeFactory, intakeLogger);
+
+    var groupChatService = app.Services.GetRequiredService<TeamLeaderGroupChatService>();
+    app.MapTeamLeaderGroupChatEndpoints(groupChatService, intakeLogger);
 }
 
 // ── Claims Assessment demo endpoints (Try It Out tab on /agents/claims-assessment) ──
