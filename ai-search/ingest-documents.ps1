@@ -2,7 +2,7 @@
 # Azure AI Search indexes provisioned by setup-index.ps1. Use this after
 # editing or adding mock claim or policy JSON files.
 
-$SearchServiceName = "srch-zc"   # Update to the full aiSearchName output from main.bicep, e.g. srch-zc-abc123 (the deployment appends a 6-char unique suffix)
+$SearchServiceName = "search-zc"   # Update to the full aiSearchName output from main.bicep, e.g. srch-zc-abc123 (the deployment appends a 6-char unique suffix)
 $IndexPrefix = "claims"
 
 $ErrorActionPreference = "Stop"
