@@ -1,0 +1,13 @@
+{
+  "id": "policy-home-essentials-v3",
+  "policyName": "Zava Home Essentials — Buildings & Contents (PDS v3.2)",
+  "productLine": "home",
+  "version": "3.2",
+  "summary": "Combined buildings and contents cover for owner-occupied residential properties, including burst-pipe water damage, accidental damage, theft, fire, and storm. Replacement-value basis with no depreciation on contents under 5 years old. 24/7 emergency make-safe benefit up to $500 included.",
+  "coverage": "Insured perils: fire & smoke; lightning & explosion; storm & rainwater; flood (when flood add-on selected); theft & attempted theft; malicious damage; impact (vehicles, fallen trees); accidental glass breakage; burst, leaking or overflowing water pipes & appliances. Sub-limits: jewellery $5,000 per item / $10,000 aggregate unless specified; cash on premises $500; portable contents (away-from-home) $2,500. Temporary accommodation up to 12 months when home is uninhabitable. Make-safe / emergency repairs up to $500 prior to assessment.",
+  "exclusions": "Pre-existing damage, gradual deterioration, lack of maintenance, mould unless from an insured event, damage from defective workmanship, damage caused by pets to building fixtures, business use of the property unless declared, damage during property being unoccupied for more than 60 consecutive days.",
+  "evidenceRequired": ["Photos of damage", "Proof of ownership for high-value items >$1,000", "Police report for theft / malicious damage", "Plumber or trade report for water-damage causation", "Quotes from licensed builder for repairs >$3,000"],
+  "owner": "Home Product Team",
+  "tags": ["home", "buildings", "contents", "water-damage", "make-safe", "PDS"],
+  "lastUpdated": "2026-01-10T00:00:00Z"
+}

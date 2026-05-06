@@ -137,6 +137,27 @@
             </p>
             <button id="assessment-process-btn" type="button">Process with Claims Assessment Agent</button>
             <div id="assessment-process-status" class="assessment-status" hidden></div>
+
+            <!-- Step 3a — visual policy + checklist -->
+            <div id="assessment-validation" class="assessment-validation" hidden>
+                <div class="assessment-validation-grid">
+                    <div class="assessment-policy-card" id="assessment-policy-card"></div>
+                    <div class="assessment-checklist-card">
+                        <div class="assessment-checklist-head">
+                            <span class="assessment-result-pill" id="assessment-checklist-pill"></span>
+                            <span class="assessment-result-title">Policy validation checklist</span>
+                        </div>
+                        <ul class="assessment-checklist" id="assessment-checklist"></ul>
+                        <div class="assessment-decision">
+                            <h4>Reason for decision</h4>
+                            <p id="assessment-decision-reason"></p>
+                            <h4>Settlement position</h4>
+                            <p id="assessment-decision-settlement"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="assessment-result" class="assessment-result" hidden>
                 <div class="assessment-result-head">
                     <span class="assessment-result-pill" id="assessment-result-pill"></span>
@@ -346,6 +367,172 @@
         margin: 0;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
+
+    /* ── Policy + checklist (visual validation) ─────────────────────────── */
+    .assessment-validation { margin-top: 0.9rem; }
+    .assessment-validation-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        gap: 1rem;
+    }
+    @@media (max-width: 980px) { .assessment-validation-grid { grid-template-columns: 1fr; } }
+
+    .assessment-policy-card,
+    .assessment-checklist-card {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.22);
+        border-radius: 10px;
+        padding: 0.95rem 1rem 1rem 1rem;
+        font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.9);
+    }
+
+    .assessment-policy-card h4 {
+        margin: 0 0 0.25rem 0;
+        color: #fff;
+        font-size: 0.95rem;
+        display: flex; align-items: center; gap: 0.45rem;
+    }
+    .assessment-policy-card .doc-emoji { font-size: 1.05rem; }
+    .assessment-policy-card .policy-meta {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.25rem 0.7rem;
+        margin: 0.5rem 0 0.7rem 0;
+    }
+    .assessment-policy-card .policy-meta .k {
+        color: var(--zava-muted, #97a3b6);
+        text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.08em;
+        font-weight: 700; padding-top: 0.15rem;
+    }
+    .assessment-policy-card .policy-meta .v.mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.85rem;
+    }
+    .assessment-policy-card .policy-preamble {
+        font-size: 0.84rem;
+        color: rgba(238, 242, 247, 0.78);
+        margin: 0 0 0.7rem 0;
+        font-style: italic;
+        border-left: 2px solid rgba(165, 180, 252, 0.45);
+        padding: 0.05rem 0 0.05rem 0.6rem;
+    }
+    .assessment-policy-card h5 {
+        margin: 0.7rem 0 0.3rem 0;
+        font-size: 0.78rem;
+        color: var(--zava-muted, #97a3b6);
+        text-transform: uppercase; letter-spacing: 0.09em;
+        font-weight: 700;
+    }
+    .assessment-policy-card .policy-list { list-style: none; margin: 0; padding: 0; }
+    .assessment-policy-card .policy-list li {
+        padding: 0.45rem 0.55rem;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid rgba(120, 150, 200, 0.14);
+        margin-bottom: 0.35rem;
+    }
+    .assessment-policy-card .policy-list li.entitlement { border-left: 3px solid #34d399; }
+    .assessment-policy-card .policy-list li.exclusion   { border-left: 3px solid #fca5a5; }
+    .assessment-policy-card .policy-list li.condition   { border-left: 3px solid #fcd34d; }
+    .assessment-policy-card .policy-list .clause {
+        display: inline-block;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.72rem;
+        color: #c7d2fe;
+        background: rgba(99, 102, 241, 0.16);
+        padding: 0.05rem 0.45rem;
+        border-radius: 4px;
+        margin-right: 0.4rem;
+    }
+    .assessment-policy-card .policy-list .title {
+        color: #fff; font-weight: 600;
+    }
+    .assessment-policy-card .policy-list .limit {
+        margin-left: 0.4rem;
+        color: #86efac; font-size: 0.78rem; font-weight: 600;
+    }
+    .assessment-policy-card .policy-list .desc {
+        display: block;
+        color: rgba(238, 242, 247, 0.82);
+        font-size: 0.83rem;
+        margin-top: 0.2rem;
+        line-height: 1.45;
+    }
+
+    .assessment-checklist-head {
+        display: flex; align-items: center; gap: 0.55rem;
+        margin-bottom: 0.6rem;
+    }
+    .assessment-checklist {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    .assessment-checklist li {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.6rem;
+        padding: 0.55rem 0.6rem;
+        margin-bottom: 0.4rem;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid rgba(120, 150, 200, 0.14);
+    }
+    .assessment-checklist li.pass { border-left: 3px solid #34d399; }
+    .assessment-checklist li.fail { border-left: 3px solid #f87171; background: rgba(239, 68, 68, 0.05); }
+    .assessment-checklist li.info { border-left: 3px solid #fcd34d; }
+
+    .assessment-checklist .icon {
+        display: inline-grid; place-items: center;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        font-size: 0.75rem; font-weight: 700;
+        margin-top: 0.1rem;
+    }
+    .assessment-checklist .icon.pass { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.5); }
+    .assessment-checklist .icon.fail { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.5); }
+    .assessment-checklist .icon.info { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.5); }
+
+    .assessment-checklist .label {
+        color: #fff; font-weight: 600; font-size: 0.9rem;
+        display: flex; align-items: center; gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+    .assessment-checklist .clause-ref {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.7rem;
+        color: #c7d2fe;
+        background: rgba(99, 102, 241, 0.16);
+        padding: 0.05rem 0.4rem;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+    .assessment-checklist .finding {
+        color: rgba(238, 242, 247, 0.82);
+        font-size: 0.83rem;
+        line-height: 1.5;
+        margin-top: 0.2rem;
+    }
+
+    .assessment-decision {
+        margin-top: 0.8rem;
+        padding-top: 0.6rem;
+        border-top: 1px dashed rgba(120, 150, 200, 0.25);
+    }
+    .assessment-decision h4 {
+        margin: 0.4rem 0 0.2rem 0;
+        font-size: 0.78rem;
+        color: var(--zava-muted, #97a3b6);
+        text-transform: uppercase; letter-spacing: 0.09em;
+        font-weight: 700;
+    }
+    .assessment-decision p {
+        margin: 0;
+        font-size: 0.86rem;
+        line-height: 1.55;
+        color: rgba(238, 242, 247, 0.9);
+    }
 </style>
 
 <script>
@@ -367,6 +554,12 @@
         const resultEl = $('#assessment-result');
         const resultBody = $('#assessment-result-body');
         const resultPill = $('#assessment-result-pill');
+        const validationEl = $('#assessment-validation');
+        const policyCard = $('#assessment-policy-card');
+        const checklistEl = $('#assessment-checklist');
+        const checklistPill = $('#assessment-checklist-pill');
+        const decisionReason = $('#assessment-decision-reason');
+        const decisionSettlement = $('#assessment-decision-settlement');
 
         let currentClaim = null;
 
@@ -401,6 +594,7 @@
         async function selectClaim(claimNumber) {
             currentClaim = null;
             resultEl.hidden = true;
+            validationEl.hidden = true;
             processStatus.hidden = true;
             if (!claimNumber) {
                 cardStep.hidden = true;
@@ -454,6 +648,97 @@
             return { cls: 'info', label: 'Recommendation' };
         }
 
+        function recommendationPillClass(rec) {
+            switch ((rec || '').toLowerCase()) {
+                case 'approve': return 'approve';
+                case 'partialapprove': return 'partial';
+                case 'decline': return 'decline';
+                case 'needmoreinfo': return 'info';
+                default: return 'info';
+            }
+        }
+
+        function renderPolicy(p) {
+            if (!p) {
+                policyCard.innerHTML = '<div class="finding">No policy document on file.</div>';
+                return;
+            }
+            const ent = (p.entitlements || []).map(e => `
+                <li class="entitlement">
+                    <span class="clause">${escapeHtml(e.clauseId)}</span>
+                    <span class="title">${escapeHtml(e.title)}</span>
+                    <span class="limit">${escapeHtml(e.limit)}</span>
+                    <span class="desc">${escapeHtml(e.description)}</span>
+                </li>`).join('');
+            const exc = (p.exclusions || []).map(e => `
+                <li class="exclusion">
+                    <span class="clause">${escapeHtml(e.clauseId)}</span>
+                    <span class="title">${escapeHtml(e.title)}</span>
+                    <span class="desc">${escapeHtml(e.description)}</span>
+                </li>`).join('');
+            const cond = (p.conditions || []).map(e => `
+                <li class="condition">
+                    <span class="clause">${escapeHtml(e.clauseId)}</span>
+                    <span class="title">${escapeHtml(e.title)}</span>
+                    <span class="desc">${escapeHtml(e.description)}</span>
+                </li>`).join('');
+            policyCard.innerHTML = `
+                <h4><span class="doc-emoji" aria-hidden="true">📄</span>${escapeHtml(p.productName)}</h4>
+                <div class="policy-meta">
+                    <div class="k">Policy no.</div><div class="v mono">${escapeHtml(p.policyNumber)}</div>
+                    <div class="k">Insured</div><div class="v">${escapeHtml(p.policyHolder)}</div>
+                    <div class="k">In force</div><div class="v">${escapeHtml(p.effectiveFrom)} → ${escapeHtml(p.effectiveTo)}</div>
+                    <div class="k">Sum insured</div><div class="v">${escapeHtml(p.sumInsured)}</div>
+                    <div class="k">Excess</div><div class="v">${escapeHtml(p.excess)}</div>
+                </div>
+                <p class="policy-preamble">${escapeHtml(p.schedulePreamble)}</p>
+                <h5>Schedule of cover &amp; entitlements</h5>
+                <ul class="policy-list">${ent}</ul>
+                <h5>Exclusions</h5>
+                <ul class="policy-list">${exc}</ul>
+                <h5>Conditions</h5>
+                <ul class="policy-list">${cond}</ul>
+            `;
+        }
+
+        function renderChecklist(report) {
+            const cls = recommendationPillClass(report.recommendation);
+            checklistPill.textContent = report.recommendationLabel || 'Recommendation';
+            checklistPill.className = 'assessment-result-pill ' + cls;
+            decisionReason.textContent = report.recommendationReason || '';
+            decisionSettlement.textContent = report.settlementPosition || '';
+            const icon = (s) => s === 'pass' ? '✓' : (s === 'fail' ? '✗' : 'ⓘ');
+            checklistEl.innerHTML = (report.items || []).map(it => `
+                <li class="${escapeHtml(it.status)}">
+                    <span class="icon ${escapeHtml(it.status)}" aria-hidden="true">${icon(it.status)}</span>
+                    <div>
+                        <div class="label">
+                            <span>${escapeHtml(it.label)}</span>
+                            ${it.clauseRef ? `<span class="clause-ref">${escapeHtml(it.clauseRef)}</span>` : ''}
+                        </div>
+                        <div class="finding">${escapeHtml(it.finding)}</div>
+                    </div>
+                </li>`).join('');
+        }
+
+        async function loadValidation(claim) {
+            if (!claim) return;
+            try {
+                const [policyRes, checklistRes] = await Promise.all([
+                    fetch(`/assessment/policy/${encodeURIComponent(claim.policyNumber)}`),
+                    fetch(`/assessment/checklist/${encodeURIComponent(claim.claimNumber)}`)
+                ]);
+                const policy = policyRes.ok ? await policyRes.json() : null;
+                if (!checklistRes.ok) throw new Error('HTTP ' + checklistRes.status);
+                const report = await checklistRes.json();
+                renderPolicy(policy);
+                renderChecklist(report);
+                validationEl.hidden = false;
+            } catch (err) {
+                validationEl.hidden = true;
+            }
+        }
+
         async function processClaim() {
             if (!currentClaim) return;
             processBtn.disabled = true;
@@ -461,6 +746,11 @@
             processStatus.className = 'assessment-status';
             processStatus.innerHTML = '<span class="spinner"></span>Engaging Claims Assessment Agent…';
             resultEl.hidden = true;
+            validationEl.hidden = true;
+
+            // Render the visual policy + checklist in parallel with the agent
+            // call so the user sees the validation immediately.
+            const validationPromise = loadValidation(currentClaim);
 
             try {
                 let lastVerdict = null;
@@ -507,6 +797,8 @@
                 processStatus.className = 'assessment-status error';
                 processStatus.textContent = 'Failed to process: ' + err.message;
             } finally {
+                // Make sure the visual checklist resolves even if the agent call failed.
+                await validationPromise;
                 processBtn.disabled = false;
             }
         }

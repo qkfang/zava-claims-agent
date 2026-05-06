@@ -1,0 +1,24 @@
+{
+  "vendor": "Acme Restoration Services",
+  "quoteNumber": "ACM-2026-0142",
+  "quoteDate": "2026-04-28",
+  "claimReference": "CL-1001",
+  "scope": "Kitchen water-damage remediation following burst flexible hose under sink. Strip-out, drying, replacement of cabinetry, flooring, and gyprock to wet zone.",
+  "currency": "AUD",
+  "lineItems": [
+    { "description": "Make safe and emergency water extraction (after-hours)", "amount": 880.00 },
+    { "description": "Strip-out of damaged kitchen cabinetry and disposal", "amount": 1450.00 },
+    { "description": "Structural drying — 4 days, 3 dehumidifiers + air movers", "amount": 1980.00 },
+    { "description": "Mould treatment and antimicrobial application", "amount": 620.00 },
+    { "description": "Replace base + wall cabinetry (laminate, like-for-like)", "amount": 6850.00 },
+    { "description": "Replace 9 m² engineered timber flooring (kitchen + adjoining hall)", "amount": 2780.00 },
+    { "description": "Replace damaged gyprock to wet wall (4 m²) and repaint", "amount": 1420.00 },
+    { "description": "Plumbing — replace flexible hose, isolation valves, pressure test", "amount": 690.00 },
+    { "description": "Site clean and final inspection", "amount": 380.00 }
+  ],
+  "subtotal": 17050.00,
+  "gst": 1705.00,
+  "total": 18755.00,
+  "warranty": "12 months on workmanship",
+  "notes": "Pricing assumes existing benchtop can be re-used after strip-out. Replacement benchtop quoted separately if delamination is found."
+}

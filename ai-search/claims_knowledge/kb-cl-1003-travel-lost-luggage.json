@@ -1,0 +1,13 @@
+{
+  "id": "kb-cl-1003-travel-lost-luggage",
+  "title": "CL-1003 — Travel claim, lost checked luggage on international transit",
+  "category": "Claim Case",
+  "claimType": "travel",
+  "claimNumber": "CL-1003",
+  "policyNumber": "POL-TRAVEL-6620",
+  "content": "Customer: Priya Raghavan, returning from Singapore (SQ238 SIN-MEL) on 2026-04-30. One of two checked bags failed to arrive at Melbourne Airport. Property Irregularity Report PIR-MEL-SQ-2026-04-30-118 issued by Singapore Airlines baggage services. Bag was confirmed permanently lost after the airline's 21-day search window expired. Itemised loss schedule submitted by the customer totals $3,180 (clothing $1,420, conference shoes $260, prescription glasses $640, professional camera lens $860). Policy benefit: lost-luggage cover up to $5,000 per insured person, with a $250 excess and per-item sub-limit of $1,000. Outstanding evidence: receipts for the camera lens and prescription glasses (over the $250 single-item proof threshold). Status: at Claims Assessment pending receipt evidence; Customer Communications has issued a templated request for the missing receipts.",
+  "severity": "low",
+  "department": "Claims Assessment",
+  "tags": ["travel", "lost-luggage", "airline-pir", "evidence-pending"],
+  "lastUpdated": "2026-05-04T11:05:00Z"
+}

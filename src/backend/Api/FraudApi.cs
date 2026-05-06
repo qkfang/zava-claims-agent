@@ -5,7 +5,8 @@ using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
 
-record FraudProcessRequest(string ClaimNumber);
+record FraudProcessRequest(string ClaimNumber, List<string>? DocumentIds);
+record FraudVerifyRequest(string ClaimNumber, List<string> DocumentIds);
 
 /// <summary>
 /// HTTP endpoints that back the "Try It Out" tab on the Fraud Investigation
@@ -13,14 +14,17 @@ record FraudProcessRequest(string ClaimNumber);
 ///
 /// 1. List every claim minted by the Claims Intake Try It Out tab so the
 ///    user can pick a Claim ID from a dropdown.
-/// 2. Run the selected case through the Fraud Investigation Agent (Felix):
-///    build a fraud-review prompt from the claim's captured fields, invoke
-///    the Foundry <see cref="ZavaClaims.Agents.FraudInvestigationAgent"/>
-///    when configured, and return a structured risk summary plus the agent's
-///    narrative.
+/// 2. Show the scan documents / IDs already attached to each claim and
+///    allow extra sample documents to be tacked on.
+/// 3. Run the selected case + its documents through the Fraud Investigation
+///    Agent (Felix) and the document-authenticity verifier:
+///    Content Understanding extracts authenticity-oriented fields from
+///    every document, a deterministic rules layer scores each one as
+///    legit / suspicious / fake, and the Foundry agent's narrative
+///    references the document findings.
 ///
-/// A deterministic fallback runs when Foundry is not configured so the demo
-/// always tells a complete story end-to-end.
+/// A deterministic fallback runs when Foundry / Content Understanding is
+/// not configured so the demo always tells a complete story end-to-end.
 /// </summary>
 public static class FraudApi
 {
@@ -28,26 +32,87 @@ public static class FraudApi
         this WebApplication app,
         IntakeClaimStore claimStore,
         ClaimsAgentFactory agentFactory,
+        FraudCaseDocumentStore caseDocStore,
+        FraudDocumentVerifier verifier,
         ILogger logger)
     {
         // List of claims currently held in memory. Used to populate the
         // dropdown on the Fraud Investigation Try It Out tab.
         app.MapGet("/fraud/claims", () =>
         {
-            var claims = claimStore.All().Select(r => new
+            var claims = claimStore.All().Select(r =>
             {
-                claimNumber = r.ClaimNumber,
-                customerName = r.CustomerName,
-                policyNumber = r.PolicyNumber,
-                claimType = r.ClaimType,
-                incidentDate = r.IncidentDate,
-                incidentLocation = r.IncidentLocation,
-                incidentDescription = r.IncidentDescription,
-                estimatedLoss = r.EstimatedLoss,
-                urgency = r.Urgency,
-                createdAt = r.CreatedAt.ToString("u")
+                caseDocStore.EnsureClaimAttachments(r.ClaimNumber, r.SampleId);
+                return new
+                {
+                    claimNumber = r.ClaimNumber,
+                    customerName = r.CustomerName,
+                    policyNumber = r.PolicyNumber,
+                    claimType = r.ClaimType,
+                    incidentDate = r.IncidentDate,
+                    incidentLocation = r.IncidentLocation,
+                    incidentDescription = r.IncidentDescription,
+                    estimatedLoss = r.EstimatedLoss,
+                    urgency = r.Urgency,
+                    createdAt = r.CreatedAt.ToString("u"),
+                };
             });
             return Results.Ok(claims);
+        });
+
+        // Static manifest of every sample document the demo can attach to a
+        // claim. Drives both the case-document panel and the "📎 Add sample
+        // docs" popover on the page.
+        app.MapGet("/fraud/samples", () =>
+        {
+            var samples = caseDocStore.AllSamples().Select(s => new
+            {
+                id = s.Id,
+                label = s.Label,
+                kind = s.Kind,
+                src = s.Src,
+                expected = s.Expected,
+                description = s.Description,
+            });
+            return Results.Ok(samples);
+        });
+
+        // Documents pre-attached to a specific claim (deterministic per
+        // sampleId — see FraudCaseDocumentStore.SeedCaseDefaults).
+        app.MapGet("/fraud/claims/{claimNumber}/documents", (string claimNumber) =>
+        {
+            var claim = claimStore.Get(claimNumber);
+            if (claim is null)
+                return Results.NotFound(new { error = $"claim '{claimNumber}' not found" });
+
+            caseDocStore.EnsureClaimAttachments(claim.ClaimNumber, claim.SampleId);
+            var docs = caseDocStore.DocumentsForClaim(claim.ClaimNumber);
+            return Results.Ok(docs);
+        });
+
+        // Verify a list of sample documents against a claim. Returns the
+        // per-document verdict, failure reasons, and the full list of
+        // checks that were performed.
+        app.MapPost("/fraud/documents/verify", async (FraudVerifyRequest request, HttpContext ctx) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.ClaimNumber))
+                return Results.BadRequest(new { error = "claimNumber is required" });
+
+            var claim = claimStore.Get(request.ClaimNumber);
+            if (claim is null)
+                return Results.NotFound(new { error = $"claim '{request.ClaimNumber}' not found" });
+
+            var samples = caseDocStore.ResolveSamples(request.DocumentIds ?? new List<string>());
+            var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
+            var verifications = await verifier.VerifyAsync(claim, samples, baseUrl);
+
+            return Results.Ok(new
+            {
+                claimNumber = claim.ClaimNumber,
+                contentUnderstandingConfigured = verifier.ContentUnderstandingConfigured,
+                checkNames = verifier.CheckNames,
+                documents = verifications,
+            });
         });
 
         // Engage the Fraud Investigation Agent on the selected claim.
@@ -66,13 +131,26 @@ public static class FraudApi
 
             logger.LogInformation("Fraud process: claimNumber={ClaimNumber}", Sanitize(claim.ClaimNumber));
 
+            // Verify any documents the page asked us to include. Defaults
+            // to the seeded case documents when none are supplied so the
+            // demo always has something to talk about.
+            caseDocStore.EnsureClaimAttachments(claim.ClaimNumber, claim.SampleId);
+            var requestedIds = request.DocumentIds is { Count: > 0 }
+                ? request.DocumentIds
+                : caseDocStore.DocumentsForClaim(claim.ClaimNumber).Select(d => d.Id).ToList();
+            var samples = caseDocStore.ResolveSamples(requestedIds);
+            var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
+            IReadOnlyList<FraudDocumentVerification> documentVerifications = samples.Count > 0
+                ? await verifier.VerifyAsync(claim, samples, baseUrl)
+                : Array.Empty<FraudDocumentVerification>();
+
             // Build a deterministic fraud-review summary from the captured
             // claim. This is what we surface in the UI; the live Foundry
             // agent's narrative is added alongside when configured.
             var (riskLevel, riskScore, riskSummary, indicators, inconsistencies, actions, approvalRequired)
-                = AnalyseClaim(claim);
+                = AnalyseClaim(claim, documentVerifications);
 
-            var prompt = BuildAgentPrompt(claim);
+            var prompt = BuildAgentPrompt(claim, documentVerifications);
 
             object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
             {
@@ -84,6 +162,9 @@ public static class FraudApi
                 inconsistencies,
                 actions,
                 approvalRequired,
+                documents = documentVerifications,
+                checkNames = verifier.CheckNames,
+                contentUnderstandingConfigured = verifier.ContentUnderstandingConfigured,
                 agentNotes = trace?.Text,
                 agentConfigured = agentFactory.IsConfigured,
                 agentError,
@@ -127,9 +208,13 @@ public static class FraudApi
 
     /// <summary>
     /// Build a structured prompt for the Fraud Investigation Agent. Mirrors
-    /// the way the Claims Intake demo concatenates the email + form text.
+    /// the way the Claims Intake demo concatenates the email + form text,
+    /// and now also surfaces the per-document authenticity findings so the
+    /// agent can incorporate them into the risk narrative.
     /// </summary>
-    private static string BuildAgentPrompt(IntakeClaimRecord c)
+    private static string BuildAgentPrompt(
+        IntakeClaimRecord c,
+        IReadOnlyList<FraudDocumentVerification> documents)
     {
         var sb = new StringBuilder();
         sb.AppendLine("CLAIM CASE FOR FRAUD REVIEW");
@@ -147,22 +232,54 @@ public static class FraudApi
         sb.AppendLine("Incident description (as captured at intake):");
         sb.AppendLine(c.IncidentDescription);
         sb.AppendLine();
+
+        if (documents.Count > 0)
+        {
+            sb.AppendLine("DOCUMENT AUTHENTICITY FINDINGS");
+            sb.AppendLine("------------------------------");
+            sb.AppendLine("Each scan document attached to the case has been processed through");
+            sb.AppendLine("Azure Content Understanding and a deterministic checks layer. Use");
+            sb.AppendLine("these findings as evidence when you cite indicators in your output.");
+            sb.AppendLine();
+            int i = 1;
+            foreach (var doc in documents)
+            {
+                sb.AppendLine($"Document #{i} — {doc.Label} ({doc.Kind})");
+                sb.AppendLine($"  Verdict: {doc.Verdict}    Source: {doc.Source}");
+                if (doc.FailureReasons.Count > 0)
+                {
+                    sb.AppendLine("  Why this verdict:");
+                    foreach (var reason in doc.FailureReasons)
+                        sb.AppendLine($"    - {reason}");
+                }
+                sb.AppendLine("  Checks performed:");
+                foreach (var check in doc.Checks)
+                    sb.AppendLine($"    [{check.Status}] {check.Name} — {check.Detail}");
+                sb.AppendLine();
+                i++;
+            }
+        }
+
         sb.AppendLine("Please review this claim for fraud indicators. Build a timeline,");
         sb.AppendLine("compare against the customer's prior history (assume relevant signals");
         sb.AppendLine("are available via the prior-claims and document tools), and produce");
         sb.AppendLine("a Fraud Risk Score, Risk Indicators, Timeline Inconsistencies,");
         sb.AppendLine("Investigation Action Plan, and Human Approval Required sections.");
+        sb.AppendLine("When citing indicators driven by document findings, refer to the");
+        sb.AppendLine("specific document by its number above.");
         return sb.ToString();
     }
 
     /// <summary>
     /// Deterministic fraud-indicator analysis used to drive the Try It Out
     /// panel. Looks at the captured claim fields for common signals (high
-    /// estimated loss, urgent reports, missing data, suspicious wording).
+    /// estimated loss, urgent reports, missing data, suspicious wording),
+    /// and folds in the document-authenticity verdicts so document-level
+    /// red flags show up alongside the claim-level ones.
     /// </summary>
     private static (string Level, int Score, string Summary, List<string> Indicators,
         List<string> Inconsistencies, List<string> Actions, string ApprovalRequired)
-        AnalyseClaim(IntakeClaimRecord c)
+        AnalyseClaim(IntakeClaimRecord c, IReadOnlyList<FraudDocumentVerification> documents)
     {
         var indicators = new List<string>();
         var inconsistencies = new List<string>();
@@ -236,6 +353,28 @@ public static class FraudApi
             score += 5;
         }
 
+        // Document-level indicators / inconsistencies
+        int docIndex = 0;
+        foreach (var doc in documents)
+        {
+            docIndex++;
+            if (doc.Verdict == "fake")
+            {
+                indicators.Add($"Document #{docIndex} ({doc.Label}) flagged as **fake** — {string.Join("; ", doc.FailureReasons.Take(2))}");
+                score += 25;
+            }
+            else if (doc.Verdict == "suspicious")
+            {
+                indicators.Add($"Document #{docIndex} ({doc.Label}) flagged as **suspicious** — {string.Join("; ", doc.FailureReasons.Take(2))}");
+                score += 12;
+            }
+
+            foreach (var check in doc.Checks.Where(c => c.Status == "fail"))
+            {
+                inconsistencies.Add($"Document #{docIndex}: {check.Name} — {check.Detail}");
+            }
+        }
+
         score = Math.Clamp(score, 5, 95);
         var level = score >= 65 ? "High" : score >= 35 ? "Medium" : "Low";
 
@@ -243,6 +382,10 @@ public static class FraudApi
         actions.Add("Build a full timeline from the email, claim form, and any attached evidence and look for gaps or contradictions.");
         actions.Add("Run a duplicate-receipt and document-tamper check against the network and prior claims.");
         actions.Add($"Pull the customer's prior-claims history for policy {c.PolicyNumber} and any cross-industry signals.");
+        if (documents.Any(d => d.Verdict == "fake"))
+        {
+            actions.Add("Quarantine the document(s) flagged as fake and request originals through the customer's preferred contact channel.");
+        }
         if (level == "High")
         {
             actions.Add("Escalate to a human Fraud Investigator for a structured review before any settlement movement.");

@@ -1,0 +1,13 @@
+{
+  "id": "policy-life-term-v2",
+  "policyName": "Zava Life Term Cover (PDS v2.3)",
+  "productLine": "life",
+  "version": "2.3",
+  "summary": "Stepped or level-premium term life insurance for individuals up to age 75 entry. Sum insured options $100,000 to $5,000,000. Optional add-ons: terminal illness benefit (paid on diagnosis with 12-month prognosis), funeral advancement benefit ($25,000), and child cover.",
+  "coverage": "Lump-sum benefit paid to nominated beneficiaries on the death of the insured. Terminal illness benefit advances the full sum insured upon medical certification of a terminal condition with a life expectancy of 12 months or less. Funeral advancement: a $25,000 advance paid within 5 business days of receiving the death certificate to support immediate funeral costs. Worldwide cover, 24/7. Premiums waived during a paid claim assessment period.",
+  "exclusions": "Death by suicide within the first 13 months of policy commencement or reinstatement. Death arising from a pre-existing condition not disclosed at underwriting where non-disclosure was material. Death directly caused by participation in a declared act of war as a combatant.",
+  "evidenceRequired": ["Certified copy of death certificate", "Certified copy of beneficiary's photo ID", "Original policy schedule (if held)", "Coronial report if death is non-natural or under investigation", "Treating doctor's statement for terminal-illness advance claims", "Beneficiary bank account details for settlement"],
+  "owner": "Life Product Team",
+  "tags": ["life", "term", "bereavement", "terminal-illness", "funeral-advance", "PDS"],
+  "lastUpdated": "2026-04-01T00:00:00Z"
+}

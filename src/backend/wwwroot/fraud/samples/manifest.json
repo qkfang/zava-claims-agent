@@ -1,0 +1,100 @@
+{
+  "samples": [
+    {
+      "id": "dl-real",
+      "label": "Driver Licence \u2014 Michael Harris (Zava State)",
+      "kind": "driver-licence",
+      "src": "/fraud/samples/driver-licence-real.png",
+      "expected": "legit",
+      "description": "Plausible Zava State driver licence for the home-burst-pipe persona.",
+      "expectedHolderName": "Michael Harris",
+      "documentNumber": "DL-77-XK-204",
+      "issuer": "Zava State Roads Authority",
+      "expectedIssueDate": "2024-03-12",
+      "expectedExpiryDate": "2029-03-12"
+    },
+    {
+      "id": "dl-fake",
+      "label": "Driver Licence \u2014 Tampered (Zava State)",
+      "kind": "driver-licence",
+      "src": "/fraud/samples/driver-licence-tampered.png",
+      "expected": "fake",
+      "description": "Mismatched DOB, misspelt issuer banner, broken hologram security band.",
+      "expectedHolderName": "Michael Harris",
+      "documentNumber": "DL-99-AA-117",
+      "issuer": "Zavaa State Roads Authority",
+      "expectedIssueDate": "2024-03-12",
+      "expectedExpiryDate": "2029-03-12"
+    },
+    {
+      "id": "passport-real",
+      "label": "Passport \u2014 Grace Liu (Zava Republic)",
+      "kind": "passport",
+      "src": "/fraud/samples/passport-real.png",
+      "expected": "legit",
+      "description": "Plausible Zava Republic passport bio page.",
+      "expectedHolderName": "Grace Liu",
+      "documentNumber": "ZA8842917",
+      "issuer": "Zava Republic",
+      "expectedIssueDate": "2022-02-02",
+      "expectedExpiryDate": "2032-02-01"
+    },
+    {
+      "id": "passport-fake",
+      "label": "Passport \u2014 Photo swap (Zava Republic)",
+      "kind": "passport",
+      "src": "/fraud/samples/passport-photo-swap.png",
+      "expected": "fake",
+      "description": "Photo region clearly re-pasted; MRZ check digits inconsistent.",
+      "expectedHolderName": "Grace Liu",
+      "documentNumber": "ZA8842917X",
+      "issuer": "Zava Republic",
+      "expectedIssueDate": "2022-02-02",
+      "expectedExpiryDate": "2032-02-01"
+    },
+    {
+      "id": "receipt-real",
+      "label": "Electronics receipt \u2014 Gadget House #44827",
+      "kind": "receipt",
+      "src": "/fraud/samples/receipt-real.png",
+      "expected": "legit",
+      "description": "Itemised electronics receipt matching the staged-theft scenario contents.",
+      "expectedTotal": 5416.4,
+      "documentNumber": "GH-2026-44827",
+      "issuer": "Gadget House"
+    },
+    {
+      "id": "receipt-dup",
+      "label": "Electronics receipt \u2014 Gadget House #44827 (duplicate)",
+      "kind": "receipt",
+      "src": "/fraud/samples/receipt-duplicate.png",
+      "expected": "fake",
+      "description": "Same receipt previously submitted on another claim \u2014 duplicate signal.",
+      "expectedTotal": 5416.4,
+      "documentNumber": "GH-2026-44827",
+      "issuer": "Gadget House"
+    },
+    {
+      "id": "quote-real",
+      "label": "Repair quote \u2014 Northside Panel & Paint",
+      "kind": "repair-quote",
+      "src": "/fraud/samples/repair-quote-real.png",
+      "expected": "legit",
+      "description": "Body-repair quote for the rear-end collision scenario.",
+      "expectedTotal": 4796.0,
+      "documentNumber": "NPP-Q-2026-00318",
+      "issuer": "Northside Panel & Paint"
+    },
+    {
+      "id": "quote-edited",
+      "label": "Repair quote \u2014 Northside Panel & Paint (edited total)",
+      "kind": "repair-quote",
+      "src": "/fraud/samples/repair-quote-edited.png",
+      "expected": "fake",
+      "description": "Same quote with the total visibly retyped in a different font.",
+      "expectedTotal": 8796.0,
+      "documentNumber": "NPP-Q-2026-00318",
+      "issuer": "Northside Panel & Paint"
+    }
+  ]
+}

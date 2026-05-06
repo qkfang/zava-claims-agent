@@ -1,0 +1,13 @@
+{
+  "id": "policy-business-pack-v5",
+  "policyName": "Zava Business Pack — SME Property & Interruption (PDS v5.0)",
+  "productLine": "business",
+  "version": "5.0",
+  "summary": "Bundled cover for small-to-medium businesses combining building (or tenant improvements), contents & stock, business interruption, money, glass, and theft sections. Standard indemnity period 12 months for business interruption with optional extensions to 18 or 24 months.",
+  "coverage": "Property damage (building, contents, stock) on a replacement basis. Business interruption: gross profit, increased cost of working, additional increase in cost of working, payroll, claim preparation costs ($25,000). Theft & money: cash on premises and in transit ($5,000 base, optional uplift). Glass: external glass and signage. Public & products liability: $20m. Tax audit add-on, machinery breakdown add-on, and cyber-event add-on available.",
+  "exclusions": "Wear and tear and gradual deterioration; loss of market or customer goodwill; consequential loss not covered by the BI section; war, terrorism (unless add-on selected); loss caused by computer viruses (unless cyber add-on); loss while premises are unoccupied for >30 consecutive days; pollution gradually discharged.",
+  "evidenceRequired": ["Sworn statement of loss / damage", "Stock & asset register at time of loss", "BAS and tax returns for the prior 24 months for BI calculation", "Forensic accountant report for BI claims >$100,000", "Fire & Rescue / police reports for fire or theft", "Photos and supplier invoices for damaged stock", "Indicative scope of works from licensed builder"],
+  "owner": "Commercial Product Team",
+  "tags": ["business", "SME", "business-interruption", "BI", "stock", "PDS"],
+  "lastUpdated": "2026-02-20T00:00:00Z"
+}

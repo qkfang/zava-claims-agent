@@ -120,6 +120,28 @@
             <div class="fraud-claim-grid" id="fraud-claim-details"></div>
         </div>
 
+        <!-- Step 2b — case documents -->
+        <div class="fraud-step" data-step="2b" id="fraud-docs-step" hidden>
+            <div class="fraud-step-head">
+                <span class="fraud-step-num">2b</span>
+                <h3>Scan documents on the case</h3>
+            </div>
+            <p class="muted">
+                These are the ID and scan documents on the claim file. Felix's
+                fraud agent will run each selected document through Azure
+                Content Understanding, score it as <em>legit / suspicious / fake</em>,
+                and explain every authenticity check it ran. Tick or untick to
+                control which documents are reviewed, or pick extra samples
+                from the popover.
+            </p>
+            <div class="fraud-docs-row">
+                <div id="fraud-case-docs" class="fraud-doc-grid">
+                    <div class="fraud-doc-empty muted">Loading case documents…</div>
+                </div>
+                <span id="fraud-sample-host"></span>
+            </div>
+        </div>
+
         <!-- Step 3 — engage agent -->
         <div class="fraud-step" data-step="3" id="fraud-process-step" hidden>
             <div class="fraud-step-head">
@@ -205,6 +227,12 @@
                     <div class="fraud-output-label">Human approval required</div>
                     <p id="fraud-approval" class="fraud-approval-text"></p>
                 </div>
+            </div>
+
+            <div id="fraud-doc-output" class="fraud-doc-output" hidden>
+                <div class="fraud-output-label">Document authenticity</div>
+                <p class="muted fraud-doc-output-hint" id="fraud-doc-output-hint"></p>
+                <div id="fraud-doc-cards" class="fraud-doc-cards"></div>
             </div>
 
             <div id="fraud-agent-notes" class="fraud-notes" hidden>
@@ -383,6 +411,198 @@
         margin: 0;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
+
+    /* Step 2b — case documents */
+    .fraud-docs-row { display: flex; gap: 0.7rem; align-items: flex-start; flex-wrap: wrap; }
+    .fraud-doc-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 0.55rem;
+        flex: 1;
+        min-width: 260px;
+    }
+    .fraud-doc-empty { padding: 0.55rem; }
+    .fraud-doc-tile {
+        position: relative;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.22);
+        border-radius: 8px;
+        padding: 0.55rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+    .fraud-doc-tile.selected {
+        border-color: var(--fraud-accent);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--fraud-accent) 40%, transparent);
+    }
+    .fraud-doc-tile img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 5px;
+        background: #0a101c;
+        cursor: zoom-in;
+    }
+    .fraud-doc-tile .fraud-doc-title {
+        font-size: 0.78rem;
+        color: rgba(238, 242, 247, 0.92);
+        line-height: 1.25;
+    }
+    .fraud-doc-tile .fraud-doc-kind {
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--zava-muted, #97a3b6);
+    }
+    .fraud-doc-tile .fraud-doc-toggle {
+        display: flex; align-items: center; gap: 0.35rem;
+        font-size: 0.78rem;
+        color: rgba(238, 242, 247, 0.86);
+    }
+    .fraud-doc-tile.removable .fraud-doc-remove {
+        position: absolute; top: 4px; right: 6px;
+        background: transparent; color: rgba(238, 242, 247, 0.65);
+        border: none; cursor: pointer; font-size: 0.85rem; padding: 2px 4px;
+    }
+    .fraud-doc-tile.removable .fraud-doc-remove:hover { color: #fca5a5; }
+
+    /* Sample-doc popover trigger sits inside the docs row */
+    #fraud-sample-host { align-self: stretch; display: flex; align-items: flex-start; }
+
+    /* Step 4 — per-document authenticity card */
+    .fraud-doc-output { margin-top: 0.9rem; }
+    .fraud-doc-output-hint { margin: 0 0 0.5rem 0; font-size: 0.82rem; }
+    .fraud-doc-cards { display: grid; gap: 0.7rem; }
+    .fraud-doc-card {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 10px;
+        padding: 0.7rem 0.85rem;
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 0.7rem;
+    }
+    @@media (max-width: 720px) { .fraud-doc-card { grid-template-columns: 1fr; } }
+    .fraud-doc-card img {
+        width: 100%; max-height: 130px; object-fit: cover;
+        border-radius: 6px; background: #0a101c; cursor: zoom-in;
+    }
+    .fraud-doc-card-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .fraud-doc-card-title { color: #fff; font-weight: 600; font-size: 0.92rem; }
+    .fraud-doc-card-kind {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em;
+        color: var(--zava-muted, #97a3b6);
+    }
+    .fraud-doc-verdict {
+        padding: 0.16rem 0.62rem;
+        border-radius: 999px;
+        font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .fraud-doc-verdict.legit      { background: rgba(34, 197, 94, 0.16); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .fraud-doc-verdict.suspicious { background: rgba(245, 158, 11, 0.18); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .fraud-doc-verdict.fake       { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .fraud-doc-source {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em;
+        color: var(--zava-muted, #97a3b6); margin-left: auto;
+    }
+    .fraud-doc-section-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin: 0.55rem 0 0.25rem 0;
+    }
+    .fraud-doc-reasons { margin: 0; padding-left: 1.05rem; font-size: 0.84rem; line-height: 1.45; color: rgba(238, 242, 247, 0.88); }
+    .fraud-doc-reasons li { margin: 0.18rem 0; }
+    .fraud-doc-checks { list-style: none; margin: 0; padding: 0; font-size: 0.84rem; line-height: 1.45; color: rgba(238, 242, 247, 0.88); }
+    .fraud-doc-checks li { display: flex; gap: 0.45rem; align-items: flex-start; padding: 0.15rem 0; }
+    .fraud-doc-checks .check-icon { width: 1rem; flex: 0 0 1rem; font-weight: 700; }
+    .fraud-doc-checks .check-icon.pass { color: #86efac; }
+    .fraud-doc-checks .check-icon.fail { color: #fca5a5; }
+    .fraud-doc-checks .check-icon.warn { color: #fcd34d; }
+    .fraud-doc-checks .check-icon.na   { color: #94a3b8; }
+    .fraud-doc-checks .check-name { font-weight: 600; color: rgba(238, 242, 247, 0.94); }
+    .fraud-doc-checks .check-detail { color: rgba(238, 242, 247, 0.78); }
+    .fraud-doc-cu {
+        margin-top: 0.5rem;
+        background: rgba(15, 22, 38, 0.6);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 6px;
+    }
+    .fraud-doc-cu summary {
+        cursor: pointer; padding: 0.35rem 0.55rem; font-size: 0.78rem;
+        color: var(--zava-muted, #97a3b6);
+    }
+    .fraud-doc-cu pre {
+        margin: 0; padding: 0.55rem 0.7rem;
+        font-size: 0.78rem; line-height: 1.45;
+        color: rgba(238, 242, 247, 0.86);
+        white-space: pre-wrap; word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        max-height: 240px; overflow: auto;
+    }
+
+    /* Lightweight reusable lightbox shared with the Notice pages */
+    .fraud-lightbox {
+        position: fixed; inset: 0;
+        background: rgba(10, 16, 28, 0.85);
+        display: none; align-items: center; justify-content: center;
+        z-index: 9000; padding: 2rem;
+    }
+    .fraud-lightbox.open { display: flex; }
+    .fraud-lightbox img { max-width: 96vw; max-height: 92vh; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    .fraud-lightbox .fraud-lightbox-close {
+        position: absolute; top: 14px; right: 18px;
+        background: transparent; color: #fff;
+        border: none; font-size: 2rem; cursor: pointer;
+    }
+
+    /* Sample-docs popover (scoped so it doesn't fight the global Notice CSS) */
+    .fraud-sample-trigger {
+        display: inline-block; padding: 0.45rem 0.7rem;
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        border-radius: 6px;
+        color: #fca5a5; font-size: 0.85rem; cursor: pointer;
+        white-space: nowrap;
+    }
+    .fraud-sample-trigger:hover { background: rgba(239, 68, 68, 0.18); }
+    .fraud-sample-popover {
+        position: absolute;
+        margin-top: 6px;
+        background: #0f172a;
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 10px;
+        padding: 0.7rem;
+        width: 380px;
+        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
+        z-index: 80;
+        display: none;
+    }
+    .fraud-sample-popover.open { display: block; }
+    .fraud-sample-popover .fraud-sample-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.45rem;
+        max-height: 380px; overflow: auto;
+    }
+    .fraud-sample-popover .fraud-sample-tile {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.4rem;
+        display: flex; flex-direction: column; gap: 0.3rem;
+    }
+    .fraud-sample-popover .fraud-sample-tile img {
+        width: 100%; height: 80px; object-fit: cover; border-radius: 5px; background: #0a101c; cursor: zoom-in;
+    }
+    .fraud-sample-popover .fraud-sample-tile .fraud-sample-label {
+        font-size: 0.74rem; color: rgba(238, 242, 247, 0.92); line-height: 1.25;
+    }
+    .fraud-sample-popover .fraud-sample-tile .fraud-sample-add {
+        background: var(--fraud-accent); color: #2a0606;
+        border: none; border-radius: 5px;
+        padding: 0.3rem 0.5rem; font-size: 0.78rem; font-weight: 700;
+        cursor: pointer;
+    }
+    .fraud-sample-popover .fraud-sample-tile .fraud-sample-add:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 
 <script>
@@ -398,6 +618,9 @@
         const emptyEl = $('#fraud-empty');
         const claimStep = $('#fraud-claim-step');
         const claimDetails = $('#fraud-claim-details');
+        const docsStep = $('#fraud-docs-step');
+        const docsGrid = $('#fraud-case-docs');
+        const sampleHost = $('#fraud-sample-host');
         const processStep = $('#fraud-process-step');
         const processBtn = $('#fraud-process-btn');
         const processStatus = $('#fraud-process-status');
@@ -411,9 +634,17 @@
         const approvalEl = $('#fraud-approval');
         const agentNotesEl = $('#fraud-agent-notes');
         const agentNotesBody = $('#fraud-agent-notes-body');
+        const docOutputEl = $('#fraud-doc-output');
+        const docOutputHint = $('#fraud-doc-output-hint');
+        const docCardsEl = $('#fraud-doc-cards');
 
         let claims = [];
         let selectedClaim = null;
+        // documents currently attached to the selected claim
+        // (id -> { id, label, kind, src, selected, removable })
+        let caseDocs = new Map();
+        // full sample manifest, lazy-loaded once
+        let sampleManifest = null;
 
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -438,6 +669,217 @@
                 row('Description', c.incidentDescription, true);
         }
 
+        // ── Lightbox (shared between case docs and sample popover) ──
+        function ensureLightbox() {
+            let lb = document.getElementById('fraud-lightbox');
+            if (lb) return lb;
+            lb = document.createElement('div');
+            lb.id = 'fraud-lightbox';
+            lb.className = 'fraud-lightbox';
+            lb.innerHTML = '<button class="fraud-lightbox-close" type="button" aria-label="Close">&times;</button><img alt="" />';
+            document.body.appendChild(lb);
+            lb.addEventListener('click', e => {
+                if (e.target === lb || e.target.classList.contains('fraud-lightbox-close')) {
+                    lb.classList.remove('open');
+                }
+            });
+            return lb;
+        }
+        function openLightbox(src) {
+            const lb = ensureLightbox();
+            lb.querySelector('img').src = src;
+            lb.classList.add('open');
+        }
+
+        // ── Case-document grid ────────────────────────────────────
+        function renderCaseDocs() {
+            if (caseDocs.size === 0) {
+                docsGrid.innerHTML = '<div class="fraud-doc-empty muted">No scan documents on this case yet — add one from the popover →</div>';
+                return;
+            }
+            const tiles = [];
+            for (const d of caseDocs.values()) {
+                tiles.push(`
+                    <div class="fraud-doc-tile ${d.selected ? 'selected' : ''} ${d.removable ? 'removable' : ''}" data-doc-id="${escapeHtml(d.id)}">
+                        ${d.removable ? '<button type="button" class="fraud-doc-remove" title="Remove from case" aria-label="Remove">✕</button>' : ''}
+                        <img src="${escapeHtml(d.src)}" alt="${escapeHtml(d.label)}" loading="lazy" />
+                        <div class="fraud-doc-kind">${escapeHtml(d.kind)}</div>
+                        <div class="fraud-doc-title">${escapeHtml(d.label)}</div>
+                        <label class="fraud-doc-toggle">
+                            <input type="checkbox" ${d.selected ? 'checked' : ''} />
+                            <span>Include in review</span>
+                        </label>
+                    </div>`);
+            }
+            docsGrid.innerHTML = tiles.join('');
+            docsGrid.querySelectorAll('.fraud-doc-tile').forEach(tile => {
+                const id = tile.dataset.docId;
+                tile.querySelector('img').addEventListener('click', () => openLightbox(tile.querySelector('img').src));
+                const cb = tile.querySelector('input[type="checkbox"]');
+                cb.addEventListener('change', () => {
+                    const d = caseDocs.get(id);
+                    if (d) { d.selected = cb.checked; tile.classList.toggle('selected', d.selected); }
+                });
+                const removeBtn = tile.querySelector('.fraud-doc-remove');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', () => {
+                        caseDocs.delete(id);
+                        renderCaseDocs();
+                        renderSamplePopover();
+                    });
+                }
+            });
+        }
+
+        async function loadCaseDocs(claimNumber) {
+            docsGrid.innerHTML = '<div class="fraud-doc-empty muted">Loading case documents…</div>';
+            caseDocs = new Map();
+            try {
+                const res = await fetch(`/fraud/claims/${encodeURIComponent(claimNumber)}/documents`);
+                if (res.ok) {
+                    const docs = await res.json();
+                    docs.forEach(d => caseDocs.set(d.id, { ...d, selected: true, removable: false }));
+                }
+            } catch (err) {
+                console.warn('Fraud case docs load failed', err);
+            }
+            renderCaseDocs();
+            renderSamplePopover();
+        }
+
+        // ── Sample-doc popover (own mini implementation, scoped so it
+        //    doesn't collide with the Notice pages' SAMPLE_DOCS list) ──
+        async function ensureSampleManifest() {
+            if (sampleManifest) return sampleManifest;
+            try {
+                const res = await fetch('/fraud/samples');
+                sampleManifest = res.ok ? await res.json() : [];
+            } catch {
+                sampleManifest = [];
+            }
+            return sampleManifest;
+        }
+
+        function renderSamplePopover() {
+            sampleHost.innerHTML = `
+                <button type="button" class="fraud-sample-trigger" id="fraud-sample-trigger">📎 Add sample docs</button>
+                <div class="fraud-sample-popover" id="fraud-sample-popover" role="dialog" aria-label="Sample documents">
+                    <div class="sample-docs-title" style="font-weight:600; color:#fff; margin-bottom:4px;">Sample Documents</div>
+                    <div class="sample-docs-hint" style="font-size:0.76rem; color:#97a3b6; margin-bottom:8px;">
+                        Click an image to preview, or "Add" to attach it to this case.
+                    </div>
+                    <div class="fraud-sample-grid" id="fraud-sample-grid">
+                        <div class="muted" style="padding:0.4rem;">Loading samples…</div>
+                    </div>
+                </div>`;
+            const trigger = sampleHost.querySelector('#fraud-sample-trigger');
+            const popover = sampleHost.querySelector('#fraud-sample-popover');
+            const grid = sampleHost.querySelector('#fraud-sample-grid');
+
+            // Position the popover relative to the trigger.
+            sampleHost.style.position = 'relative';
+
+            function close() { popover.classList.remove('open'); }
+            trigger.addEventListener('click', async () => {
+                const willOpen = !popover.classList.contains('open');
+                document.querySelectorAll('.fraud-sample-popover.open').forEach(p => p.classList.remove('open'));
+                if (!willOpen) return;
+                popover.classList.add('open');
+                const samples = await ensureSampleManifest();
+                if (!samples.length) {
+                    grid.innerHTML = '<div class="muted" style="padding:0.4rem;">No samples available.</div>';
+                    return;
+                }
+                grid.innerHTML = samples.map(s => {
+                    const already = caseDocs.has(s.id);
+                    return `
+                        <div class="fraud-sample-tile" data-sample-id="${escapeHtml(s.id)}">
+                            <img src="${escapeHtml(s.src)}" alt="${escapeHtml(s.label)}" loading="lazy" />
+                            <div class="fraud-sample-label">${escapeHtml(s.label)}</div>
+                            <button type="button" class="fraud-sample-add" ${already ? 'disabled' : ''}>${already ? 'Attached' : 'Add'}</button>
+                        </div>`;
+                }).join('');
+                grid.querySelectorAll('.fraud-sample-tile').forEach(tile => {
+                    const id = tile.dataset.sampleId;
+                    const sample = samples.find(s => s.id === id);
+                    tile.querySelector('img').addEventListener('click', () => openLightbox(sample.src));
+                    tile.querySelector('.fraud-sample-add').addEventListener('click', () => {
+                        if (!sample || caseDocs.has(sample.id)) return;
+                        caseDocs.set(sample.id, {
+                            id: sample.id, label: sample.label, kind: sample.kind, src: sample.src,
+                            selected: true, removable: true,
+                        });
+                        renderCaseDocs();
+                        renderSamplePopover();
+                    });
+                });
+            });
+
+            document.addEventListener('click', e => {
+                if (!sampleHost.contains(e.target)) close();
+            }, { capture: true, once: true });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); }, { once: true });
+        }
+
+        function selectedDocumentIds() {
+            return Array.from(caseDocs.values()).filter(d => d.selected).map(d => d.id);
+        }
+
+        // ── Render per-document authenticity output ──
+        function checkIcon(status) {
+            switch ((status || '').toLowerCase()) {
+                case 'pass': return '<span class="check-icon pass">✓</span>';
+                case 'fail': return '<span class="check-icon fail">✗</span>';
+                case 'warn': return '<span class="check-icon warn">⚠</span>';
+                default:     return '<span class="check-icon na">–</span>';
+            }
+        }
+
+        function renderDocCards(documents, cuConfigured) {
+            if (!documents || !documents.length) {
+                docOutputEl.hidden = true;
+                docCardsEl.innerHTML = '';
+                return;
+            }
+            docOutputEl.hidden = false;
+            docOutputHint.textContent = cuConfigured
+                ? `Each document was processed through Azure Content Understanding and the deterministic checks layer.`
+                : `Content Understanding is not configured — the checks layer ran against manifest expectations only.`;
+            docCardsEl.innerHTML = documents.map((d, idx) => {
+                const verdict = (d.verdict || 'suspicious').toLowerCase();
+                const reasons = (d.failureReasons || []);
+                const checks = (d.checks || []);
+                const reasonsHtml = reasons.length
+                    ? `<ul class="fraud-doc-reasons">${reasons.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
+                    : `<p class="muted" style="margin:0; font-size:0.84rem;">No failure reasons — every check passed.</p>`;
+                const checksHtml = `<ul class="fraud-doc-checks">${checks.map(c => `
+                    <li>${checkIcon(c.status)}<div><div class="check-name">${escapeHtml(c.name)}</div><div class="check-detail">${escapeHtml(c.detail)}</div></div></li>`).join('')}</ul>`;
+                const cuBlock = d.cuMarkdown
+                    ? `<details class="fraud-doc-cu"><summary>Content Understanding output (markdown)</summary><pre>${escapeHtml(d.cuMarkdown)}</pre></details>`
+                    : '';
+                return `
+                    <div class="fraud-doc-card" data-doc-id="${escapeHtml(d.id)}">
+                        <div><img src="${escapeHtml(d.src)}" alt="${escapeHtml(d.label)}" loading="lazy" /></div>
+                        <div>
+                            <div class="fraud-doc-card-head">
+                                <span class="fraud-doc-card-title">Document #${idx + 1} — ${escapeHtml(d.label)}</span>
+                                <span class="fraud-doc-verdict ${verdict}">${escapeHtml(verdict)}</span>
+                                <span class="fraud-doc-card-kind">${escapeHtml(d.kind)}</span>
+                                <span class="fraud-doc-source">${escapeHtml(d.source || '')}</span>
+                            </div>
+                            <div class="fraud-doc-section-label">Why this verdict</div>
+                            ${reasonsHtml}
+                            <div class="fraud-doc-section-label">Checks performed</div>
+                            ${checksHtml}
+                            ${cuBlock}
+                        </div>
+                    </div>`;
+            }).join('');
+            docCardsEl.querySelectorAll('.fraud-doc-card img').forEach(img => {
+                img.addEventListener('click', () => openLightbox(img.src));
+            });
+        }
+
         async function loadClaims(preserveSelection) {
             const previous = preserveSelection ? selectEl.value : null;
             selectEl.innerHTML = '<option value="">— Loading claims… —</option>';
@@ -449,6 +891,7 @@
                     selectEl.innerHTML = '<option value="">— No claims yet —</option>';
                     emptyEl.hidden = false;
                     claimStep.hidden = true;
+                    docsStep.hidden = true;
                     processStep.hidden = true;
                     outputStep.hidden = true;
                     return;
@@ -472,15 +915,19 @@
             selectedClaim = claims.find(c => c.claimNumber === claimNumber) || null;
             outputStep.hidden = true;
             processStatus.hidden = true;
+            docOutputEl.hidden = true;
             if (!selectedClaim) {
                 claimStep.hidden = true;
+                docsStep.hidden = true;
                 processStep.hidden = true;
                 return;
             }
             renderClaim(selectedClaim);
             claimStep.hidden = false;
+            docsStep.hidden = false;
             processStep.hidden = false;
             processBtn.disabled = false;
+            loadCaseDocs(selectedClaim.claimNumber);
         }
 
         async function processClaim() {
@@ -494,7 +941,10 @@
             try {
                 const data = await window.zcAgentStream({
                     url: '/fraud/process',
-                    body: { claimNumber: selectedClaim.claimNumber },
+                    body: {
+                        claimNumber: selectedClaim.claimNumber,
+                        documentIds: selectedDocumentIds(),
+                    },
                     onDelta: (_chunk, fullText) => {
                         agentNotesEl.hidden = false;
                         agentNotesBody.classList.add('agent-md-streaming');
@@ -521,6 +971,8 @@
                 inconsistenciesEl.innerHTML = (data.inconsistencies || []).map(i => `<li>${escapeHtml(i)}</li>`).join('') || '<li class="muted">None.</li>';
                 actionsEl.innerHTML = (data.actions || []).map(a => `<li>${escapeHtml(a)}</li>`).join('') || '<li class="muted">No further action recommended.</li>';
                 approvalEl.textContent = data.approvalRequired || 'Yes — fraud-related decisions always require human approval.';
+
+                renderDocCards(data.documents || [], !!data.contentUnderstandingConfigured);
 
                 if (data.agentNotes) {
                     agentNotesEl.hidden = false;

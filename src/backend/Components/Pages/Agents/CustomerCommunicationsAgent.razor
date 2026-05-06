@@ -19,6 +19,7 @@
     <nav class="agent-tabs" role="tablist" aria-label="Customer Communications agent details">
         <button type="button" class="agent-tab active" data-tab="overview" role="tab" aria-selected="true" tabindex="0">Overview</button>
         <button type="button" class="agent-tab" data-tab="try" role="tab" aria-selected="false" tabindex="-1">Try it out</button>
+        <button type="button" class="agent-tab" data-tab="voice" role="tab" aria-selected="false" tabindex="-1">Voice chat</button>
     </nav>
 
     <div class="agent-tab-panel active" data-panel="overview" role="tabpanel">
@@ -227,6 +228,62 @@
                 <div class="comms-agent-notes-label">Foundry agent narrative</div>
                 <div id="comms-agent-notes-body" class="agent-md"></div>
             </div>
+        </div>
+    </section>
+    </div>
+
+    <div class="agent-tab-panel" data-panel="voice" role="tabpanel">
+    <section class="panel voice-panel" style="--accent: #ec4899">
+        <h2>Voice chat with Cara</h2>
+        <p class="muted voice-help">
+            Talk to Cara directly from your browser using the
+            <strong>Azure AI Foundry Voice Live API</strong> — a real-time
+            speech-to-speech connection to the Customer Communications
+            Foundry agent. Press the mic, speak naturally, and Cara will
+            reply out loud. You can interrupt her at any time. Optionally
+            pick a claim first so Cara has the context. The mic streams
+            24&nbsp;kHz PCM audio over a secure WebSocket proxy on this
+            server; works best in Chrome / Edge / Safari on
+            <code>localhost</code> or over <code>https</code>.
+        </p>
+
+        <div class="voice-context-row">
+            <label class="voice-context-label" for="voice-claim-select">Claim context (optional)</label>
+            <select id="voice-claim-select" class="comms-select voice-select" disabled>
+                <option value="">Loading claims…</option>
+            </select>
+            <button type="button" id="voice-refresh-btn" class="comms-secondary" title="Refresh claim list">↻ Refresh</button>
+        </div>
+
+        <div class="voice-stage" aria-live="polite">
+            <button type="button" id="voice-mic-btn" class="voice-mic" aria-pressed="false" aria-label="Start talking to Cara">
+                <span class="voice-mic-icon" aria-hidden="true">
+                    <i class="fa-solid fa-microphone"></i>
+                </span>
+                <span class="voice-mic-label">Press to talk</span>
+            </button>
+
+            <div class="voice-wave" id="voice-wave" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span>
+            </div>
+
+            <div class="voice-status" id="voice-status">Idle. Press the mic and start speaking — Cara is listening.</div>
+        </div>
+
+        <div class="voice-text-row">
+            <input type="text" id="voice-text-input" class="voice-text-input" placeholder="…or type a message and press Enter" />
+            <button type="button" id="voice-text-send" class="voice-text-send">Send</button>
+            <label class="voice-toggle">
+                <input type="checkbox" id="voice-tts-toggle" checked />
+                <span>Speak replies</span>
+            </label>
+        </div>
+
+        <div class="voice-transcript" id="voice-transcript" role="log" aria-live="polite">
+            <div class="voice-empty">Your conversation with Cara will appear here.</div>
         </div>
     </section>
     </div>
@@ -450,6 +507,212 @@
         margin: 0;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
+
+    /* Voice chat tab */
+    .voice-panel { --voice-accent: #ec4899; }
+    .voice-help { margin-bottom: 0.9rem; }
+    .voice-help code {
+        background: rgba(236, 72, 153, 0.12);
+        padding: 1px 6px; border-radius: 4px; font-size: 0.85rem;
+    }
+
+    .voice-context-row {
+        display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center;
+        margin-bottom: 0.85rem;
+    }
+    .voice-context-label {
+        color: var(--zava-muted, #97a3b6);
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .voice-select { flex: 1 1 320px; }
+
+    .voice-stage {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 0.85rem;
+        padding: 1.4rem 1rem 1.2rem 1rem;
+        border: 1px solid color-mix(in srgb, var(--voice-accent) 28%, transparent);
+        background:
+            radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--voice-accent) 14%, transparent) 0%, transparent 65%),
+            rgba(10, 16, 28, 0.7);
+        border-radius: 14px;
+    }
+
+    .voice-mic {
+        width: 96px; height: 96px;
+        border-radius: 50%;
+        border: 1px solid color-mix(in srgb, var(--voice-accent) 55%, transparent);
+        background:
+            radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--voice-accent) 70%, #1b0a18) 0%, color-mix(in srgb, var(--voice-accent) 30%, #100716) 70%);
+        color: #fff;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.8rem;
+        gap: 0.25rem;
+        box-shadow: 0 6px 22px color-mix(in srgb, var(--voice-accent) 28%, transparent);
+        transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.2s ease;
+        position: relative;
+    }
+    .voice-mic:hover { transform: translateY(-1px); }
+    .voice-mic:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--voice-accent) 40%, transparent),
+                    0 6px 22px color-mix(in srgb, var(--voice-accent) 28%, transparent);
+    }
+    .voice-mic-icon { font-size: 1.85rem; line-height: 1; }
+    .voice-mic-label { font-size: 0.78rem; letter-spacing: 0.04em; }
+    .voice-mic.listening {
+        background:
+            radial-gradient(circle at 50% 35%, #ff5a8a 0%, #b42463 70%);
+        animation: voice-mic-pulse 1.4s ease-in-out infinite;
+    }
+    .voice-mic.speaking {
+        background:
+            radial-gradient(circle at 50% 35%, #6ee7b7 0%, #047857 70%);
+        border-color: rgba(110, 231, 183, 0.55);
+        box-shadow: 0 6px 22px rgba(110, 231, 183, 0.28);
+    }
+    .voice-mic.disabled, .voice-mic[disabled] { opacity: 0.55; cursor: not-allowed; }
+
+    @@keyframes voice-mic-pulse {
+        0%, 100% { box-shadow: 0 6px 22px color-mix(in srgb, var(--voice-accent) 28%, transparent); }
+        50%      { box-shadow: 0 6px 22px color-mix(in srgb, var(--voice-accent) 60%, transparent),
+                               0 0 0 8px color-mix(in srgb, var(--voice-accent) 18%, transparent); }
+    }
+
+    .voice-wave {
+        display: flex; align-items: center; gap: 4px;
+        height: 56px;
+        width: 100%; max-width: 420px;
+        justify-content: center;
+    }
+    .voice-wave span {
+        display: block;
+        width: 5px;
+        height: 8px;
+        border-radius: 3px;
+        background: linear-gradient(180deg,
+            color-mix(in srgb, var(--voice-accent) 90%, #fff),
+            color-mix(in srgb, var(--voice-accent) 50%, #1a0a18));
+        opacity: 0.55;
+        transform-origin: center;
+        transition: height 0.08s ease;
+    }
+    .voice-wave.active span { animation: voice-wave-bounce 1s ease-in-out infinite; opacity: 0.9; }
+    .voice-wave.active span:nth-child(odd)  { animation-duration: 0.9s; }
+    .voice-wave.active span:nth-child(even) { animation-duration: 1.15s; }
+    .voice-wave.active span:nth-child(3n)   { animation-delay: 0.15s; }
+    .voice-wave.active span:nth-child(4n)   { animation-delay: 0.3s; }
+    .voice-wave.active span:nth-child(5n)   { animation-delay: 0.45s; }
+    .voice-wave.speaking span {
+        background: linear-gradient(180deg, #6ee7b7, #047857);
+    }
+
+    @@keyframes voice-wave-bounce {
+        0%, 100% { height: 8px; }
+        50%      { height: 46px; }
+    }
+
+    .voice-status {
+        font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.88);
+        text-align: center;
+        min-height: 1.2em;
+    }
+    .voice-status.error { color: #fca5a5; }
+
+    .voice-text-row {
+        display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center;
+        margin-top: 0.9rem;
+    }
+    .voice-text-input {
+        flex: 1 1 280px;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.28);
+        color: #fff;
+        font-size: 0.9rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 6px;
+        font-family: inherit;
+    }
+    .voice-text-input:focus {
+        outline: none;
+        border-color: var(--voice-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--voice-accent) 25%, transparent);
+    }
+    .voice-text-send {
+        background: var(--voice-accent);
+        color: #2a0418;
+        border: none;
+        border-radius: 6px;
+        padding: 0.55rem 1rem;
+        font-size: 0.88rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .voice-text-send:disabled { opacity: 0.5; cursor: not-allowed; }
+    .voice-toggle {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        font-size: 0.82rem;
+        color: rgba(238, 242, 247, 0.85);
+        cursor: pointer;
+    }
+    .voice-toggle input { accent-color: var(--voice-accent); }
+
+    .voice-transcript {
+        margin-top: 1rem;
+        background: rgba(10, 16, 28, 0.6);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 10px;
+        padding: 0.75rem 0.85rem;
+        max-height: 320px;
+        overflow-y: auto;
+        display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .voice-transcript .voice-empty {
+        color: var(--zava-muted, #97a3b6);
+        font-size: 0.85rem;
+        font-style: italic;
+        text-align: center;
+        padding: 0.8rem 0;
+    }
+    .voice-msg {
+        max-width: 82%;
+        padding: 0.5rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.88rem;
+        line-height: 1.45;
+        color: rgba(238, 242, 247, 0.92);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        background: rgba(15, 22, 38, 0.7);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .voice-msg.user {
+        align-self: flex-end;
+        background: color-mix(in srgb, var(--voice-accent) 18%, rgba(15, 22, 38, 0.85));
+        border-color: color-mix(in srgb, var(--voice-accent) 40%, transparent);
+        color: #fff;
+    }
+    .voice-msg.cara {
+        align-self: flex-start;
+        background: rgba(15, 22, 38, 0.85);
+    }
+    .voice-msg.interim {
+        opacity: 0.65;
+        font-style: italic;
+    }
+    .voice-msg-role {
+        display: block;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 700;
+        color: var(--zava-muted, #97a3b6);
+        margin-bottom: 0.2rem;
+    }
+    .voice-msg.user .voice-msg-role { color: #ffd6e9; }
 </style>
 
 <script>
@@ -627,6 +890,578 @@
         if (!window.__commsDemoEnhancedHook) {
             window.__commsDemoEnhancedHook = true;
             const hook = () => init();
+            if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
+                Blazor.addEventListener('enhancedload', hook);
+            } else {
+                document.addEventListener('enhancedload', hook);
+            }
+        }
+    })();
+</script>
+
+
+<script>
+    // Voice chat tab — real-time speech-to-speech via Azure AI Foundry
+    // Voice Live API. The backend at /communications/voice-live proxies a
+    // bearer-authenticated WebSocket to the Customer Communications
+    // Foundry agent (Cara). The browser captures 24 kHz mono PCM16 from
+    // the mic and plays returned PCM16 audio chunks back through the Web
+    // Audio API. Server-side VAD on the Voice Live side decides when Cara
+    // replies, so the user can talk naturally and even barge in.
+    (function () {
+        function initVoice() {
+            const root = document.querySelector('.voice-panel');
+            if (!root || root.dataset.wired === '1') return;
+            root.dataset.wired = '1';
+
+            const $ = sel => root.querySelector(sel);
+            const claimSelect = $('#voice-claim-select');
+            const refreshBtn = $('#voice-refresh-btn');
+            const micBtn = $('#voice-mic-btn');
+            const micLabel = micBtn.querySelector('.voice-mic-label');
+            const wave = $('#voice-wave');
+            const statusEl = $('#voice-status');
+            const textInput = $('#voice-text-input');
+            const sendBtn = $('#voice-text-send');
+            const ttsToggle = $('#voice-tts-toggle');
+            const transcriptEl = $('#voice-transcript');
+
+            const SAMPLE_RATE = 24000;
+            const FRAME_MS = 50;
+            const FRAME_SAMPLES = (SAMPLE_RATE * FRAME_MS) / 1000;
+
+            const waveBars = Array.from(wave.querySelectorAll('span'));
+
+            let ws = null;
+            let connected = false;
+            let connecting = false;
+            let voiceEnabled = false;
+            let micStream = null;
+            let micCtx = null;
+            let scriptNode = null;
+            let analyserIn = null;
+            let analyserOut = null;
+            let waveRaf = 0;
+            let playbackCtx = null;
+            let playbackTime = 0;
+            let activeSources = [];
+            let userTranscriptEl = null;
+            let caraTranscriptEl = null;
+            let caraSpeaking = false;
+
+            function escapeHtml(s) {
+                return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+            }
+            function setStatus(text, isError) {
+                statusEl.textContent = text;
+                statusEl.classList.toggle('error', !!isError);
+            }
+            function clearEmpty() {
+                const empty = transcriptEl.querySelector('.voice-empty');
+                if (empty) empty.remove();
+            }
+            function appendMessage(role, text) {
+                clearEmpty();
+                const div = document.createElement('div');
+                div.className = 'voice-msg ' + (role === 'user' ? 'user' : 'cara');
+                const roleSpan = document.createElement('span');
+                roleSpan.className = 'voice-msg-role';
+                roleSpan.textContent = role === 'user' ? 'You' : 'Cara';
+                const textSpan = document.createElement('span');
+                textSpan.className = 'voice-msg-text';
+                textSpan.textContent = text;
+                div.appendChild(roleSpan);
+                div.appendChild(textSpan);
+                transcriptEl.appendChild(div);
+                transcriptEl.scrollTop = transcriptEl.scrollHeight;
+                return div;
+            }
+            function appendOrUpdate(role, text, currentRef) {
+                if (currentRef && currentRef.parentNode) {
+                    currentRef.querySelector('.voice-msg-text').textContent = text;
+                    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+                    return currentRef;
+                }
+                return appendMessage(role, text);
+            }
+
+            function startWaveLoop() {
+                if (waveRaf) return;
+                const bufIn = analyserIn ? new Uint8Array(analyserIn.frequencyBinCount) : null;
+                const bufOut = analyserOut ? new Uint8Array(analyserOut.frequencyBinCount) : null;
+                const tick = () => {
+                    let useOut = caraSpeaking && analyserOut;
+                    let buf;
+                    if (useOut) { analyserOut.getByteFrequencyData(bufOut); buf = bufOut; }
+                    else if (analyserIn) { analyserIn.getByteFrequencyData(bufIn); buf = bufIn; }
+                    if (buf) {
+                        for (let i = 0; i < waveBars.length; i++) {
+                            const v = buf[i % buf.length] / 255;
+                            const h = Math.max(8, Math.min(46, 8 + v * 60));
+                            waveBars[i].style.height = h + 'px';
+                        }
+                    }
+                    wave.classList.toggle('speaking', caraSpeaking);
+                    waveRaf = requestAnimationFrame(tick);
+                };
+                wave.classList.add('active');
+                waveRaf = requestAnimationFrame(tick);
+            }
+            function stopWaveLoop() {
+                if (waveRaf) cancelAnimationFrame(waveRaf);
+                waveRaf = 0;
+                wave.classList.remove('active', 'speaking');
+                waveBars.forEach(b => { b.style.height = ''; });
+            }
+
+            async function probeConfig() {
+                try {
+                    const res = await fetch('/communications/voice-live/config');
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const cfg = await res.json();
+                    voiceEnabled = !!cfg.enabled;
+                } catch (_) {
+                    voiceEnabled = false;
+                }
+                if (!voiceEnabled) {
+                    micBtn.classList.add('disabled');
+                    micBtn.disabled = true;
+                    micLabel.textContent = 'Mic unavailable';
+                    setStatus('Voice Live is not configured on the server. Set AZURE_AI_PROJECT_ENDPOINT to enable real-time voice. You can still type below once connected.', true);
+                } else {
+                    setStatus('Idle. Press the mic to start a live conversation with Cara.');
+                }
+            }
+
+            async function loadClaims() {
+                claimSelect.disabled = true;
+                claimSelect.innerHTML = '<option value="">Loading claims…</option>';
+                try {
+                    const res = await fetch('/communications/claims');
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const claims = await res.json();
+                    const opts = ['<option value="">No claim context — open conversation</option>']
+                        .concat(claims.map(c => '<option value="' + escapeHtml(c.claimNumber) + '">' +
+                            escapeHtml(c.claimNumber) + ' · ' + escapeHtml(c.customerName) + ' · ' + escapeHtml(c.claimType) +
+                            '</option>'));
+                    claimSelect.innerHTML = opts.join('');
+                    claimSelect.disabled = false;
+                } catch (_) {
+                    claimSelect.innerHTML = '<option value="">No claim context — open conversation</option>';
+                    claimSelect.disabled = false;
+                }
+            }
+
+            async function loadClaimDetail(claimNumber) {
+                if (!claimNumber) return null;
+                try {
+                    const res = await fetch('/communications/claims/' + encodeURIComponent(claimNumber));
+                    if (!res.ok) return null;
+                    return await res.json();
+                } catch (_) { return null; }
+            }
+
+            function floatToPcm16(f32) {
+                const out = new Int16Array(f32.length);
+                for (let i = 0; i < f32.length; i++) {
+                    let s = Math.max(-1, Math.min(1, f32[i]));
+                    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+                }
+                return out;
+            }
+            function pcm16ToFloat(int16) {
+                const out = new Float32Array(int16.length);
+                for (let i = 0; i < int16.length; i++) out[i] = int16[i] / 0x8000;
+                return out;
+            }
+            function arrayBufferToBase64(buf) {
+                let bin = '';
+                const bytes = new Uint8Array(buf);
+                const chunk = 0x8000;
+                for (let i = 0; i < bytes.length; i += chunk) {
+                    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+                }
+                return btoa(bin);
+            }
+            function base64ToArrayBuffer(b64) {
+                const bin = atob(b64);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                return bytes.buffer;
+            }
+            function downsample(buf, srcRate, dstRate) {
+                if (dstRate === srcRate) return buf;
+                const ratio = srcRate / dstRate;
+                const newLen = Math.round(buf.length / ratio);
+                const out = new Float32Array(newLen);
+                let pos = 0, idx = 0;
+                while (pos < newLen) {
+                    const next = Math.round((pos + 1) * ratio);
+                    let sum = 0, count = 0;
+                    for (; idx < next && idx < buf.length; idx++) { sum += buf[idx]; count++; }
+                    out[pos++] = count ? sum / count : 0;
+                }
+                return out;
+            }
+
+            async function startCapture() {
+                micStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                try {
+                    micCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+                } catch (_) {
+                    micCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (micCtx.state === 'suspended') await micCtx.resume();
+
+                const source = micCtx.createMediaStreamSource(micStream);
+                analyserIn = micCtx.createAnalyser();
+                analyserIn.fftSize = 64;
+                source.connect(analyserIn);
+
+                const bufferSize = 2048;
+                scriptNode = micCtx.createScriptProcessor(bufferSize, 1, 1);
+                let pending = [];
+
+                scriptNode.onaudioprocess = (e) => {
+                    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                    let f32 = e.inputBuffer.getChannelData(0);
+                    if (Math.abs(micCtx.sampleRate - SAMPLE_RATE) > 1) {
+                        f32 = downsample(f32, micCtx.sampleRate, SAMPLE_RATE);
+                    }
+                    pending.push(new Float32Array(f32));
+                    let total = pending.reduce((s, a) => s + a.length, 0);
+                    while (total >= FRAME_SAMPLES) {
+                        const frame = new Float32Array(FRAME_SAMPLES);
+                        let written = 0;
+                        while (written < FRAME_SAMPLES && pending.length) {
+                            const chunk = pending[0];
+                            const need = FRAME_SAMPLES - written;
+                            if (chunk.length <= need) {
+                                frame.set(chunk, written);
+                                written += chunk.length;
+                                pending.shift();
+                            } else {
+                                frame.set(chunk.subarray(0, need), written);
+                                pending[0] = chunk.subarray(need);
+                                written = FRAME_SAMPLES;
+                            }
+                        }
+                        const pcm = floatToPcm16(frame);
+                        const b64 = arrayBufferToBase64(pcm.buffer);
+                        try {
+                            ws.send(JSON.stringify({
+                                type: 'input_audio_buffer.append',
+                                audio: b64
+                            }));
+                        } catch (_) {}
+                        total -= FRAME_SAMPLES;
+                    }
+                };
+                source.connect(scriptNode);
+                scriptNode.connect(micCtx.destination);
+            }
+
+            function stopCapture() {
+                try { if (scriptNode) scriptNode.disconnect(); } catch (_) {}
+                scriptNode = null;
+                if (micStream) {
+                    micStream.getTracks().forEach(t => t.stop());
+                    micStream = null;
+                }
+                if (micCtx) {
+                    try { micCtx.close(); } catch (_) {}
+                    micCtx = null;
+                }
+                analyserIn = null;
+            }
+
+            function ensurePlayback() {
+                if (playbackCtx) return playbackCtx;
+                try {
+                    playbackCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+                } catch (_) {
+                    playbackCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                analyserOut = playbackCtx.createAnalyser();
+                analyserOut.fftSize = 64;
+                analyserOut.connect(playbackCtx.destination);
+                playbackTime = playbackCtx.currentTime;
+                return playbackCtx;
+            }
+            function enqueuePcm16(int16) {
+                const ctx = ensurePlayback();
+                if (ctx.state === 'suspended') ctx.resume();
+                const f32 = pcm16ToFloat(int16);
+                const buf = ctx.createBuffer(1, f32.length, SAMPLE_RATE);
+                buf.getChannelData(0).set(f32);
+                const src = ctx.createBufferSource();
+                src.buffer = buf;
+                src.connect(analyserOut);
+                const startAt = Math.max(playbackTime, ctx.currentTime + 0.02);
+                src.start(startAt);
+                playbackTime = startAt + buf.duration;
+                src.onended = () => {
+                    activeSources = activeSources.filter(s => s !== src);
+                    if (!activeSources.length) {
+                        caraSpeaking = false;
+                        micBtn.classList.remove('speaking');
+                    }
+                };
+                activeSources.push(src);
+                if (!caraSpeaking) {
+                    caraSpeaking = true;
+                    micBtn.classList.add('speaking');
+                }
+            }
+            function flushPlayback() {
+                activeSources.forEach(s => { try { s.stop(); } catch (_) {} });
+                activeSources = [];
+                if (playbackCtx) playbackTime = playbackCtx.currentTime;
+                caraSpeaking = false;
+                micBtn.classList.remove('speaking');
+            }
+
+            function onServerEvent(evt) {
+                switch (evt.type) {
+                    case 'session.created':
+                    case 'session.updated':
+                        setStatus('Connected. Speak naturally — Cara is listening.');
+                        break;
+                    case 'input_audio_buffer.speech_started':
+                        flushPlayback();
+                        caraTranscriptEl = null;
+                        setStatus('Listening…');
+                        break;
+                    case 'input_audio_buffer.speech_stopped':
+                        setStatus('Cara is thinking…');
+                        break;
+                    case 'conversation.item.input_audio_transcription.delta': {
+                        const prev = userTranscriptEl ? userTranscriptEl.querySelector('.voice-msg-text').textContent : '';
+                        userTranscriptEl = appendOrUpdate('user', prev + (evt.delta || ''), userTranscriptEl);
+                        break;
+                    }
+                    case 'conversation.item.input_audio_transcription.completed':
+                        if (evt.transcript) {
+                            userTranscriptEl = appendOrUpdate('user', evt.transcript, userTranscriptEl);
+                        }
+                        userTranscriptEl = null;
+                        break;
+                    case 'response.audio_transcript.delta': {
+                        const prev = caraTranscriptEl ? caraTranscriptEl.querySelector('.voice-msg-text').textContent : '';
+                        caraTranscriptEl = appendOrUpdate('cara', prev + (evt.delta || ''), caraTranscriptEl);
+                        break;
+                    }
+                    case 'response.audio_transcript.done':
+                        if (evt.transcript) {
+                            caraTranscriptEl = appendOrUpdate('cara', evt.transcript, caraTranscriptEl);
+                        }
+                        caraTranscriptEl = null;
+                        break;
+                    case 'response.audio.delta':
+                        if (evt.delta && ttsToggle.checked) {
+                            const buf = base64ToArrayBuffer(evt.delta);
+                            const i16 = new Int16Array(buf);
+                            enqueuePcm16(i16);
+                        }
+                        break;
+                    case 'response.done':
+                        setStatus('Ready. Keep talking, or press the mic to end the call.');
+                        break;
+                    case 'error': {
+                        const msg = (evt.error && (evt.error.message || evt.error.code)) || 'Voice Live error';
+                        setStatus('Voice Live error: ' + msg, true);
+                        break;
+                    }
+                }
+            }
+
+            async function connect() {
+                if (connected || connecting) return;
+                connecting = true;
+                setStatus('Connecting to Voice Live…');
+
+                const claim = await loadClaimDetail(claimSelect.value);
+
+                const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const url = proto + '//' + location.host + '/communications/voice-live';
+
+                ws = new WebSocket(url);
+                ws.binaryType = 'arraybuffer';
+
+                ws.onopen = async () => {
+                    connected = true;
+                    connecting = false;
+                    micBtn.classList.add('listening');
+                    micBtn.setAttribute('aria-pressed', 'true');
+                    micLabel.textContent = 'End call';
+                    ensurePlayback();
+
+                    // Configure the Voice Live session — PCM16 24 kHz both
+                    // ways, server VAD, noise suppression / echo
+                    // cancellation, automatic input transcription so we
+                    // can show what the user said. The "instructions"
+                    // property is intentionally omitted: when using a
+                    // custom Foundry agent (Cara) the agent already has
+                    // its own instructions configured server-side.
+                    const sessionUpdate = {
+                        type: 'session.update',
+                        session: {
+                            modalities: ['audio', 'text'],
+                            input_audio_format: 'pcm16',
+                            output_audio_format: 'pcm16',
+                            input_audio_sampling_rate: SAMPLE_RATE,
+                            input_audio_noise_reduction: { type: 'azure_deep_noise_suppression' },
+                            input_audio_echo_cancellation: { type: 'server_echo_cancellation' },
+                            turn_detection: {
+                                type: 'azure_semantic_vad',
+                                silence_duration_ms: 500,
+                                threshold: 0.5
+                            },
+                            input_audio_transcription: { model: 'whisper-1' },
+                            voice: {
+                                name: 'en-US-Ava:DragonHDLatestNeural',
+                                type: 'azure-standard'
+                            }
+                        }
+                    };
+                    try { ws.send(JSON.stringify(sessionUpdate)); } catch (_) {}
+
+                    if (claim) {
+                        const ctxText =
+                            'Context for this call (do not read this aloud unless asked):\n' +
+                            'Claim number: ' + (claim.claimNumber || '') + '\n' +
+                            'Customer: ' + (claim.customerName || '') + '\n' +
+                            'Policy: ' + (claim.policyNumber || '') + '\n' +
+                            'Claim type: ' + (claim.claimType || '') + '\n' +
+                            'Incident: ' + (claim.incidentDate || '') + ' · ' + (claim.incidentLocation || '') + '\n' +
+                            'Description: ' + (claim.incidentDescription || '') + '\n' +
+                            'Urgency: ' + (claim.urgency || '') + '\n' +
+                            'Stage: Lodged, awaiting Claims Assessment.';
+                        try {
+                            ws.send(JSON.stringify({
+                                type: 'conversation.item.create',
+                                item: {
+                                    type: 'message',
+                                    role: 'user',
+                                    content: [{ type: 'input_text', text: ctxText }]
+                                }
+                            }));
+                        } catch (_) {}
+                    }
+
+                    try {
+                        await startCapture();
+                        startWaveLoop();
+                        setStatus('Connected. Say hello — Cara can hear you.');
+                    } catch (err) {
+                        setStatus('Could not access microphone: ' + (err.message || err) + '. You can still type below.', true);
+                    }
+                };
+
+                ws.onmessage = (e) => {
+                    if (typeof e.data !== 'string') return;
+                    try {
+                        const evt = JSON.parse(e.data);
+                        onServerEvent(evt);
+                    } catch (_) { /* ignore */ }
+                };
+
+                ws.onerror = () => {
+                    setStatus('Voice Live connection error. Please retry.', true);
+                };
+
+                ws.onclose = () => {
+                    teardown();
+                    setStatus('Call ended.');
+                };
+            }
+
+            function teardown() {
+                connected = false;
+                connecting = false;
+                stopCapture();
+                stopWaveLoop();
+                flushPlayback();
+                micBtn.classList.remove('listening', 'speaking');
+                micBtn.setAttribute('aria-pressed', 'false');
+                micLabel.textContent = 'Press to talk';
+                userTranscriptEl = null;
+                caraTranscriptEl = null;
+                if (ws) {
+                    try { ws.close(); } catch (_) {}
+                    ws = null;
+                }
+            }
+
+            async function toggleMic() {
+                if (connected || connecting) {
+                    teardown();
+                    setStatus('Call ended.');
+                    return;
+                }
+                if (!voiceEnabled) {
+                    setStatus('Voice Live is not configured on the server. You can still type below once connected.', true);
+                    return;
+                }
+                try {
+                    await connect();
+                } catch (err) {
+                    setStatus('Could not start call: ' + (err.message || err), true);
+                    teardown();
+                }
+            }
+
+            function sendText(text) {
+                if (!text) return;
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    setStatus('Start a call first to chat with Cara via Voice Live.', true);
+                    return;
+                }
+                appendMessage('user', text);
+                try {
+                    ws.send(JSON.stringify({
+                        type: 'conversation.item.create',
+                        item: {
+                            type: 'message',
+                            role: 'user',
+                            content: [{ type: 'input_text', text }]
+                        }
+                    }));
+                    ws.send(JSON.stringify({ type: 'response.create' }));
+                } catch (_) {}
+            }
+
+            micBtn.addEventListener('click', toggleMic);
+            refreshBtn.addEventListener('click', loadClaims);
+            sendBtn.addEventListener('click', () => {
+                const v = textInput.value.trim();
+                if (!v) return;
+                textInput.value = '';
+                sendText(v);
+            });
+            textInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendBtn.click();
+                }
+            });
+
+            probeConfig();
+            loadClaims();
+        }
+
+        initVoice();
+
+        if (!window.__commsVoiceEnhancedHook) {
+            window.__commsVoiceEnhancedHook = true;
+            const hook = () => initVoice();
             if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
                 Blazor.addEventListener('enhancedload', hook);
             } else {

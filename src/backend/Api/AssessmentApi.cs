@@ -1,4 +1,5 @@
 using ZavaClaims.Agents;
+using ZavaClaims.App.Models;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -48,6 +49,46 @@ public static class AssessmentApi
             return record is null
                 ? Results.NotFound(new { error = $"claim '{claimNumber}' not found" })
                 : Results.Ok(record);
+        });
+
+        // Sample policy document for a given policy number — drives the
+        // "Policy document" card on the assessment page so the user can see
+        // exactly what the agent is comparing the claim against.
+        app.MapGet("/assessment/policy/{policyNumber}", (string policyNumber) =>
+        {
+            var policy = PolicyDocumentCatalog.FindPolicy(policyNumber);
+            return policy is null
+                ? Results.NotFound(new { error = $"policy '{policyNumber}' not found" })
+                : Results.Ok(policy);
+        });
+
+        // Visual assessment checklist for a given claim — the per-item
+        // pass/fail breakdown the agent worked through against the policy
+        // document, plus the overall recommendation and reason for it.
+        app.MapGet("/assessment/checklist/{claimNumber}", (string claimNumber) =>
+        {
+            var claim = claimStore.Get(claimNumber);
+            if (claim is null)
+                return Results.NotFound(new { error = $"claim '{claimNumber}' not found" });
+
+            var report = PolicyDocumentCatalog.BuildReport(claim);
+            return Results.Ok(new
+            {
+                claimNumber = report.ClaimNumber,
+                policyNumber = report.PolicyNumber,
+                recommendation = report.Recommendation.ToString(),
+                recommendationLabel = report.RecommendationLabel,
+                recommendationReason = report.RecommendationReason,
+                settlementPosition = report.SettlementPosition,
+                items = report.Items.Select(i => new
+                {
+                    id = i.Id,
+                    label = i.Label,
+                    status = i.Status.ToString().ToLowerInvariant(),
+                    finding = i.Finding,
+                    clauseRef = i.ClauseRef,
+                }),
+            });
         });
 
         // Engage the Claims Assessment Agent on the selected claim. Mirrors

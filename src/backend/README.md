@@ -69,6 +69,56 @@ uses to invoke `quantlib` agents.
 If the configuration is empty, `ClaimsAgentFactory.IsConfigured` is `false`
 and the static demo pages still render normally.
 
+## Fraud Investigation — document authenticity
+
+The Try-It-Out tab on `/agents/fraud-investigation` runs a per-document
+authenticity pass over the scan documents and IDs attached to each claim.
+Eight illustrative sample documents (real + deliberately-fake pairs of
+driver licences, passports, receipts, and repair quotes) ship under
+[`wwwroot/fraud/samples/`](wwwroot/fraud/samples/) with a manifest at
+[`manifest.json`](wwwroot/fraud/samples/manifest.json). The mocks are
+visibly fictitious ("Zava State", "Specimen") and were generated once by
+[`tools/generate_fraud_samples.py`](../../tools/generate_fraud_samples.py);
+the runtime never invokes that script.
+
+Each seeded claim has a deterministic set of case documents attached
+(see `FraudCaseDocumentStore.SeedCaseDefaults`) and the user can attach
+additional samples via the **📎 Add sample docs** popover on Step 2b.
+
+Verification flow:
+
+1. The page POSTs the claim number and the selected document IDs to
+   `POST /fraud/process` (or `POST /fraud/documents/verify` for a
+   document-only run).
+2. `FraudDocumentVerifier` resolves each ID to a public URL under
+   `wwwroot/fraud/samples/`, calls
+   `ContentUnderstandingService.AnalyzeWithCustomFieldsAsync` with the
+   shared authenticity field schema (document type, issuer, holder name,
+   document number, dates, totals, tamper indicators, security features,
+   and a consistency summary), and folds the results into a small
+   deterministic checks layer.
+3. Each document gets a verdict (`legit` / `suspicious` / `fake`), the
+   list of checks performed (with pass / fail / warn / n/a), and the
+   reasons any check failed.
+4. The findings are summarised back into the agent prompt so Felix's
+   risk narrative cites each document by number when it explains the
+   risk indicators.
+
+When `ContentUnderstandingService` isn't registered (i.e. when the notice
+intelligence services aren't configured) the verifier falls back to the
+manifest's `expected` value and the rules layer still produces a useful
+verdict + checks list, so the demo tells a complete story end-to-end
+without any Azure resources.
+
+New endpoints:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/fraud/samples` | Returns the static sample manifest. |
+| GET | `/fraud/claims/{claimNumber}/documents` | Returns documents pre-attached to a claim. |
+| POST | `/fraud/documents/verify` | Verify a list of documents against a claim. |
+| POST | `/fraud/process` | Engage the Fraud Investigation Agent (now accepts an optional `documentIds` array). |
+
 ## Future work
 
 Once `src/ui` is wired up, the clickable links in the voxel office should

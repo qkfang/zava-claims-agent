@@ -1,0 +1,24 @@
+{
+  "vendor": "Bayside Build & Repair",
+  "quoteNumber": "BBR-04421",
+  "quoteDate": "2026-04-29",
+  "claimReference": "CL-1001",
+  "scope": "Repair to kitchen following water escape. Includes drying, replacement cabinetry, flooring, painting and plumbing rectification.",
+  "currency": "AUD",
+  "lineItems": [
+    { "description": "Make safe and emergency water extraction (after-hours)", "amount": 750.00 },
+    { "description": "Strip-out of damaged kitchen cabinetry and disposal", "amount": 1280.00 },
+    { "description": "Structural drying — 3 days, 2 dehumidifiers + air movers", "amount": 1450.00 },
+    { "description": "Mould treatment and antimicrobial application", "amount": 540.00 },
+    { "description": "Replace base + wall cabinetry (laminate, like-for-like)", "amount": 6200.00 },
+    { "description": "Replace 9 m² engineered timber flooring (kitchen + adjoining hall)", "amount": 2520.00 },
+    { "description": "Replace damaged gyprock to wet wall (4 m²) and repaint", "amount": 1280.00 },
+    { "description": "Plumbing — replace flexible hose, isolation valves, pressure test", "amount": 640.00 },
+    { "description": "Site clean and final inspection", "amount": 320.00 }
+  ],
+  "subtotal": 14980.00,
+  "gst": 1498.00,
+  "total": 16478.00,
+  "warranty": "10 years structural / 2 years workmanship",
+  "notes": "Quote assumes power and hot water are available on site. Asbestos clearance not included — if pre-1990 build, separate testing required."
+}

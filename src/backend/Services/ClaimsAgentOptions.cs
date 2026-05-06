@@ -16,6 +16,15 @@ public class ClaimsAgentOptions
     public string? BingConnectionId { get; set; }
 
     /// <summary>
+    /// Base URL of the in-process MCP server exposed by this app
+    /// (e.g. <c>http://localhost:5000</c>). When set, the loss-adjuster
+    /// agent registers an MCP tool pointing at <c>{AppMcpUrl}/mcp</c> so
+    /// it can call <c>analyzeQuote</c> / <c>compareQuotes</c> /
+    /// <c>generateClaimExcel</c>.
+    /// </summary>
+    public string? AppMcpUrl { get; set; }
+
+    /// <summary>
     /// Returns true when the minimum configuration required to instantiate a
     /// Foundry agent is present (project endpoint + model deployment name).
     /// </summary>
