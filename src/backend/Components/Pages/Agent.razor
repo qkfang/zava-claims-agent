@@ -35,7 +35,7 @@ else
         </div>
     }
 
-    <div class="agent-tab-panel @(AgentModel.Id == "claims-intake" ? "tab-panel-overview active" : "")"
+    <div class="agent-tab-panel @(AgentModel.Id == "claims-intake" ? "tab-panel-overview active" : "standalone")"
          data-panel="overview">
         <section class="panel">
         <h2>What this agent does</h2>
@@ -454,9 +454,9 @@ else
     }
     .agent-tab-panel { display: none; }
     .agent-tab-panel.active { display: block; }
-    /* When the agent is not claims-intake, the overview panel has no "active"
-       class but should still render as the only content on the page. */
-    .agent-tab-panel:not(.tab-panel-overview):not(.tab-panel-tryit) { display: block; }
+    /* For non-claims-intake agent pages there are no tabs at all; the single
+       overview panel gets the .standalone marker so it always shows. */
+    .agent-tab-panel.standalone { display: block; }
 </style>
 
 <script>
