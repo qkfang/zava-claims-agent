@@ -549,6 +549,9 @@ export function buildOffice(scene: Scene): OfficeLayout {
     cx: number;
     cz: number;
     sign: string;
+    /** Emoji icon for this role — mirrors the matching backend agent
+     *  page header icon (`src/backend/Components/Pages/Agents/*.razor`). */
+    icon: string;
   };
   // Cubicle centres are spaced 10 units apart (was 8) so each booth has
   // visible breathing room between its accent floor and its neighbour's
@@ -559,17 +562,17 @@ export function buildOffice(scene: Scene): OfficeLayout {
     // "Investigator" suffixes) so the label stays large and legible on
     // the desk sign even from the orbit camera.
     // Front row (z = 0)
-    { label: "intake",         accent: "#3a5fb0", cx: -21, cz: 0, sign: "INTAKE" },
-    { label: "supplier",       accent: "#2e8a6e", cx: -11, cz: 0, sign: "SUPPLIER" },
-    { label: "settlement",     accent: "#a06a4c", cx:  -1, cz: 0, sign: "SETTLEMENT" },
-    { label: "communications", accent: "#b56fbf", cx:   9, cz: 0, sign: "COMMS" },
+    { label: "intake",         accent: "#3a5fb0", cx: -21, cz: 0, sign: "INTAKE",      icon: "📥" },
+    { label: "supplier",       accent: "#2e8a6e", cx: -11, cz: 0, sign: "SUPPLIER",    icon: "🛠️" },
+    { label: "settlement",     accent: "#a06a4c", cx:  -1, cz: 0, sign: "SETTLEMENT",  icon: "💳" },
+    { label: "communications", accent: "#b56fbf", cx:   9, cz: 0, sign: "COMMS",       icon: "✉️" },
     // Back row (z = 10) — Team Leader gets the executive corner office
-    { label: "assessor",     accent: "#6ec1ff", cx: -11, cz: 10, sign: "ASSESSOR" },
-    { label: "lossAdjuster", accent: "#ffb347", cx:  -1, cz: 10, sign: "LOSS ADJUSTER" },
-    { label: "fraud",        accent: "#e8504c", cx:   9, cz: 10, sign: "FRAUD" },
+    { label: "assessor",     accent: "#6ec1ff", cx: -11, cz: 10, sign: "ASSESSOR",     icon: "📋" },
+    { label: "lossAdjuster", accent: "#ffb347", cx:  -1, cz: 10, sign: "LOSS ADJUSTER", icon: "🔍" },
+    { label: "fraud",        accent: "#e8504c", cx:   9, cz: 10, sign: "FRAUD",        icon: "🛡️" },
   ];
   for (const c of cubicles) {
-    buildDepartmentZone(scene, mat, c.label, c.cx, c.cz, c.sign, c.accent);
+    buildDepartmentZone(scene, mat, c.label, c.cx, c.cz, c.sign, c.accent, c.icon);
   }
 
   // ----- Team Leader executive office (back-far-left) -----
@@ -730,6 +733,7 @@ function buildDepartmentZone(
   cz: number,
   signText: string,
   accentHex: string,
+  icon: string,
 ): void {
   // Floor accent under the department zone
   const accent = MeshBuilder.CreateBox(
@@ -741,7 +745,7 @@ function buildDepartmentZone(
   accent.material = mat(`dept_floorMat_${label}`, accentHex);
 
   // Build the desk + screens via the cubicle helper
-  buildCubicle(scene, mat, label, cx, cz, signText, accentHex);
+  buildCubicle(scene, mat, label, cx, cz, signText, accentHex, icon);
 }
 
 /** Build a single labelled cubicle: tall office-screen partitions, desk,
@@ -754,6 +758,7 @@ function buildCubicle(
   cz: number,
   signText: string,
   accentHex = "#d8c7a7",
+  icon: string | null = null,
 ): void {
   const cubicleWallMat = mat(`cub_${label}`, "#d8c7a7");
   const accentMat = mat(`cubAccent_${label}`, accentHex);
@@ -908,6 +913,19 @@ function buildCubicle(
     new Vector3(cx - 1.3, 0.92, cz + 1.65),
   );
 
+  // Agent icon plaque sitting on the desk — mirrors the emoji shown on
+  // the matching backend agent page header so the staff member's role
+  // is recognisable from the bird's-eye orbit camera.
+  if (icon) {
+    buildDeskIconPlaque(
+      scene,
+      `${label}`,
+      new Vector3(cx - 1.4, 0.95, cz + 0.95),
+      accentHex,
+      icon,
+    );
+  }
+
   // Chair (in front of desk)
   const chairSeat = MeshBuilder.CreateBox(
     `chairSeat_${label}`,
@@ -923,6 +941,38 @@ function buildCubicle(
   );
   chairBack.position = new Vector3(cx, 1.0, cz + 0.1);
   chairBack.material = chairMat;
+}
+
+/** Build a small flat plaque that sits on a desk top, with an emoji icon
+ *  painted onto it via a DynamicTexture. Used to surface each agent's
+ *  role icon next to its desk so the office matches the backend agent
+ *  page headers. The plaque is shallow so its top face — most visible
+ *  from the orbit camera — clearly shows the icon. */
+function buildDeskIconPlaque(
+  scene: Scene,
+  label: string,
+  pos: Vector3,
+  accentHex: string,
+  icon: string,
+): void {
+  const plaque = MeshBuilder.CreateBox(
+    `deskIcon_${label}`,
+    { width: 0.55, height: 0.08, depth: 0.55 },
+    scene,
+  );
+  plaque.position = pos.clone();
+  drawSignTexture(scene, plaque, 256, 256, (ctx) => {
+    // Accent-coloured border around a white card so the icon reads at a
+    // glance from above. Emoji glyphs render in their native colours.
+    ctx.fillStyle = accentHex;
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(14, 14, 228, 228);
+    ctx.font = "160px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(icon, 128, 138);
+  });
 }
 
 /** Build a small monitor (base + stem + screen) at the given desk position. */
@@ -1061,6 +1111,16 @@ function buildTeamLeaderOffice(
 
   // Monitor + executive chair
   buildMonitor(scene, mat, new Vector3(origin.x - 0.7, 0.93, origin.z + 0.3), 0);
+
+  // Team Leader role icon plaque on the desk — uses the executive office
+  // floor accent colour so the badge reads against the white card.
+  buildDeskIconPlaque(
+    scene,
+    "teamLeader",
+    new Vector3(origin.x + 1.4, 0.97, origin.z - 0.1),
+    "#3a2a20",
+    "🧭",
+  );
   const chairSeat = MeshBuilder.CreateBox(
     "tlChair",
     { width: 0.75, height: 0.12, depth: 0.7 },

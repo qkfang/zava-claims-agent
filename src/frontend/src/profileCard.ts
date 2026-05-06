@@ -153,6 +153,13 @@ export class ProfileCard {
           <div class="profile-name">${escape(p.name)}</div>
           <div class="profile-role">${escape(titleLine)}</div>
         </div>
+        ${
+          p.icon
+            ? `<div class="profile-icon" style="background:${headerColor}" aria-hidden="true">${escape(
+                p.icon,
+              )}</div>`
+            : ""
+        }
         <button class="close" aria-label="Close profile">×</button>
       </header>
       <section>

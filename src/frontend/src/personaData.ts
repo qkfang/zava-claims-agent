@@ -32,6 +32,13 @@ export interface StaffPersona {
   palette: PaletteKey;
   /** Swatch color used in the agents panel. */
   color: string;
+  /**
+   * Emoji icon for this agent — mirrors the icon shown in the matching
+   * backend agent page header (`src/backend/Components/Pages/Agents/*.razor`)
+   * so the office desk plaque, the profile card, and the agent page all
+   * use the same symbol.
+   */
+  icon: string;
   personality: string;
   /** Bullet list of "what they do". */
   responsibilities: string[];
@@ -80,6 +87,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
     role_short: "First point of contact when a customer lodges a claim.",
     palette: "intakeOfficer",
     color: "#f4c463",
+    icon: "📥",
     personality: "Calm, organised, patient, and reassuring.",
     responsibilities: [
       "Records claim details",
@@ -101,6 +109,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Reviews the claim and determines whether it is covered under the policy.",
     palette: "claimsAssessor",
     color: "#5fb8a8",
+    icon: "📋",
     personality: "Analytical, detail-focused, fair, and careful.",
     responsibilities: [
       "Reviews policy wording",
@@ -122,6 +131,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Investigates damage or complex losses and estimates repair costs.",
     palette: "lossAdjuster",
     color: "#7a9c5a",
+    icon: "🔍",
     personality: "Methodical, evidence-driven, fair, and field-savvy.",
     responsibilities: [
       "Inspects damaged property",
@@ -148,6 +158,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Reviews suspicious or inconsistent claims to protect the business.",
     palette: "fraudInvestigator",
     color: "#7a4f9c",
+    icon: "🛡️",
     personality: "Sharp, sceptical, evidence-led, and discreet.",
     responsibilities: [
       "Cross-checks claim history",
@@ -174,6 +185,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Arranges repairers, builders, assessors, and other third parties.",
     palette: "supplierCoord",
     color: "#e07a3a",
+    icon: "🛠️",
     personality: "Practical, well-connected, and customer-aware.",
     responsibilities: [
       "Books approved repairers and contractors",
@@ -199,6 +211,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
     role_short: "Calculates the payout and prepares settlement.",
     palette: "settlementOfficer",
     color: "#3a5fb0",
+    icon: "💳",
     personality: "Numbers-focused, precise, transparent, and customer-fair.",
     responsibilities: [
       "Calculates the final settlement amount",
@@ -219,6 +232,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Keeps the customer informed and supported throughout the claim.",
     palette: "commsSpecialist",
     color: "#c14a7a",
+    icon: "✉️",
     personality: "Warm, articulate, empathetic, and clear.",
     responsibilities: [
       "Sends status updates and outcome letters",
@@ -240,6 +254,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Monitors escalations, workload, and quality across the team.",
     palette: "teamLeader",
     color: "#cdb497",
+    icon: "🧭",
     personality: "Calm, decisive, supportive, and quality-focused.",
     responsibilities: [
       "Reviews escalations and high-value claims",

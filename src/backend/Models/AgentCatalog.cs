@@ -42,7 +42,7 @@ public static class AgentCatalog
                 "Generate a missing-information checklist and acknowledge the customer.",
             },
             Icon: "📥",
-            Accent: "#0ea5e9"),
+            Accent: "#3a5fb0"),
 
         new AgentDefinition(
             Id: "claims-assessment",
@@ -60,7 +60,7 @@ public static class AgentCatalog
                 "Recommend approve, partial approve, or decline.",
             },
             Icon: "📋",
-            Accent: "#6366f1"),
+            Accent: "#6ec1ff"),
 
         new AgentDefinition(
             Id: "loss-adjuster",
@@ -78,7 +78,7 @@ public static class AgentCatalog
                 "Highlight pre-existing damage or underinsurance risks.",
             },
             Icon: "🔍",
-            Accent: "#f59e0b"),
+            Accent: "#ffb347"),
 
         new AgentDefinition(
             Id: "fraud-investigation",
@@ -96,7 +96,7 @@ public static class AgentCatalog
                 "Recommend next investigation steps — never accuse the customer.",
             },
             Icon: "🛡️",
-            Accent: "#ef4444"),
+            Accent: "#e8504c"),
 
         new AgentDefinition(
             Id: "supplier-coordinator",
@@ -114,7 +114,7 @@ public static class AgentCatalog
                 "Draft customer-facing booking confirmations.",
             },
             Icon: "🛠️",
-            Accent: "#10b981"),
+            Accent: "#2e8a6e"),
 
         new AgentDefinition(
             Id: "settlement",
@@ -132,7 +132,7 @@ public static class AgentCatalog
                 "Draft the settlement letter and payment instruction.",
             },
             Icon: "💳",
-            Accent: "#a855f7"),
+            Accent: "#a06a4c"),
 
         new AgentDefinition(
             Id: "customer-communications",
@@ -150,7 +150,7 @@ public static class AgentCatalog
                 "Provide a call script when a phone follow-up is recommended.",
             },
             Icon: "✉️",
-            Accent: "#ec4899"),
+            Accent: "#b56fbf"),
 
         new AgentDefinition(
             Id: "team-leader",
@@ -168,7 +168,7 @@ public static class AgentCatalog
                 "Reassign work when a queue is overloaded.",
             },
             Icon: "🧭",
-            Accent: "#14b8a6"),
+            Accent: "#3a2a20"),
     };
 
     public static AgentDefinition? FindById(string id) =>

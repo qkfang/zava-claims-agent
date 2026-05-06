@@ -1121,6 +1121,7 @@ export class ClaimSimulation {
         current: heldClaim
           ? `Holding ${heldClaim.id} — ${heldClaim.type}`
           : describeTask(staff.task),
+        icon: staff.persona.icon,
         claims,
         scenarioName: "",
         currentHandler: null,
@@ -1148,6 +1149,7 @@ export class ClaimSimulation {
         responsibilities: persona?.need ?? [],
         situation: persona?.situation_long ?? "",
         current: describeCustomerState(customer),
+        icon: null,
         claims: [
           {
             id: customer.claim.id,
@@ -1325,6 +1327,8 @@ export interface CharacterProfile {
   responsibilities: string[];
   situation: string;
   current: string;
+  /** Staff only — emoji icon for this role (matches the backend agent page). */
+  icon: string | null;
   claims: CharacterProfileClaim[];
   /** Customer only — friendly scenario name. */
   scenarioName: string;
