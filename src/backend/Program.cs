@@ -42,12 +42,16 @@ builder.Services.AddHttpClient();
 // Always registered:
 //   - LossAdjusterMcpTools (analyzeQuote / compareQuotes / generateClaimExcel)
 //   - SupplierMcpTools (lookupSuppliers / generateQuoteRequestPdf)
+//   - SettlementMcpTools (settlement_* payment-flow tools — payee validation,
+//     invoice match, authority check, calculation, Teams approval request,
+//     and gated release)
 // The notice intelligence flow conditionally adds AgentDiMcpTools below when
 // its Azure resources are configured.
 var mcpBuilder = builder.Services.AddMcpServer()
     .WithHttpTransport(options => { options.Stateless = true; })
     .WithTools<LossAdjusterMcpTools>()
-    .WithTools<ZavaClaims.App.Mcp.SupplierMcpTools>();
+    .WithTools<ZavaClaims.App.Mcp.SupplierMcpTools>()
+    .WithTools<SettlementMcpTools>();
 builder.Services.AddCors();
 
 // In-memory store of claim cases minted by the Claims Intake demo's
@@ -55,6 +59,13 @@ builder.Services.AddCors();
 // by claim number.
 builder.Services.AddSingleton<IntakeClaimStore>();
 builder.Services.AddSingleton<TeamLeaderGroupChatService>();
+
+// Settlement payment-flow services (always registered). The Settlement
+// MCP tools and the /settlement/* HTTP endpoints depend on these.
+// TeamsNotificationService degrades gracefully when TEAMS_WEBHOOK_URL is
+// not configured (logs the payload instead of posting).
+builder.Services.AddSingleton<PaymentApprovalStore>();
+builder.Services.AddSingleton<TeamsNotificationService>();
 
 // Fraud Investigation document-authenticity demo: loads the static sample
 // manifest from wwwroot/fraud/samples/manifest.json and tracks per-claim

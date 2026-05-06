@@ -49,7 +49,8 @@ public class ClaimsAgent : BaseAgent
         string? bingConnectionId = null,
         ILogger? logger = null,
         string? mcpServerUri = null,
-        string? mcpServerLabel = null)
+        string? mcpServerLabel = null,
+        IList<ResponseTool>? extraTools = null)
         : base(aiProjectClient, agentId, deploymentName, instructions, null,
             agentDef =>
             {
@@ -71,6 +72,14 @@ public class ClaimsAgent : BaseAgent
                         toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.NeverRequireApproval));
                     agentDef.Tools.Add(mcpTool);
                 }
+
+                if (extraTools != null)
+                {
+                    foreach (var tool in extraTools)
+                    {
+                        if (tool != null) agentDef.Tools.Add(tool);
+                    }
+                }
             },
             logger)
     {
@@ -86,6 +95,8 @@ public class ClaimsAgent : BaseAgent
             tools.Add("Bing Grounding (web)");
         if (!string.IsNullOrWhiteSpace(mcpServerUri))
             tools.Add($"MCP server '{mcpServerLabel ?? "zava-claims-mcp"}' at {mcpServerUri}");
+        if (extraTools != null && extraTools.Count > 0)
+            tools.Add($"MCP tool surface ({extraTools.Count} tool{(extraTools.Count == 1 ? "" : "s")})");
         ConfiguredTools = tools;
     }
 }

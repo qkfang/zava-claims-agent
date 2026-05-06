@@ -47,14 +47,44 @@
                     <li>Authority limit checker</li>
                     <li>Invoice matcher</li>
                     <li>Settlement letter generator</li>
-                    <li>Payment API</li>
+                    <li>Payment API <span class="muted">(MCP automation)</span></li>
+                    <li>Microsoft Teams approval card <span class="muted">(Adaptive Card)</span></li>
                 </ul>
                 <h3>Human approval</h3>
                 <p class="approval">
                     Required for payment release, payee mismatch, high-value settlement, ex-gratia,
-                    manual override, or customer dispute.
+                    manual override, or customer dispute. The agent cross-checks every input, then
+                    posts an approval request to Microsoft Teams and pauses — payment is only
+                    released after the human approver clicks <strong>Approve</strong>.
                 </p>
             </div>
+        </div>
+    </section>
+
+    <section class="panel" style="--accent: #a855f7">
+        <h2>Automated payment flow with human approval in Teams</h2>
+        <div class="demo">
+            <p>
+                The Settlement Agent is wired up with a dedicated MCP tool surface that
+                automates the payment workflow end-to-end. Each step is a discrete tool the
+                agent can call: <code>settlement_validatePayee</code>,
+                <code>settlement_matchInvoice</code>,
+                <code>settlement_calculateSettlement</code>,
+                <code>settlement_checkAuthorityLimit</code>,
+                <code>settlement_requestPaymentApproval</code> and
+                <code>settlement_releasePayment</code>. Every tool call requires explicit
+                operator consent before it runs, so nothing happens silently.
+            </p>
+            <p>
+                When the cross-checks complete, the agent calls
+                <code>settlement_requestPaymentApproval</code> which posts an Adaptive Card
+                to a Microsoft Teams channel via an Incoming Webhook
+                (<code>TEAMS_WEBHOOK_URL</code>). The card shows the customer, policy,
+                payable amount and payee, and links back to this page for review. The
+                approver clicks Approve in Teams (or here in the demo) before the agent
+                will call <code>settlement_releasePayment</code> — that tool refuses to
+                run while the approval is still pending or has been rejected.
+            </p>
         </div>
     </section>
 
@@ -177,6 +207,25 @@
                         <span class="settlement-approval-pill" id="settlement-approval-pill"></span>
                     </div>
                     <p id="settlement-approval-reason"></p>
+                </div>
+
+                <div class="settlement-approval settlement-teams-card" id="settlement-teams-card" hidden>
+                    <div class="settlement-approval-head">
+                        <span class="settlement-step-num small">T</span>
+                        <span class="settlement-approval-title">Microsoft Teams approval</span>
+                        <span class="settlement-approval-pill" id="settlement-teams-pill"></span>
+                    </div>
+                    <p class="settlement-teams-msg" id="settlement-teams-msg"></p>
+                    <div class="settlement-teams-meta">
+                        <div><span class="k">Approval id</span> <code id="settlement-teams-approvalid"></code></div>
+                        <div><span class="k">Approval link</span> <a id="settlement-teams-link" href="#" target="_blank" rel="noopener">open</a></div>
+                    </div>
+                    <div class="settlement-teams-actions">
+                        <button type="button" id="settlement-teams-approve-btn" class="settlement-teams-approve">Approve in Teams</button>
+                        <button type="button" id="settlement-teams-reject-btn" class="settlement-teams-reject">Reject</button>
+                        <button type="button" id="settlement-teams-release-btn" class="settlement-teams-release" hidden>Release payment</button>
+                    </div>
+                    <div class="settlement-teams-status" id="settlement-teams-status" hidden></div>
                 </div>
 
                 <div class="settlement-notes">
@@ -445,5 +494,364 @@
         margin: 0;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
+
+    .settlement-teams-card { border-color: color-mix(in srgb, #4f6bed 38%, transparent); background: color-mix(in srgb, #4f6bed 10%, rgba(15, 22, 38, 0.7)); }
+    .settlement-teams-card .settlement-approval-pill.sent { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.45); }
+    .settlement-teams-card .settlement-approval-pill.skipped { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.4); }
+    .settlement-teams-card .settlement-approval-pill.approved { background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .settlement-teams-card .settlement-approval-pill.rejected { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .settlement-teams-card .settlement-approval-pill.released { background: rgba(168, 85, 247, 0.18); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45); }
+    .settlement-teams-msg { margin: 0.2rem 0 0.45rem 0; color: rgba(238, 242, 247, 0.88); font-size: 0.88rem; }
+    .settlement-teams-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem 0.85rem; font-size: 0.82rem; color: rgba(238, 242, 247, 0.86); margin-bottom: 0.55rem; }
+    @@media (max-width: 820px) { .settlement-teams-meta { grid-template-columns: 1fr; } }
+    .settlement-teams-meta .k { color: var(--zava-muted, #97a3b6); font-weight: 600; text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.08em; margin-right: 0.4rem; }
+    .settlement-teams-meta code { background: rgba(10, 16, 28, 0.6); padding: 1px 6px; border-radius: 4px; }
+    .settlement-teams-meta a { color: #c7d2fe; }
+    .settlement-teams-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+    .settlement-teams-actions button {
+        border: none; border-radius: 8px; padding: 0.45rem 0.95rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    }
+    .settlement-teams-actions button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .settlement-teams-approve { background: #22c55e; color: #052e16; }
+    .settlement-teams-reject { background: rgba(239, 68, 68, 0.85); color: #1a0707; }
+    .settlement-teams-release { background: var(--settlement-accent); color: #1a0633; }
+    .settlement-teams-status { margin-top: 0.5rem; font-size: 0.85rem; color: rgba(238, 242, 247, 0.86); }
+    .settlement-teams-status.error { color: #fca5a5; }
 </style>
 
+<script>
+    (function () {
+        function init() {
+        const root = document.querySelector('.settlement-panel');
+        if (!root || root.dataset.wired === '1') return;
+        root.dataset.wired = '1';
+
+        const $ = sel => root.querySelector(sel);
+        const select = $('#settlement-claim-select');
+        const refreshBtn = $('#settlement-refresh-btn');
+        const emptyEl = $('#settlement-claim-empty');
+        const summaryEl = $('#settlement-claim-summary');
+        const inputsStep = $('#settlement-inputs-step');
+        const inputsForm = $('#settlement-inputs-form');
+        const processStep = $('#settlement-process-step');
+        const processBtn = $('#settlement-process-btn');
+        const processStatus = $('#settlement-process-status');
+        const resultEl = $('#settlement-result');
+        const calcBody = $('#settlement-calc-body');
+        const payableEl = $('#settlement-payable-amount');
+        const approvalPill = $('#settlement-approval-pill');
+        const approvalReason = $('#settlement-approval-reason');
+        const letterEl = $('#settlement-letter');
+        const agentNotesEl = $('#settlement-agent-notes');
+        const agentNotesBody = $('#settlement-agent-notes-body');
+        const teamsCard = $('#settlement-teams-card');
+        const teamsPill = $('#settlement-teams-pill');
+        const teamsMsg = $('#settlement-teams-msg');
+        const teamsApprovalIdEl = $('#settlement-teams-approvalid');
+        const teamsLinkEl = $('#settlement-teams-link');
+        const teamsApproveBtn = $('#settlement-teams-approve-btn');
+        const teamsRejectBtn = $('#settlement-teams-reject-btn');
+        const teamsReleaseBtn = $('#settlement-teams-release-btn');
+        const teamsStatus = $('#settlement-teams-status');
+        let currentApprovalId = null;
+
+        let claims = [];
+        let selected = null;
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        function fmtMoney(n) {
+            const num = Number(n) || 0;
+            return num.toLocaleString('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 });
+        }
+
+        function parseMoney(value) {
+            if (value === null || value === undefined) return 0;
+            const cleaned = String(value).replace(/[^0-9.\-]/g, '');
+            const n = parseFloat(cleaned);
+            return Number.isFinite(n) ? n : 0;
+        }
+
+        function defaultPolicyLimit(claimType, approved) {
+            const t = (claimType || '').toLowerCase();
+            if (t.includes('home')) return 750000;
+            if (t.includes('motor') || t.includes('car')) return 60000;
+            if (t.includes('travel')) return 15000;
+            if (t.includes('business')) return 250000;
+            if (t.includes('life')) return 500000;
+            return Math.max(approved * 5, 50000);
+        }
+
+        function defaultExcess(claimType) {
+            const t = (claimType || '').toLowerCase();
+            if (t.includes('home')) return 500;
+            if (t.includes('motor') || t.includes('car')) return 800;
+            if (t.includes('travel')) return 250;
+            if (t.includes('business')) return 1000;
+            return 500;
+        }
+
+        async function loadClaims() {
+            try {
+                const res = await fetch('/settlement/claims');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                claims = await res.json();
+                const previous = select.value;
+                select.innerHTML = '<option value="">— Select a Claim ID —</option>' +
+                    claims.map(c => `<option value="${escapeHtml(c.claimNumber)}">${escapeHtml(c.claimNumber)} — ${escapeHtml(c.customerName)} (${escapeHtml(c.claimType)})</option>`).join('');
+                if (previous && claims.some(c => c.claimNumber === previous)) {
+                    select.value = previous;
+                }
+                emptyEl.hidden = claims.length > 0;
+            } catch (err) {
+                emptyEl.hidden = false;
+                emptyEl.textContent = 'Failed to load claims: ' + err.message;
+            }
+        }
+
+        async function selectClaim(claimNumber) {
+            resultEl.hidden = true;
+            processStatus.hidden = true;
+            teamsCard.hidden = true;
+            currentApprovalId = null;
+            if (!claimNumber) {
+                selected = null;
+                summaryEl.hidden = true;
+                inputsStep.hidden = true;
+                processStep.hidden = true;
+                return;
+            }
+            try {
+                const res = await fetch(`/settlement/claims/${encodeURIComponent(claimNumber)}`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                selected = await res.json();
+            } catch (err) {
+                selected = null;
+                summaryEl.hidden = true;
+                inputsStep.hidden = true;
+                processStep.hidden = true;
+                emptyEl.hidden = false;
+                emptyEl.textContent = 'Failed to load claim: ' + err.message;
+                return;
+            }
+
+            $('#settlement-claim-num').textContent = selected.claimNumber;
+            $('#settlement-claim-customer').textContent = selected.customerName;
+            $('#settlement-claim-policy').textContent = selected.policyNumber;
+            $('#settlement-claim-type').textContent = selected.claimType;
+            $('#settlement-claim-incident').textContent =
+                `${selected.incidentDate || '—'} · ${selected.incidentLocation || '—'} — ${selected.incidentDescription || ''}`;
+            summaryEl.hidden = false;
+
+            const approved = parseMoney(selected.estimatedLoss);
+            inputsForm.approvedAmount.value = approved.toFixed(2);
+            inputsForm.policyLimit.value = defaultPolicyLimit(selected.claimType, approved).toFixed(2);
+            inputsForm.excess.value = defaultExcess(selected.claimType).toFixed(2);
+            inputsForm.depreciation.value = '0';
+            inputsForm.priorPayments.value = '0';
+
+            inputsStep.hidden = false;
+            processStep.hidden = false;
+        }
+
+        async function processSettlement() {
+            if (!selected) return;
+            processBtn.disabled = true;
+            processStatus.hidden = false;
+            processStatus.className = 'settlement-status';
+            processStatus.innerHTML = '<span class="spinner"></span>Engaging Settlement Agent…';
+            resultEl.hidden = true;
+
+            const payload = {
+                claimNumber: selected.claimNumber,
+                approvedAmount: parseFloat(inputsForm.approvedAmount.value) || 0,
+                policyLimit: parseFloat(inputsForm.policyLimit.value) || 0,
+                excess: parseFloat(inputsForm.excess.value) || 0,
+                depreciation: parseFloat(inputsForm.depreciation.value) || 0,
+                priorPayments: parseFloat(inputsForm.priorPayments.value) || 0
+            };
+
+            try {
+                const data = await window.zcAgentStream({
+                    url: '/settlement/process',
+                    body: payload,
+                    onDelta: (_chunk, fullText) => {
+                        agentNotesEl.hidden = false;
+                        agentNotesBody.classList.add('agent-md-streaming');
+                        agentNotesBody.textContent = fullText;
+                    },
+                    onError: (msg) => {
+                        processStatus.className = 'settlement-status error';
+                        processStatus.textContent = 'Agent error: ' + msg;
+                    }
+                });
+                if (!data) throw new Error('No response from agent');
+
+                processStatus.textContent = data.agentConfigured
+                    ? 'Settlement Agent processed the claim.'
+                    : 'Processed (Foundry agent not configured — using deterministic demo calculation).';
+
+                calcBody.innerHTML = (data.calculation || []).map((row, idx, arr) => {
+                    const isTotal = idx === arr.length - 1;
+                    const cls = isTotal ? 'pos' : (row.amount < 0 ? 'neg' : (row.amount > 0 ? 'pos' : ''));
+                    const sign = row.amount < 0 ? '−' : (row.amount > 0 && !isTotal && idx > 0 ? '+' : '');
+                    const display = sign + fmtMoney(Math.abs(row.amount));
+                    return `<tr${isTotal ? ' class="total"' : ''}>
+                        <td>${escapeHtml(row.label)}</td>
+                        <td class="amount ${cls}">${escapeHtml(display)}</td>
+                    </tr>`;
+                }).join('');
+
+                payableEl.textContent = data.payableAmountFormatted || fmtMoney(data.payableAmount);
+
+                approvalPill.textContent = data.humanApprovalRequired ? 'Required' : 'Optional';
+                approvalPill.className = 'settlement-approval-pill ' + (data.humanApprovalRequired ? 'required' : 'optional');
+                approvalReason.textContent = data.humanApprovalReason || '';
+
+                window.zcRenderMarkdown(letterEl, data.settlementLetter || '');
+
+                if (data.agentNotes) {
+                    agentNotesEl.hidden = false;
+                    agentNotesBody.classList.remove('agent-md-streaming');
+                    window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
+                } else {
+                    agentNotesEl.hidden = true;
+                }
+
+                renderTeamsCard(data.paymentApproval);
+
+                resultEl.hidden = false;
+                resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                // Surface input + raw output in the Engage Agent sub-tabs.
+                if (window.engageTabsRender) {
+                    const scope = document.querySelector('.settlement-panel .engage-tabs-scope');
+                    window.engageTabsRender(scope, data);
+                }
+            } catch (err) {
+                processStatus.className = 'settlement-status error';
+                processStatus.textContent = 'Failed to process: ' + err.message;
+            } finally {
+                processBtn.disabled = false;
+            }
+        }
+
+        function renderTeamsCard(approval) {
+            if (!approval || !approval.approvalId) {
+                teamsCard.hidden = true;
+                currentApprovalId = null;
+                return;
+            }
+            currentApprovalId = approval.approvalId;
+            teamsCard.hidden = false;
+            teamsApprovalIdEl.textContent = approval.approvalId;
+            if (approval.approvalUrl) {
+                teamsLinkEl.href = approval.approvalUrl;
+                teamsLinkEl.textContent = approval.approvalUrl;
+            } else {
+                teamsLinkEl.removeAttribute('href');
+                teamsLinkEl.textContent = '(none)';
+            }
+            const sentText = approval.teamsSent
+                ? `Adaptive Card posted to ${escapeHtml(approval.teamsChannel || 'Teams')}.`
+                : (approval.teamsConfigured
+                    ? `Teams send failed: ${escapeHtml(approval.teamsMessage || 'unknown error')}.`
+                    : 'Teams webhook not configured (set TEAMS_WEBHOOK_URL); approval card was logged only.');
+            teamsMsg.innerHTML = sentText + ' Approve below to simulate the Teams approver clicking <strong>Approve</strong>.';
+            updateTeamsPill(approval.status || 'pending', approval.teamsSent);
+            teamsStatus.hidden = true;
+            teamsStatus.className = 'settlement-teams-status';
+            teamsStatus.textContent = '';
+            teamsReleaseBtn.hidden = true;
+            teamsApproveBtn.disabled = false;
+            teamsRejectBtn.disabled = false;
+        }
+
+        function updateTeamsPill(status, sent) {
+            const s = (status || 'pending').toLowerCase();
+            teamsPill.className = 'settlement-approval-pill ' + s;
+            if (s === 'pending') {
+                teamsPill.textContent = sent ? 'Sent · Pending' : 'Logged · Pending';
+                if (!sent) teamsPill.classList.add('skipped');
+                else teamsPill.classList.add('sent');
+            } else {
+                teamsPill.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+            }
+        }
+
+        async function decideApproval(action) {
+            if (!currentApprovalId) return;
+            teamsApproveBtn.disabled = true;
+            teamsRejectBtn.disabled = true;
+            teamsStatus.hidden = false;
+            teamsStatus.className = 'settlement-teams-status';
+            teamsStatus.innerHTML = '<span class="spinner"></span>Sending decision…';
+            try {
+                const res = await fetch(`/settlement/payment/${encodeURIComponent(currentApprovalId)}/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ decidedBy: 'Demo approver (Teams)' })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                updateTeamsPill(data.status, true);
+                teamsStatus.textContent = `Decision recorded: ${data.status}` +
+                    (data.decidedBy ? ` by ${data.decidedBy}` : '') + '.';
+                if (data.status === 'approved') {
+                    teamsReleaseBtn.hidden = false;
+                    teamsReleaseBtn.disabled = false;
+                }
+            } catch (err) {
+                teamsStatus.className = 'settlement-teams-status error';
+                teamsStatus.textContent = 'Failed: ' + err.message;
+                teamsApproveBtn.disabled = false;
+                teamsRejectBtn.disabled = false;
+            }
+        }
+
+        async function releasePayment() {
+            if (!currentApprovalId) return;
+            teamsReleaseBtn.disabled = true;
+            teamsStatus.hidden = false;
+            teamsStatus.className = 'settlement-teams-status';
+            teamsStatus.innerHTML = '<span class="spinner"></span>Releasing payment…';
+            try {
+                const res = await fetch(`/settlement/payment/${encodeURIComponent(currentApprovalId)}/release`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                updateTeamsPill(data.status, true);
+                teamsStatus.textContent = `Payment released. Reference: ${data.paymentReference}.`;
+            } catch (err) {
+                teamsStatus.className = 'settlement-teams-status error';
+                teamsStatus.textContent = 'Failed: ' + err.message;
+                teamsReleaseBtn.disabled = false;
+            }
+        }
+
+        select.addEventListener('change', () => selectClaim(select.value));
+        refreshBtn.addEventListener('click', loadClaims);
+        processBtn.addEventListener('click', processSettlement);
+        teamsApproveBtn.addEventListener('click', () => decideApproval('approve'));
+        teamsRejectBtn.addEventListener('click', () => decideApproval('reject'));
+        teamsReleaseBtn.addEventListener('click', releasePayment);
+
+        loadClaims();
+        }
+
+        init();
+
+        if (!window.__settlementDemoEnhancedHook) {
+            window.__settlementDemoEnhancedHook = true;
+            const hook = () => init();
+            if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
+                Blazor.addEventListener('enhancedload', hook);
+            } else {
+                document.addEventListener('enhancedload', hook);
+            }
+        }
+    })();
+</script>
