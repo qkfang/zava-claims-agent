@@ -15,7 +15,14 @@
     </div>
 </div>
 
-<div class="agent-tab-panel standalone">
+<div class="agent-tabs" role="tablist" aria-label="Supplier Coordination views">
+    <button type="button" class="agent-tab active" role="tab"
+            aria-selected="true" data-tab="overview">Overview</button>
+    <button type="button" class="agent-tab" role="tab"
+            aria-selected="false" data-tab="tryit">Try It Out</button>
+</div>
+
+<div class="agent-tab-panel tab-panel-overview active" data-panel="overview">
     <section class="panel" style="--accent: #10b981">
         <h2>What this agent does</h2>
         <p>
@@ -71,3 +78,24 @@
 
     <OtherAgentsBar CurrentId="supplier-coordinator" />
 </div>
+
+<div class="agent-tab-panel tab-panel-tryit" data-panel="tryit">
+    <SupplierCoordinationDemo />
+</div>
+
+<script>
+    (function () {
+        const tabs = document.querySelectorAll('.agent-tabs .agent-tab');
+        if (!tabs.length) return;
+        const panels = document.querySelectorAll('.agent-tab-panel');
+        tabs.forEach(t => t.addEventListener('click', () => {
+            const target = t.dataset.tab;
+            tabs.forEach(x => {
+                const on = x === t;
+                x.classList.toggle('active', on);
+                x.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            panels.forEach(p => p.classList.toggle('active', p.dataset.panel === target));
+        }));
+    })();
+</script>
