@@ -197,6 +197,14 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     app.MapSettlementEndpoints(settlementStore, settlementFactory, settlementLogger);
 }
 
+// ── Fraud Investigation demo endpoints (Try It Out tab on /agents/fraud-investigation) ──
+{
+    var fraudLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
+    var fraudFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
+    app.MapFraudEndpoints(intakeStore, fraudFactory, fraudLogger);
+}
+
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
 if (noticeEnabled)
 {
