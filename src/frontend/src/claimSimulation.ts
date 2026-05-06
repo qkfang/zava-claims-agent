@@ -175,6 +175,176 @@ function moveToward(
   return false;
 }
 
+/* ------------------------------------------------------------------ */
+/* Office navigation                                                   */
+/*                                                                     */
+/* Cubicles in `officeScene.ts` are walled boxes: side walls at        */
+/* `cx ± 2.95` (z ∈ [cz-2.4, cz+2.6]), back partition at z = cz+2.6    */
+/* (x ∈ [cx-3, cx+3]). The only opening is the south side at          */
+/* z = cz - 2.4. Straight-line pathing from one cubicle to another     */
+/* therefore cuts through partitions and the desks behind them. The   */
+/* planner below produces a list of XZ waypoints that:                 */
+/*   1. Exit the source cubicle through its south opening.             */
+/*   2. Travel along the front aisle (z ≈ -3.6, south of front-row    */
+/*      cubicles) and/or the central aisle (z ≈ 5, between front- and */
+/*      back-row cubicles).                                            */
+/*   3. Cross between rows only via the gaps between front-row         */
+/*      cubicles. Front-row backs at z=2.6 are 6m wide and centred on  */
+/*      cx ∈ {-21,-11,-1,9}, leaving safe x-gaps centred at            */
+/*      ROW_GAP_X = {-16, -6, 4} (between cubicles) and {-26, 14}     */
+/*      (around the leftmost / rightmost cubicle ends).                */
+/*   4. Enter the target cubicle through its south opening.            */
+/* ------------------------------------------------------------------ */
+
+interface CubicleZone {
+  cx: number;
+  cz: number;
+}
+
+/**
+ * All seven department cubicles plus the Team Leader executive office
+ * (which has a glass partition at z = cz - 2.4 — same opening side as a
+ * regular cubicle, so it's modelled identically here).
+ */
+const CUBICLE_ZONES: CubicleZone[] = [
+  { cx: -21, cz: 0 }, // Intake
+  { cx: -11, cz: 0 }, // Supplier
+  { cx: -1, cz: 0 }, // Settlement
+  { cx: 9, cz: 0 }, // Communications
+  { cx: -11, cz: 10 }, // Assessor
+  { cx: -1, cz: 10 }, // Loss Adjuster
+  { cx: 9, cz: 10 }, // Fraud
+  { cx: -21, cz: 10 }, // Team Leader
+];
+
+/** Front aisle Z (south of front-row cubicles, north of lobby furniture). */
+const FRONT_AISLE_Z = -3.6;
+/** Central aisle Z (between front- and back-row cubicles). */
+const CENTRAL_AISLE_Z = 5.0;
+/** Just south of any cubicle's south opening (clear of side-wall ends). */
+const CUBICLE_APPROACH_OFFSET = 2.6;
+
+/**
+ * X-coordinates of the gaps between front-row cubicles. Front-row back
+ * partitions are 6m wide and centred at cx ∈ {-21,-11,-1,9}, so a path
+ * crossing z=2.6 must do so at one of these gap centres (or at the far
+ * left/right ends) to avoid clipping a partition.
+ */
+const ROW_GAP_X = [-26, -16, -6, 4, 14];
+
+/** Find the cubicle that contains point `p`, or null if it's in the open. */
+function findCubicleAt(p: { x: number; z: number }): CubicleZone | null {
+  for (const c of CUBICLE_ZONES) {
+    if (
+      Math.abs(p.x - c.cx) <= 3.0 &&
+      p.z >= c.cz - 2.4 &&
+      p.z <= c.cz + 2.6
+    ) {
+      return c;
+    }
+  }
+  return null;
+}
+
+/** Aisle Z appropriate for reaching/leaving a cubicle of row `cz`. */
+function aisleZForRow(cz: number): number {
+  // Back row (cz=10): use the central aisle just south of its opening.
+  // Front row (cz=0): use the front aisle just south of its opening.
+  return cz === 10 ? CENTRAL_AISLE_Z : FRONT_AISLE_Z;
+}
+
+/** Pick the gap-X nearest the average of `xs` for crossing front-row backs. */
+function nearestGapX(...xs: number[]): number {
+  const avg = xs.reduce((a, b) => a + b, 0) / xs.length;
+  let best = ROW_GAP_X[0];
+  let bestD = Math.abs(avg - best);
+  for (const g of ROW_GAP_X) {
+    const d = Math.abs(avg - g);
+    if (d < bestD) {
+      best = g;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+/**
+ * Plan a sequence of XZ waypoints from `from` to `to` that avoids the
+ * cubicle partitions and desks. The returned list does NOT include
+ * `from`, but always ends with a waypoint at `to`.
+ */
+function planOfficePath(
+  from: { x: number; z: number },
+  to: Vector3,
+): Vector3[] {
+  const srcCub = findCubicleAt(from);
+  const tgtCub = findCubicleAt({ x: to.x, z: to.z });
+  const wps: Vector3[] = [];
+  const y = 0.2;
+  const push = (x: number, z: number): void => {
+    // Skip duplicates (consecutive waypoints with the same XZ).
+    const last = wps.length > 0 ? wps[wps.length - 1] : null;
+    if (last && Math.abs(last.x - x) < 0.05 && Math.abs(last.z - z) < 0.05) {
+      return;
+    }
+    wps.push(new Vector3(x, y, z));
+  };
+
+  // Same cubicle (or both in the open) — go direct.
+  if (
+    srcCub &&
+    tgtCub &&
+    srcCub.cx === tgtCub.cx &&
+    srcCub.cz === tgtCub.cz
+  ) {
+    push(to.x, to.z);
+    return wps;
+  }
+
+  // 1. Exit source cubicle south of its opening.
+  if (srcCub) {
+    push(srcCub.cx, srcCub.cz - CUBICLE_APPROACH_OFFSET);
+  }
+
+  // 2. Decide which aisle(s) connect source and target sides.
+  //    "side" is determined by the cubicle row, or by the point's z if
+  //    the endpoint is in the open lobby.
+  const srcAisleZ = srcCub
+    ? aisleZForRow(srcCub.cz)
+    : from.z >= 2.6
+      ? CENTRAL_AISLE_Z
+      : FRONT_AISLE_Z;
+  const tgtAisleZ = tgtCub
+    ? aisleZForRow(tgtCub.cz)
+    : to.z >= 2.6
+      ? CENTRAL_AISLE_Z
+      : FRONT_AISLE_Z;
+
+  if (srcAisleZ === tgtAisleZ) {
+    // Same aisle: walk along it from the source x to the target x.
+    if (srcCub) push(srcCub.cx, srcAisleZ);
+    if (tgtCub) push(tgtCub.cx, tgtAisleZ);
+  } else {
+    // Crossing rows: use a front-row-cubicle gap to bridge the aisles.
+    const srcX = srcCub ? srcCub.cx : from.x;
+    const tgtX = tgtCub ? tgtCub.cx : to.x;
+    const gapX = nearestGapX(srcX, tgtX);
+    if (srcCub) push(srcCub.cx, srcAisleZ);
+    push(gapX, srcAisleZ);
+    push(gapX, tgtAisleZ);
+    if (tgtCub) push(tgtCub.cx, tgtAisleZ);
+  }
+
+  // 3. Enter target cubicle south of its opening.
+  if (tgtCub) {
+    push(tgtCub.cx, tgtCub.cz - CUBICLE_APPROACH_OFFSET);
+  }
+
+  // 4. Final destination.
+  push(to.x, to.z);
+  return wps;
+}
+
 /** Tasks that processing staff agents can be assigned to. */
 type Task =
   | { kind: "idle" }
@@ -199,6 +369,8 @@ interface StaffAgent {
   processTimer: number;
   /** Current intermediate target while moving. */
   moveTarget: Vector3 | null;
+  /** Remaining waypoints after `moveTarget` (consumed in order). */
+  moveQueue: Vector3[];
   /** Optional callback invoked once we reach moveTarget. */
   onArrive: (() => void) | null;
   /** True for staff that participate in the active claim pipeline. */
@@ -307,6 +479,7 @@ export class ClaimSimulation {
         task: { kind: "idle" },
         processTimer: 0,
         moveTarget: null,
+        moveQueue: [],
         onArrive: null,
         active: persona.active_in_pipeline,
         ambientMessages: persona.active_in_pipeline ? undefined : persona.ambient,
@@ -511,11 +684,16 @@ export class ClaimSimulation {
         s.character.setWalking(true);
         const arrived = moveToward(s.character.root, s.moveTarget, speed, dtSec);
         if (arrived) {
-          s.moveTarget = null;
-          s.character.setWalking(false);
-          const cb = s.onArrive;
-          s.onArrive = null;
-          if (cb) cb();
+          if (s.moveQueue.length > 0) {
+            // Advance to the next waypoint without firing onArrive.
+            s.moveTarget = s.moveQueue.shift()!;
+          } else {
+            s.moveTarget = null;
+            s.character.setWalking(false);
+            const cb = s.onArrive;
+            s.onArrive = null;
+            if (cb) cb();
+          }
         }
       } else if (s.processTimer > 0) {
         s.processTimer -= dtSec;
@@ -967,8 +1145,21 @@ export class ClaimSimulation {
     target: Vector3,
     onArrive: () => void,
   ): void {
-    s.moveTarget = target.clone();
+    // Plan a multi-waypoint path that avoids cubicle partitions/desks.
+    const path = planOfficePath(
+      { x: s.character.root.position.x, z: s.character.root.position.z },
+      target,
+    );
+    // `planOfficePath` always returns at least one waypoint (the final
+    // destination). The first becomes the immediate moveTarget; the rest
+    // queue up so the staff agent walks the route segment-by-segment.
+    s.moveTarget = path[0].clone();
     s.moveTarget.y = 0.2;
+    s.moveQueue = path.slice(1).map((p) => {
+      const v = p.clone();
+      v.y = 0.2;
+      return v;
+    });
     s.onArrive = onArrive;
   }
 
@@ -1236,6 +1427,7 @@ export class ClaimSimulation {
         }
         s.task = { kind: "idle" };
         s.moveTarget = null;
+        s.moveQueue = [];
         s.onArrive = null;
         s.processTimer = 0;
         s.character.setWalking(false);
