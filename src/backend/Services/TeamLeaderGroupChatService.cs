@@ -40,7 +40,9 @@ public class GroupChatSession
     public Channel<GroupChatTurn> Events { get; } =
         Channel.CreateUnbounded<GroupChatTurn>(new UnboundedChannelOptions
         {
-            SingleReader = false,
+            // Exactly one orchestration task writes to this channel and the
+            // matching SSE handler is the only reader for the session.
+            SingleReader = true,
             SingleWriter = true
         });
     public bool Completed { get; set; }

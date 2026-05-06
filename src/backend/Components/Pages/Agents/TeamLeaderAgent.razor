@@ -767,7 +767,7 @@
 
             async function startGroupChat() {
                 if (!selectedClaim) return;
-                if (activeStream) { try { activeStream.close(); } catch { } activeStream = null; }
+                if (activeStream) { try { activeStream.close(); } catch { /* ignore — closing an already-closed stream */ } activeStream = null; }
 
                 startBtn.disabled = true;
                 statusEl.hidden = false;
