@@ -125,10 +125,16 @@
     font-size: 0.86rem;
 }
 .agent-md.agent-md-streaming::after {
-    content: "▍";
+    /* Decorative blinking caret rendered without content text so screen
+       readers don't announce it; we just paint a thin rectangle next to
+       the trailing token. */
+    content: "";
     display: inline-block;
+    width: 0.55em;
+    height: 1em;
     margin-left: 2px;
-    color: rgba(110, 193, 255, 0.85);
+    vertical-align: text-bottom;
+    background: rgba(110, 193, 255, 0.85);
     animation: zc-stream-caret 1s steps(2, end) infinite;
 }
 @keyframes zc-stream-caret {

@@ -29,7 +29,7 @@
         return typeof window !== 'undefined'
             && typeof window.fetch === 'function'
             && typeof TextDecoder !== 'undefined'
-            && window.ReadableStream;
+            && typeof window.ReadableStream !== 'undefined';
     }
 
     /**
