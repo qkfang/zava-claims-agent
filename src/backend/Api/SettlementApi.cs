@@ -1,5 +1,6 @@
 using System.Globalization;
 using OpenAI.Responses;
+using ZavaClaims.Agents;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -89,7 +90,11 @@ public static class SettlementApi
         // so the panel always has a displayable result, and when Foundry is
         // configured we also invoke the live SettlementAgent and surface
         // its narrative in `agentNotes`.
-        app.MapPost("/settlement/process", async (SettlementProcessRequest request) =>
+        //
+        // Clients can request a live SSE stream of the agent reply by sending
+        // `Accept: text/event-stream`; otherwise the response is a single JSON
+        // envelope as before.
+        app.MapPost("/settlement/process", async (HttpContext httpContext, SettlementProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.ClaimNumber))
                 return Results.BadRequest(new { error = "claimNumber is required" });
@@ -143,66 +148,6 @@ public static class SettlementApi
                 "this email and we will be in touch.\n\n" +
                 "Kind regards,\nSeth — Settlement Officer\nZava Insurance";
 
-            string? agentNotes = null;
-            string? agentInput = null;
-            object? agentRawOutput = null;
-            if (agentFactory.IsConfigured)
-            {
-                try
-                {
-                    var prompt =
-                        "CLAIM CASE\n" +
-                        "==========\n" +
-                        $"Claim number: {record.ClaimNumber}\n" +
-                        $"Customer: {record.CustomerName}\n" +
-                        $"Policy: {record.PolicyNumber}\n" +
-                        $"Claim type: {record.ClaimType}\n" +
-                        $"Incident date: {record.IncidentDate}\n" +
-                        $"Incident location: {record.IncidentLocation}\n" +
-                        $"Description: {record.IncidentDescription}\n" +
-                        $"Urgency: {record.Urgency} — {record.UrgencyReason}\n\n" +
-                        "SETTLEMENT INPUTS\n" +
-                        "=================\n" +
-                        $"Approved amount: {FormatMoney(approved)}\n" +
-                        $"Policy limit: {FormatMoney(policyLimit)}\n" +
-                        $"Excess / deductible: {FormatMoney(excess)}\n" +
-                        $"Depreciation: {FormatMoney(depreciation)}\n" +
-                        $"Prior payments: {FormatMoney(priorPayments)}\n\n" +
-                        "Use the settlement_* MCP tools to cross-check the payee, " +
-                        "match the invoice if applicable, run the calculation, " +
-                        "check the authority limit, and finally call " +
-                        "settlement_requestPaymentApproval so a human approver " +
-                        "is notified in Microsoft Teams. Do NOT call " +
-                        "settlement_releasePayment in this run — stop after " +
-                        "raising the approval request and ask the human to " +
-                        "approve in Teams.\n\n" +
-                        "Then produce the standard settlement output " +
-                        "(calculation, cross-checks, options, payment approval " +
-                        "request, settlement letter draft, and human-approval " +
-                        "decision).";
-
-                    var extraTools = settlementMcpTool != null
-                        ? new List<ResponseTool> { settlementMcpTool }
-                        : null;
-                    var agent = agentFactory.Create("settlement", extraTools);
-                    var result = await agent.RunWithTraceAsync(prompt);
-                    agentNotes = result.Text;
-                    agentInput = result.Input;
-                    agentRawOutput = new
-                    {
-                        text = result.Text,
-                        citations = result.Citations,
-                        outputItems = result.OutputItems,
-                        responseId = result.ResponseId,
-                        durationMs = result.DurationMs
-                    };
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Settlement Agent invocation failed; falling back to deterministic demo calculation");
-                }
-            }
-
             // Always create a Pending payment-approval record + send the
             // Teams Adaptive Card from the API layer, so the demo flow
             // works end-to-end even when the Foundry agent (and therefore
@@ -238,10 +183,38 @@ public static class SettlementApi
             apiApproval.TeamsMessage = teamsResult.Message;
             apiApproval.ApprovalUrl = teamsResult.ApprovalUrl;
 
-            logger.LogInformation("Settlement process: claim={ClaimNumber} payable={Payable} approvalId={ApprovalId}",
-                Sanitize(record.ClaimNumber), payable, Sanitize(apiApproval.ApprovalId));
+            var prompt =
+                "CLAIM CASE\n" +
+                "==========\n" +
+                $"Claim number: {record.ClaimNumber}\n" +
+                $"Customer: {record.CustomerName}\n" +
+                $"Policy: {record.PolicyNumber}\n" +
+                $"Claim type: {record.ClaimType}\n" +
+                $"Incident date: {record.IncidentDate}\n" +
+                $"Incident location: {record.IncidentLocation}\n" +
+                $"Description: {record.IncidentDescription}\n" +
+                $"Urgency: {record.Urgency} — {record.UrgencyReason}\n\n" +
+                "SETTLEMENT INPUTS\n" +
+                "=================\n" +
+                $"Approved amount: {FormatMoney(approved)}\n" +
+                $"Policy limit: {FormatMoney(policyLimit)}\n" +
+                $"Excess / deductible: {FormatMoney(excess)}\n" +
+                $"Depreciation: {FormatMoney(depreciation)}\n" +
+                $"Prior payments: {FormatMoney(priorPayments)}\n\n" +
+                "Use the settlement_* MCP tools to cross-check the payee, " +
+                "match the invoice if applicable, run the calculation, " +
+                "check the authority limit, and finally call " +
+                "settlement_requestPaymentApproval so a human approver " +
+                "is notified in Microsoft Teams. Do NOT call " +
+                "settlement_releasePayment in this run — stop after " +
+                "raising the approval request and ask the human to " +
+                "approve in Teams.\n\n" +
+                "Then produce the standard settlement output " +
+                "(calculation, cross-checks, options, payment approval " +
+                "request, settlement letter draft, and human-approval " +
+                "decision).";
 
-            return Results.Ok(new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
             {
                 claimNumber = record.ClaimNumber,
                 customerName = record.CustomerName,
@@ -261,10 +234,18 @@ public static class SettlementApi
                 humanApprovalRequired,
                 humanApprovalReason,
                 settlementLetter,
-                agentNotes,
+                agentNotes = trace?.Text,
                 agentConfigured = agentFactory.IsConfigured,
-                agentInput,
-                agentRawOutput,
+                agentError,
+                agentInput = trace?.Input,
+                agentRawOutput = trace is null ? null : new
+                {
+                    text = trace.Text,
+                    citations = trace.Citations,
+                    outputItems = trace.OutputItems,
+                    responseId = trace.ResponseId,
+                    durationMs = trace.DurationMs
+                },
                 paymentApproval = new
                 {
                     approvalId = apiApproval.ApprovalId,
@@ -276,7 +257,42 @@ public static class SettlementApi
                     teamsMessage = teamsResult.Message
                 },
                 mcpConfigured = settlementMcpTool != null
-            });
+            };
+
+            logger.LogInformation("Settlement process: claim={ClaimNumber} payable={Payable} approvalId={ApprovalId}",
+                Sanitize(record.ClaimNumber), payable, Sanitize(apiApproval.ApprovalId));
+
+            // Build the optional MCP extra-tools list for the SettlementAgent.
+            List<ResponseTool>? BuildExtraTools() => settlementMcpTool != null
+                ? new List<ResponseTool> { settlementMcpTool }
+                : null;
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured
+                    ? agentFactory.Create("settlement", BuildExtraTools())
+                    : null;
+                await AgentSseStreaming.StreamAsync(httpContext, streamingAgent, prompt, BuildEnvelope, logger, "Settlement Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? traceResult = null;
+            string? agentInvocationError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("settlement", BuildExtraTools());
+                    traceResult = await agent.RunWithTraceAsync(prompt);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Settlement Agent invocation failed; falling back to deterministic demo calculation");
+                    agentInvocationError = ex.Message;
+                }
+            }
+
+            return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
         });
 
         // ── Payment-approval endpoints ──────────────────────────────────

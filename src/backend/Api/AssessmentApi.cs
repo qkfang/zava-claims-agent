@@ -1,3 +1,4 @@
+using ZavaClaims.Agents;
 using ZavaClaims.App.Models;
 using ZavaClaims.App.Services;
 
@@ -94,7 +95,11 @@ public static class AssessmentApi
         // /intake/process: when Foundry is configured we invoke the live
         // ClaimsAssessmentAgent and return its narrative; otherwise we return
         // a deterministic demo summary so the page still flows.
-        app.MapPost("/assessment/process", async (AssessmentProcessRequest request) =>
+        //
+        // Clients can request a live SSE stream of the agent reply by sending
+        // `Accept: text/event-stream`; otherwise the response is a single JSON
+        // envelope as before.
+        app.MapPost("/assessment/process", async (HttpContext httpContext, AssessmentProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.ClaimNumber))
                 return Results.BadRequest(new { error = "claimNumber is required" });
@@ -105,73 +110,76 @@ public static class AssessmentApi
 
             logger.LogInformation("Assessment process: claimNumber={ClaimNumber}", Sanitize(claim.ClaimNumber));
 
-            string? agentNotes = null;
-            string? agentError = null;
-            string? agentInput = null;
-            object? agentRawOutput = null;
-            if (agentFactory.IsConfigured)
-            {
-                try
-                {
-                    var prompt =
-                        "CLAIM CASE FOR ASSESSMENT\n" +
-                        "=========================\n" +
-                        $"Claim number: {claim.ClaimNumber}\n" +
-                        $"Customer: {claim.CustomerName}\n" +
-                        $"Customer email: {claim.CustomerEmail}\n" +
-                        $"Customer phone: {claim.CustomerPhone}\n" +
-                        $"Policy number: {claim.PolicyNumber}\n" +
-                        $"Claim type: {claim.ClaimType}\n" +
-                        $"Incident date: {claim.IncidentDate}\n" +
-                        $"Incident location: {claim.IncidentLocation}\n" +
-                        $"Estimated loss: {claim.EstimatedLoss}\n" +
-                        $"Preferred contact: {claim.PreferredContact}\n" +
-                        $"Intake urgency: {claim.Urgency} — {claim.UrgencyReason}\n\n" +
-                        "INCIDENT DESCRIPTION\n" +
-                        "--------------------\n" +
-                        claim.IncidentDescription + "\n\n" +
-                        "Please review this claim against the relevant Zava Insurance policy " +
-                        "wording for the customer's policy, identify coverage and exclusions, " +
-                        "list any missing information, and recommend approve / partial / decline " +
-                        "in your standard output format.";
+            var prompt =
+                "CLAIM CASE FOR ASSESSMENT\n" +
+                "=========================\n" +
+                $"Claim number: {claim.ClaimNumber}\n" +
+                $"Customer: {claim.CustomerName}\n" +
+                $"Customer email: {claim.CustomerEmail}\n" +
+                $"Customer phone: {claim.CustomerPhone}\n" +
+                $"Policy number: {claim.PolicyNumber}\n" +
+                $"Claim type: {claim.ClaimType}\n" +
+                $"Incident date: {claim.IncidentDate}\n" +
+                $"Incident location: {claim.IncidentLocation}\n" +
+                $"Estimated loss: {claim.EstimatedLoss}\n" +
+                $"Preferred contact: {claim.PreferredContact}\n" +
+                $"Intake urgency: {claim.Urgency} — {claim.UrgencyReason}\n\n" +
+                "INCIDENT DESCRIPTION\n" +
+                "--------------------\n" +
+                claim.IncidentDescription + "\n\n" +
+                "Please review this claim against the relevant Zava Insurance policy " +
+                "wording for the customer's policy, identify coverage and exclusions, " +
+                "list any missing information, and recommend approve / partial / decline " +
+                "in your standard output format.";
 
-                    var agent = agentFactory.Create("assessment");
-                    var trace = await agent.RunWithTraceAsync(prompt);
-                    agentNotes = trace.Text;
-                    agentInput = trace.Input;
-                    agentRawOutput = new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError)
+            {
+                var notes = trace?.Text;
+                if (string.IsNullOrWhiteSpace(notes))
+                    notes = BuildFallbackAssessment(claim);
+
+                return new
+                {
+                    claimNumber = claim.ClaimNumber,
+                    agentNotes = notes,
+                    agentConfigured = agentFactory.IsConfigured,
+                    agentError,
+                    agentInput = trace?.Input,
+                    agentRawOutput = trace is null ? null : new
                     {
                         text = trace.Text,
                         citations = trace.Citations,
                         outputItems = trace.OutputItems,
                         responseId = trace.ResponseId,
                         durationMs = trace.DurationMs
-                    };
+                    }
+                };
+            }
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured ? agentFactory.Create("assessment") : null;
+                await AgentSseStreaming.StreamAsync(httpContext, streamingAgent, prompt, BuildEnvelope, logger, "Claims Assessment Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? traceResult = null;
+            string? agentInvocationError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("assessment");
+                    traceResult = await agent.RunWithTraceAsync(prompt);
                 }
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "Claims Assessment Agent invocation failed; returning deterministic demo summary");
-                    agentError = ex.Message;
+                    agentInvocationError = ex.Message;
                 }
             }
 
-            // Deterministic fallback so the demo still flows when Foundry is
-            // not configured (or the call failed). Keeps the same shape as
-            // the live agent's output sections.
-            if (string.IsNullOrWhiteSpace(agentNotes))
-            {
-                agentNotes = BuildFallbackAssessment(claim);
-            }
-
-            return Results.Ok(new
-            {
-                claimNumber = claim.ClaimNumber,
-                agentNotes,
-                agentConfigured = agentFactory.IsConfigured,
-                agentError,
-                agentInput,
-                agentRawOutput
-            });
+            return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
         });
     }
 

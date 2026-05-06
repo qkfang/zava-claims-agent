@@ -93,7 +93,11 @@ public static class IntakeApi
         // For demo reliability, structured fields come from the catalogue
         // entry. When Foundry is configured, we also invoke the live
         // ClaimsIntakeAgent and surface its narrative in `agentNotes`.
-        app.MapPost("/intake/process", async (IntakeProcessRequest request) =>
+        //
+        // Clients can request a live SSE stream of the agent reply by sending
+        // `Accept: text/event-stream`; otherwise the response is a single JSON
+        // envelope as before.
+        app.MapPost("/intake/process", async (HttpContext httpContext, IntakeProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.SampleId))
                 return Results.BadRequest(new { error = "sampleId is required" });
@@ -104,56 +108,63 @@ public static class IntakeApi
 
             logger.LogInformation("Intake process: sampleId={SampleId}", Sanitize(sample.Id));
 
-            string? agentNotes = null;
-            string? agentInput = null;
-            object? agentRawOutput = null;
-            if (agentFactory.IsConfigured)
-            {
-                try
-                {
-                    // Mirrors how /notice/* drives CtAgExtractCU: feed the
-                    // already-extracted document text directly to the agent.
-                    var combined =
-                        "INBOUND CLAIM EMAIL\n" +
-                        "===================\n" +
-                        $"From: {sample.EmailFrom}\n" +
-                        $"Date: {sample.EmailDate}\n" +
-                        $"Subject: {sample.EmailSubject}\n\n" +
-                        sample.EmailBody +
-                        "\n\nATTACHED CLAIM FORM (" + sample.FormFileName + ")\n" +
-                        "===========================================\n" +
-                        sample.FormDocumentText;
+            // Mirrors how /notice/* drives CtAgExtractCU: feed the
+            // already-extracted document text directly to the agent.
+            var combined =
+                "INBOUND CLAIM EMAIL\n" +
+                "===================\n" +
+                $"From: {sample.EmailFrom}\n" +
+                $"Date: {sample.EmailDate}\n" +
+                $"Subject: {sample.EmailSubject}\n\n" +
+                sample.EmailBody +
+                "\n\nATTACHED CLAIM FORM (" + sample.FormFileName + ")\n" +
+                "===========================================\n" +
+                sample.FormDocumentText;
 
-                    var agent = agentFactory.Create("intake");
-                    var result = await agent.RunWithTraceAsync(combined);
-                    agentNotes = result.Text;
-                    agentInput = result.Input;
-                    agentRawOutput = new
-                    {
-                        text = result.Text,
-                        citations = result.Citations,
-                        outputItems = result.OutputItems,
-                        responseId = result.ResponseId,
-                        durationMs = result.DurationMs
-                    };
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Claims Intake Agent invocation failed; falling back to deterministic demo data");
-                }
-            }
-
-            return Results.Ok(new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
             {
                 sampleId = sample.Id,
                 fields = sample.ExpectedFields,
                 urgency = sample.ExpectedUrgency,
                 urgencyReason = sample.ExpectedUrgencyReason,
-                agentNotes,
+                agentNotes = trace?.Text,
                 agentConfigured = agentFactory.IsConfigured,
-                agentInput,
-                agentRawOutput
-            });
+                agentError,
+                agentInput = trace?.Input,
+                agentRawOutput = trace is null ? null : new
+                {
+                    text = trace.Text,
+                    citations = trace.Citations,
+                    outputItems = trace.OutputItems,
+                    responseId = trace.ResponseId,
+                    durationMs = trace.DurationMs
+                }
+            };
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured ? agentFactory.Create("intake") : null;
+                await AgentSseStreaming.StreamAsync(httpContext, streamingAgent, combined, BuildEnvelope, logger, "Claims Intake Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? traceResult = null;
+            string? agentInvocationError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("intake");
+                    traceResult = await agent.RunWithTraceAsync(combined);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Claims Intake Agent invocation failed; falling back to deterministic demo data");
+                    agentInvocationError = ex.Message;
+                }
+            }
+
+            return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
         });
 
         // Submitting the (possibly edited) intake form mints a fresh

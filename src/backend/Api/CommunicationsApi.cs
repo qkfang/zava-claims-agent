@@ -1,3 +1,4 @@
+using ZavaClaims.Agents;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -57,7 +58,11 @@ public static class CommunicationsApi
         // Deterministic drafts are generated server-side so the demo always
         // produces output; when Foundry is configured the live agent is
         // also invoked and its narrative is surfaced in `agentNotes`.
-        app.MapPost("/communications/process", async (CommunicationsProcessRequest request) =>
+        //
+        // Clients can request a live SSE stream of the agent reply by sending
+        // `Accept: text/event-stream`; otherwise the response is a single JSON
+        // envelope as before.
+        app.MapPost("/communications/process", async (HttpContext httpContext, CommunicationsProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.ClaimNumber))
                 return Results.BadRequest(new { error = "claimNumber is required" });
@@ -71,54 +76,28 @@ public static class CommunicationsApi
 
             var drafts = CustomerCommunicationsDrafter.Draft(record);
 
-            string? agentNotes = null;
-            string? agentInput = null;
-            object? agentRawOutput = null;
-            if (agentFactory.IsConfigured)
-            {
-                try
-                {
-                    var prompt =
-                        "CLAIM CASE FOR CUSTOMER COMMUNICATIONS\n" +
-                        "======================================\n" +
-                        $"Claim number   : {record.ClaimNumber}\n" +
-                        $"Customer       : {record.CustomerName}\n" +
-                        $"Email          : {record.CustomerEmail}\n" +
-                        $"Phone          : {record.CustomerPhone}\n" +
-                        $"Preferred      : {record.PreferredContact}\n" +
-                        $"Policy         : {record.PolicyNumber}\n" +
-                        $"Claim type     : {record.ClaimType}\n" +
-                        $"Incident date  : {record.IncidentDate}\n" +
-                        $"Incident place : {record.IncidentLocation}\n" +
-                        $"Description    : {record.IncidentDescription}\n" +
-                        $"Estimated loss : {record.EstimatedLoss}\n" +
-                        $"Urgency        : {record.Urgency} — {record.UrgencyReason}\n" +
-                        $"Stage          : Lodged, awaiting Claims Assessment\n\n" +
-                        "Please draft empathetic, plain-English customer updates for this claim across " +
-                        "the most appropriate channels (email, SMS, portal). Include a short summary of " +
-                        "current status and next steps, and surface any vulnerability flags that need a " +
-                        "human reviewer before sending.";
+            var prompt =
+                "CLAIM CASE FOR CUSTOMER COMMUNICATIONS\n" +
+                "======================================\n" +
+                $"Claim number   : {record.ClaimNumber}\n" +
+                $"Customer       : {record.CustomerName}\n" +
+                $"Email          : {record.CustomerEmail}\n" +
+                $"Phone          : {record.CustomerPhone}\n" +
+                $"Preferred      : {record.PreferredContact}\n" +
+                $"Policy         : {record.PolicyNumber}\n" +
+                $"Claim type     : {record.ClaimType}\n" +
+                $"Incident date  : {record.IncidentDate}\n" +
+                $"Incident place : {record.IncidentLocation}\n" +
+                $"Description    : {record.IncidentDescription}\n" +
+                $"Estimated loss : {record.EstimatedLoss}\n" +
+                $"Urgency        : {record.Urgency} — {record.UrgencyReason}\n" +
+                $"Stage          : Lodged, awaiting Claims Assessment\n\n" +
+                "Please draft empathetic, plain-English customer updates for this claim across " +
+                "the most appropriate channels (email, SMS, portal). Include a short summary of " +
+                "current status and next steps, and surface any vulnerability flags that need a " +
+                "human reviewer before sending.";
 
-                    var agent = agentFactory.Create("communications");
-                    var result = await agent.RunWithTraceAsync(prompt);
-                    agentNotes = result.Text;
-                    agentInput = result.Input;
-                    agentRawOutput = new
-                    {
-                        text = result.Text,
-                        citations = result.Citations,
-                        outputItems = result.OutputItems,
-                        responseId = result.ResponseId,
-                        durationMs = result.DurationMs
-                    };
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Customer Communications Agent invocation failed; falling back to deterministic drafts");
-                }
-            }
-
-            return Results.Ok(new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
             {
                 claimNumber = record.ClaimNumber,
                 customerName = record.CustomerName,
@@ -133,11 +112,44 @@ public static class CommunicationsApi
                 drafts.VulnerabilityFlags,
                 drafts.HumanApprovalRequired,
                 drafts.HumanApprovalReason,
-                agentNotes,
+                agentNotes = trace?.Text,
                 agentConfigured = agentFactory.IsConfigured,
-                agentInput,
-                agentRawOutput
-            });
+                agentError,
+                agentInput = trace?.Input,
+                agentRawOutput = trace is null ? null : new
+                {
+                    text = trace.Text,
+                    citations = trace.Citations,
+                    outputItems = trace.OutputItems,
+                    responseId = trace.ResponseId,
+                    durationMs = trace.DurationMs
+                }
+            };
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured ? agentFactory.Create("communications") : null;
+                await AgentSseStreaming.StreamAsync(httpContext, streamingAgent, prompt, BuildEnvelope, logger, "Customer Communications Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? traceResult = null;
+            string? agentInvocationError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("communications");
+                    traceResult = await agent.RunWithTraceAsync(prompt);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Customer Communications Agent invocation failed; falling back to deterministic drafts");
+                    agentInvocationError = ex.Message;
+                }
+            }
+
+            return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
         });
 
         // Voice chat endpoint — backs the "Voice chat" tab on the
