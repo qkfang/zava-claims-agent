@@ -189,6 +189,43 @@
                     <div id="settlement-agent-notes-body" class="agent-md"></div>
                 </div>
             </div>
+
+            <div class="engage-tabs-scope" data-engage-role="settlement">
+                <div class="engage-tabs" role="tablist">
+                    <button type="button" class="engage-tab-btn active" data-engage-tab="prompt">Agent Prompt &amp; Tools</button>
+                    <button type="button" class="engage-tab-btn" data-engage-tab="input">Agent Input</button>
+                    <button type="button" class="engage-tab-btn" data-engage-tab="output">Raw Output</button>
+                </div>
+
+                <div class="engage-tab-panel active" data-engage-tab="prompt">
+                    <div class="engage-info-block">
+                        <h4>Agent metadata</h4>
+                        <div class="engage-info-meta engage-meta"></div>
+                    </div>
+                    <div class="engage-info-block">
+                        <h4>System prompt</h4>
+                        <pre class="engage-pre engage-prompt-body">Loading…</pre>
+                    </div>
+                    <div class="engage-info-block">
+                        <h4>Tools available</h4>
+                        <ul class="engage-tools-list"><li class="engage-empty">Loading…</li></ul>
+                    </div>
+                </div>
+
+                <div class="engage-tab-panel" data-engage-tab="input">
+                    <div class="engage-info-block">
+                        <h4>Prompt sent to the agent</h4>
+                        <pre class="engage-pre engage-input-body engage-empty">Engage the agent to capture the input that was sent.</pre>
+                    </div>
+                </div>
+
+                <div class="engage-tab-panel" data-engage-tab="output">
+                    <div class="engage-info-block">
+                        <h4>Raw agent output (text, citations, every output item including tool / function calls)</h4>
+                        <div class="json-viewer engage-output-body"><div class="engage-empty">Engage the agent to see the full raw response.</div></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
     </div>
@@ -593,6 +630,12 @@
 
                 resultEl.hidden = false;
                 resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                // Surface input + raw output in the Engage Agent sub-tabs.
+                if (window.engageTabsRender) {
+                    const scope = document.querySelector('.settlement-panel .engage-tabs-scope');
+                    window.engageTabsRender(scope, data);
+                }
             } catch (err) {
                 processStatus.className = 'settlement-status error';
                 processStatus.textContent = 'Failed to process: ' + err.message;

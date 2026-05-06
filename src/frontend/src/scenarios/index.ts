@@ -76,6 +76,13 @@ export interface ScenarioResetJson {
 export interface ScenarioDefinition {
   id: ScenarioId;
   scenarioNumber: number;
+  /**
+   * Fixed claim case number used when this scenario is launched. Mirrors
+   * the seeded entries minted by `IntakeClaimStore.SeedDefaults` in the
+   * backend so the scripted simulation, intake mock data, and downstream
+   * agent pages all reference the same claim id.
+   */
+  caseId: string;
   customerId: ScenarioId;
   incidentZone: ScenarioId;
   approveAtAssessor: boolean;

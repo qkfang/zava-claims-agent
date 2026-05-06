@@ -1,6 +1,7 @@
 {
   "id": "travel",
   "scenarioNumber": 4,
+  "caseId": "CLM-20260505-DEMO02",
   "customerId": "travel",
   "incidentZone": "travel",
   "approveAtAssessor": true,

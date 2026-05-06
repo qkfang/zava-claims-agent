@@ -1,6 +1,7 @@
 {
   "id": "motor",
   "scenarioNumber": 2,
+  "caseId": "CLM-20260505-DEMO01",
   "customerId": "motor",
   "incidentZone": "motor",
   "approveAtAssessor": true,

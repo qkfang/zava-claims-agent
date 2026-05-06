@@ -1,6 +1,7 @@
 {
   "id": "home",
   "scenarioNumber": 1,
+  "caseId": "CLM-20260505-DEMO03",
   "customerId": "home",
   "incidentZone": "home",
   "approveAtAssessor": true,
