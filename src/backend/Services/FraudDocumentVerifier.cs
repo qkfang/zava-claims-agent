@@ -229,6 +229,8 @@ public class FraudDocumentVerifier
         Set(fields, "issuer", sample.Issuer);
         Set(fields, "holderName", sample.ExpectedHolderName);
         Set(fields, "documentNumber", sample.DocumentNumber);
+        Set(fields, "issueDate", sample.ExpectedIssueDate);
+        Set(fields, "expiryDate", sample.ExpectedExpiryDate);
         if (sample.ExpectedTotal is { } total)
         {
             Set(fields, "totalAmount", total.ToString(CultureInfo.InvariantCulture));

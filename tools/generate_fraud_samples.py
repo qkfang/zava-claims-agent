@@ -75,7 +75,7 @@ def driver_licence(path: Path, *, fake: bool) -> None:
     if fake:
         # holder data: mismatched DOB (year clearly wrong relative to issue date)
         rows = [
-            ("SURNAME", "RIVERA"),
+            ("SURNAME", "HARRIS"),
             ("GIVEN NAMES", "MICHAEL J"),
             ("DATE OF BIRTH", "30 FEB 2020"),  # impossible date
             ("LICENCE NO.", "DL-99-AA-117"),
@@ -85,7 +85,7 @@ def driver_licence(path: Path, *, fake: bool) -> None:
         ]
     else:
         rows = [
-            ("SURNAME", "RIVERA"),
+            ("SURNAME", "HARRIS"),
             ("GIVEN NAMES", "MICHAEL J"),
             ("DATE OF BIRTH", "08 JUL 1978"),
             ("LICENCE NO.", "DL-77-XK-204"),
@@ -136,7 +136,7 @@ def passport(path: Path, *, fake: bool) -> None:
     rows_legit = [
         ("Type / Code", "P / ZAV"),
         ("Passport No.", "ZA8842917"),
-        ("Surname", "OKAFOR"),
+        ("Surname", "LIU"),
         ("Given Names", "GRACE A"),
         ("Nationality", "ZAVAN"),
         ("Date of Birth", "14 NOV 1985"),
@@ -155,10 +155,10 @@ def passport(path: Path, *, fake: bool) -> None:
     # MRZ
     if fake:
         # check digits inconsistent — clearly mangled
-        mrz1 = "P<ZAVOKAFOR<<GRACE<A<<<<<<<<<<<<<<<<<<<<<<<<"
+        mrz1 = "P<ZAVLIU<<GRACE<A<<<<<<<<<<<<<<<<<<<<<<<<"
         mrz2 = "ZA8842917X9ZAV8511144F3201019<<<<<<<<<<<<<<00"  # bad final checks
     else:
-        mrz1 = "P<ZAVOKAFOR<<GRACE<A<<<<<<<<<<<<<<<<<<<<<<<<"
+        mrz1 = "P<ZAVLIU<<GRACE<A<<<<<<<<<<<<<<<<<<<<<<<<"
         mrz2 = "ZA88429174ZAV8511144F3202012<<<<<<<<<<<<<<06"
     mrz_font = _font(20, mono=True, bold=True)
     d.rectangle((40, H - 130, W - 40, H - 30), fill="#fef3c7")
@@ -298,14 +298,16 @@ def repair_quote(path: Path, *, edited: bool) -> None:
 SAMPLES = [
     {
         "id": "dl-real",
-        "label": "Driver Licence — Michael Rivera (Zava State)",
+        "label": "Driver Licence — Michael Harris (Zava State)",
         "kind": "driver-licence",
         "src": "/fraud/samples/driver-licence-real.png",
         "expected": "legit",
         "description": "Plausible Zava State driver licence for the home-burst-pipe persona.",
-        "expectedHolderName": "Michael Rivera",
+        "expectedHolderName": "Michael Harris",
         "documentNumber": "DL-77-XK-204",
         "issuer": "Zava State Roads Authority",
+        "expectedIssueDate": "2024-03-12",
+        "expectedExpiryDate": "2029-03-12",
     },
     {
         "id": "dl-fake",
@@ -314,20 +316,24 @@ SAMPLES = [
         "src": "/fraud/samples/driver-licence-tampered.png",
         "expected": "fake",
         "description": "Mismatched DOB, misspelt issuer banner, broken hologram security band.",
-        "expectedHolderName": "Michael Rivera",
+        "expectedHolderName": "Michael Harris",
         "documentNumber": "DL-99-AA-117",
         "issuer": "Zavaa State Roads Authority",
+        "expectedIssueDate": "2024-03-12",
+        "expectedExpiryDate": "2029-03-12",
     },
     {
         "id": "passport-real",
-        "label": "Passport — Grace Okafor (Zava Republic)",
+        "label": "Passport — Grace Liu (Zava Republic)",
         "kind": "passport",
         "src": "/fraud/samples/passport-real.png",
         "expected": "legit",
         "description": "Plausible Zava Republic passport bio page.",
-        "expectedHolderName": "Grace Okafor",
+        "expectedHolderName": "Grace Liu",
         "documentNumber": "ZA8842917",
         "issuer": "Zava Republic",
+        "expectedIssueDate": "2022-02-02",
+        "expectedExpiryDate": "2032-02-01",
     },
     {
         "id": "passport-fake",
@@ -336,9 +342,11 @@ SAMPLES = [
         "src": "/fraud/samples/passport-photo-swap.png",
         "expected": "fake",
         "description": "Photo region clearly re-pasted; MRZ check digits inconsistent.",
-        "expectedHolderName": "Grace Okafor",
+        "expectedHolderName": "Grace Liu",
         "documentNumber": "ZA8842917X",
         "issuer": "Zava Republic",
+        "expectedIssueDate": "2022-02-02",
+        "expectedExpiryDate": "2032-02-01",
     },
     {
         "id": "receipt-real",

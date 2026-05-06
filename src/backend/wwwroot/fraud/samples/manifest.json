@@ -2,14 +2,16 @@
   "samples": [
     {
       "id": "dl-real",
-      "label": "Driver Licence \u2014 Michael Rivera (Zava State)",
+      "label": "Driver Licence \u2014 Michael Harris (Zava State)",
       "kind": "driver-licence",
       "src": "/fraud/samples/driver-licence-real.png",
       "expected": "legit",
       "description": "Plausible Zava State driver licence for the home-burst-pipe persona.",
-      "expectedHolderName": "Michael Rivera",
+      "expectedHolderName": "Michael Harris",
       "documentNumber": "DL-77-XK-204",
-      "issuer": "Zava State Roads Authority"
+      "issuer": "Zava State Roads Authority",
+      "expectedIssueDate": "2024-03-12",
+      "expectedExpiryDate": "2029-03-12"
     },
     {
       "id": "dl-fake",
@@ -18,20 +20,24 @@
       "src": "/fraud/samples/driver-licence-tampered.png",
       "expected": "fake",
       "description": "Mismatched DOB, misspelt issuer banner, broken hologram security band.",
-      "expectedHolderName": "Michael Rivera",
+      "expectedHolderName": "Michael Harris",
       "documentNumber": "DL-99-AA-117",
-      "issuer": "Zavaa State Roads Authority"
+      "issuer": "Zavaa State Roads Authority",
+      "expectedIssueDate": "2024-03-12",
+      "expectedExpiryDate": "2029-03-12"
     },
     {
       "id": "passport-real",
-      "label": "Passport \u2014 Grace Okafor (Zava Republic)",
+      "label": "Passport \u2014 Grace Liu (Zava Republic)",
       "kind": "passport",
       "src": "/fraud/samples/passport-real.png",
       "expected": "legit",
       "description": "Plausible Zava Republic passport bio page.",
-      "expectedHolderName": "Grace Okafor",
+      "expectedHolderName": "Grace Liu",
       "documentNumber": "ZA8842917",
-      "issuer": "Zava Republic"
+      "issuer": "Zava Republic",
+      "expectedIssueDate": "2022-02-02",
+      "expectedExpiryDate": "2032-02-01"
     },
     {
       "id": "passport-fake",
@@ -40,9 +46,11 @@
       "src": "/fraud/samples/passport-photo-swap.png",
       "expected": "fake",
       "description": "Photo region clearly re-pasted; MRZ check digits inconsistent.",
-      "expectedHolderName": "Grace Okafor",
+      "expectedHolderName": "Grace Liu",
       "documentNumber": "ZA8842917X",
-      "issuer": "Zava Republic"
+      "issuer": "Zava Republic",
+      "expectedIssueDate": "2022-02-02",
+      "expectedExpiryDate": "2032-02-01"
     },
     {
       "id": "receipt-real",

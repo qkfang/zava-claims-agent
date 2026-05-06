@@ -18,7 +18,9 @@ public record FraudSampleDocument(
     string? ExpectedHolderName,
     string? DocumentNumber,
     string? Issuer,
-    decimal? ExpectedTotal);
+    decimal? ExpectedTotal,
+    string? ExpectedIssueDate = null,
+    string? ExpectedExpiryDate = null);
 
 /// <summary>
 /// A document attached to a specific claim case in the Fraud demo. The
@@ -97,11 +99,13 @@ public class FraudCaseDocumentStore
     {
         // Using the IntakeSampleCatalog Ids as keys here — the FraudApi
         // will look the IntakeClaimRecord up by SampleId and feed it in.
-        _seedsBySampleId["motor-rear-end"]      = ["dl-real", "quote-real", "quote-edited"];
-        _seedsBySampleId["travel-lost-luggage"] = ["passport-real", "receipt-real", "receipt-dup"];
+        // Each list mixes real-looking and deliberately-fake documents so
+        // the demo always has a fail to talk about.
+        _seedsBySampleId["motor-rear-end"]      = ["quote-real", "quote-edited"];
+        _seedsBySampleId["travel-lost-luggage"] = ["passport-real", "passport-fake", "receipt-real", "receipt-dup"];
         _seedsBySampleId["home-burst-pipe"]     = ["dl-real", "dl-fake"];
         _seedsBySampleId["business-smoke"]      = ["quote-real", "receipt-real"];
-        _seedsBySampleId["life-bereavement"]    = ["passport-real", "passport-fake"];
+        _seedsBySampleId["life-bereavement"]    = ["receipt-real"];
     }
 
     private readonly Dictionary<string, string[]> _seedsBySampleId =
