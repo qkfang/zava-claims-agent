@@ -178,6 +178,7 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
     var intakeFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
     app.MapIntakeEndpoints(intakeStore, intakeFactory, intakeLogger);
+    app.MapLossAdjusterEndpoints(intakeStore, intakeFactory, intakeLogger);
 }
 
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
