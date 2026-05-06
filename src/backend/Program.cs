@@ -39,8 +39,10 @@ builder.Services.AddSingleton<ClaimsAgentFactory>();
 builder.Services.AddHttpClient();
 
 // MCP server for the in-process tool surface used by Foundry agents. The
-// loss-adjuster agent always uses this server (analyzeQuote / compareQuotes /
-// generateClaimExcel). The notice intelligence flow conditionally adds its
+// loss-adjuster agent uses analyzeQuote / compareQuotes / generateClaimExcel
+// and the settlement agent uses the settlement_* payment-flow tools (payee
+// validation, invoice match, authority check, calculation, Teams approval
+// request, release). The notice intelligence flow conditionally adds its
 // own AgentDiMcpTools below when its Azure resources are configured.
 var mcpBuilder = builder.Services.AddMcpServer()
     .WithHttpTransport(options => { options.Stateless = true; })
