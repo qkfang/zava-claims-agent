@@ -205,6 +205,15 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     app.MapFraudEndpoints(intakeStore, fraudFactory, fraudLogger);
 }
 
+// ── Customer Communications demo endpoints (Try It Out tab on
+//    /agents/customer-communications) ────────────────────────────────────────
+{
+    var commsLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
+    var commsFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
+    app.MapCommunicationsEndpoints(intakeStore, commsFactory, commsLogger);
+}
+
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
 if (noticeEnabled)
 {
