@@ -25,7 +25,19 @@ else
         </div>
     </div>
 
-    <section class="panel">
+    @if (AgentModel.Id == "claims-intake")
+    {
+        <div class="agent-tabs" role="tablist" aria-label="Claims Intake views">
+            <button type="button" class="agent-tab active" role="tab"
+                    aria-selected="true" data-tab="overview">Overview</button>
+            <button type="button" class="agent-tab" role="tab"
+                    aria-selected="false" data-tab="tryit">Try It Out</button>
+        </div>
+    }
+
+    <div class="agent-tab-panel @(AgentModel.Id == "claims-intake" ? "tab-panel-overview active" : "standalone")"
+         data-panel="overview">
+        <section class="panel">
         <h2>What this agent does</h2>
         <p>@AgentModel.Purpose</p>
         <div class="two-col">
@@ -110,6 +122,14 @@ else
             }
         </div>
     </section>
+    </div>
+
+    @if (AgentModel.Id == "claims-intake")
+    {
+        <div class="agent-tab-panel tab-panel-tryit" data-panel="tryit">
+            <ClaimsIntakeDemo />
+        </div>
+    }
 }
 
 <style>
@@ -406,7 +426,55 @@ else
         text-decoration: none;
     }
     .other-agent-icon { font-size: 1rem; }
+
+    /* Tabs (only used on the Claims Intake agent page) */
+    .agent-tabs {
+        display: flex;
+        gap: 0.25rem;
+        border-bottom: 1px solid rgba(120, 150, 200, 0.22);
+        margin-bottom: 1.1rem;
+    }
+    .agent-tab {
+        background: transparent;
+        border: none;
+        color: rgba(214, 228, 245, 0.7);
+        padding: 0.65rem 1.1rem;
+        font-size: 0.92rem;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .agent-tab:hover { color: #fff; }
+    .agent-tab.active {
+        color: #fff;
+        border-bottom-color: var(--accent, #ffb347);
+    }
+    .agent-tab-panel { display: none; }
+    .agent-tab-panel.active { display: block; }
+    /* For non-claims-intake agent pages there are no tabs at all; the single
+       overview panel gets the .standalone marker so it always shows. */
+    .agent-tab-panel.standalone { display: block; }
 </style>
+
+<script>
+    (function () {
+        const tabs = document.querySelectorAll('.agent-tabs .agent-tab');
+        if (!tabs.length) return;
+        const panels = document.querySelectorAll('.agent-tab-panel');
+        tabs.forEach(t => t.addEventListener('click', () => {
+            const target = t.dataset.tab;
+            tabs.forEach(x => {
+                const on = x === t;
+                x.classList.toggle('active', on);
+                x.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            panels.forEach(p => p.classList.toggle('active', p.dataset.panel === target));
+        }));
+    })();
+</script>
 
 @code {
     [Parameter] public string Id { get; set; } = string.Empty;
