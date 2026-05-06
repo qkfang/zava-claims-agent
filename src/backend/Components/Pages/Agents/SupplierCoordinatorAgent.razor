@@ -42,9 +42,9 @@
             <div>
                 <h3>Tools available</h3>
                 <ul>
-                    <li>Supplier directory</li>
+                    <li>Supplier directory (MCP <code>lookupSuppliers</code>) — best-price match across approved network</li>
+                    <li>Quote request PDF generator (MCP <code>generateQuoteRequestPdf</code>)</li>
                     <li>Appointment scheduler</li>
-                    <li>Quote request</li>
                     <li>SLA tracker</li>
                     <li>Invoice matcher</li>
                 </ul>
@@ -208,6 +208,18 @@
             <div class="supplier-customer">
                 <div class="supplier-customer-label">Customer update — draft</div>
                 <div id="supplier-customer-body" class="agent-md"></div>
+            </div>
+
+            <div class="supplier-pdf" id="supplier-pdf" hidden>
+                <div class="supplier-pdf-label">Quote request PDF</div>
+                <div class="supplier-pdf-row">
+                    <span class="supplier-pdf-icon" aria-hidden="true">📄</span>
+                    <div class="supplier-pdf-meta">
+                        <div class="supplier-pdf-name" id="supplier-pdf-name"></div>
+                        <div class="supplier-pdf-sub" id="supplier-pdf-sub"></div>
+                    </div>
+                    <a id="supplier-pdf-link" class="supplier-pdf-btn" href="#" download>Download PDF</a>
+                </div>
             </div>
 
             <div class="supplier-approval" id="supplier-approval" hidden>
@@ -446,6 +458,43 @@
         font-family: inherit;
     }
 
+    .supplier-pdf {
+        margin-top: 0.7rem;
+        background: rgba(16, 185, 129, 0.08);
+        border: 1px solid rgba(16, 185, 129, 0.35);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+    .supplier-pdf-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.45rem;
+    }
+    .supplier-pdf-row {
+        display: flex; align-items: center; gap: 0.7rem;
+    }
+    .supplier-pdf-icon { font-size: 1.6rem; }
+    .supplier-pdf-meta { flex: 1; min-width: 0; }
+    .supplier-pdf-name {
+        color: #fff; font-weight: 600; font-size: 0.92rem;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .supplier-pdf-sub {
+        color: var(--zava-muted, #97a3b6); font-size: 0.78rem; margin-top: 0.1rem;
+    }
+    .supplier-pdf-btn {
+        background: var(--supplier-accent);
+        color: #04241a;
+        border: none;
+        border-radius: 6px;
+        padding: 0.4rem 0.85rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .supplier-pdf-btn:hover { filter: brightness(1.1); }
+
     .supplier-approval {
         margin-top: 0.7rem;
         background: rgba(245, 158, 11, 0.10);
@@ -489,6 +538,10 @@
         const altsEl = $('#supplier-alts');
         const approvalEl = $('#supplier-approval');
         const approvalReason = $('#supplier-approval-reason');
+        const pdfEl = $('#supplier-pdf');
+        const pdfLink = $('#supplier-pdf-link');
+        const pdfName = $('#supplier-pdf-name');
+        const pdfSub = $('#supplier-pdf-sub');
 
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -500,6 +553,7 @@
             resultEl.hidden = true;
             dispatchEl.hidden = true;
             approvalEl.hidden = true;
+            if (pdfEl) pdfEl.hidden = true;
         }
 
         async function loadClaims() {
@@ -569,6 +623,7 @@
             resultEl.hidden = true;
             dispatchEl.hidden = true;
             approvalEl.hidden = true;
+            if (pdfEl) pdfEl.hidden = true;
 
             try {
                 const data = await window.zcAgentStream({
@@ -617,6 +672,25 @@
                 $('#supplier-wo-type').textContent = data.supplierType || '';
                 window.zcRenderMarkdown('#supplier-customer-body', data.customerUpdate || '');
                 dispatchEl.hidden = false;
+
+                // Surface the quote-request PDF download produced by the
+                // generateQuoteRequestPdf MCP tool (and deterministically by
+                // /supplier/process) and trigger an automatic download so
+                // the operator gets the PDF at the end of the flow.
+                if (data.quoteRequestPdfUrl && pdfEl) {
+                    const fileName = data.quoteRequestPdfFileName || 'quote-request.pdf';
+                    pdfLink.href = data.quoteRequestPdfUrl;
+                    pdfLink.setAttribute('download', fileName);
+                    pdfName.textContent = fileName;
+                    const best = data.bestPriceSupplier;
+                    pdfSub.textContent = best
+                        ? `Quote request issued to ${best.name} — ${best.quoteCurrency} ${Number(best.quoteAmount).toLocaleString()}`
+                        : 'Generated by the Supplier Coordinator agent.';
+                    pdfEl.hidden = false;
+
+                    // Auto-trigger the download once via the existing link.
+                    try { pdfLink.click(); } catch (_) { /* ignore — user can still click manually */ }
+                }
 
                 if (data.humanApprovalRequired) {
                     approvalReason.textContent = data.humanApprovalReason || '';
