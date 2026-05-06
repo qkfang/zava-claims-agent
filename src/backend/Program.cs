@@ -30,7 +30,13 @@ var agentOptions = new ClaimsAgentOptions
     SearchConnectionId = builder.Configuration["AZURE_AI_SEARCH_CONNECTION_ID"],
     SearchIndexName = builder.Configuration["AZURE_AI_SEARCH_INDEX_NAME"],
     BingConnectionId = builder.Configuration["AZURE_BING_CONNECTION_ID"],
-    AppMcpUrl = builder.Configuration["APP_MCP_URL"] ?? "http://localhost:5000",
+    // APP_MCP_URL must be a publicly reachable URL (e.g. a devtunnel/ngrok
+    // URL) because the Foundry Responses API enumerates MCP tools from the
+    // cloud — it cannot reach http://localhost on the developer's machine.
+    // When unset, agents are created without the MCP tool surface so the
+    // demo runs out of the box; set this to enable supplier/loss-adjuster/
+    // settlement MCP tools.
+    AppMcpUrl = builder.Configuration["APP_MCP_URL"],
 };
 builder.Services.AddSingleton(agentOptions);
 builder.Services.AddSingleton<ClaimsAgentFactory>();
@@ -104,6 +110,7 @@ if (noticeEnabled)
     noticeCredential = new Azure.Identity.DefaultAzureCredential(new Azure.Identity.DefaultAzureCredentialOptions
     {
         TenantId = agentOptions.TenantId,
+        ExcludeVisualStudioCredential = true,
         ExcludeVisualStudioCodeCredential = true,
         ExcludeSharedTokenCacheCredential = true
     });
@@ -376,20 +383,35 @@ if (noticeEnabled)
     var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 
     var aiProjectClient = new AIProjectClient(new Uri(agentOptions.ProjectEndpoint!), noticeCredential!);
-    var appMcpUrl = app.Configuration["APP_MCP_URL"] ?? "http://localhost:5000";
-    var appMcpTool = ResponseTool.CreateMcpTool(
-        serverLabel: "agentdi-mcp",
-        serverUri: new Uri($"{appMcpUrl}/mcp"),
-        toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.NeverRequireApproval));
-    var appMcpToolWithApproval = ResponseTool.CreateMcpTool(
-        serverLabel: "agentdi-mcp",
-        serverUri: new Uri($"{appMcpUrl}/mcp"),
-        toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.AlwaysRequireApproval));
+    // APP_MCP_URL must be publicly reachable (devtunnel/ngrok) for Foundry
+    // to enumerate MCP tools. When unset, the notice agents run without
+    // the agentdi MCP tool surface rather than failing on a localhost URL.
+    var appMcpUrl = app.Configuration["APP_MCP_URL"];
+    ResponseTool[] noApprovalTools = Array.Empty<ResponseTool>();
+    ResponseTool[] approvalTools = Array.Empty<ResponseTool>();
+    if (!string.IsNullOrWhiteSpace(appMcpUrl))
+    {
+        var mcpUriBase = appMcpUrl.TrimEnd('/');
+        var appMcpTool = ResponseTool.CreateMcpTool(
+            serverLabel: "agentdi-mcp",
+            serverUri: new Uri($"{mcpUriBase}/mcp"),
+            toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.NeverRequireApproval));
+        var appMcpToolWithApproval = ResponseTool.CreateMcpTool(
+            serverLabel: "agentdi-mcp",
+            serverUri: new Uri($"{mcpUriBase}/mcp"),
+            toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.AlwaysRequireApproval));
+        noApprovalTools = new[] { appMcpTool };
+        approvalTools = new[] { appMcpToolWithApproval };
+    }
+    else
+    {
+        app.Logger.LogWarning("APP_MCP_URL is not configured; notice intelligence agents will run without the agentdi MCP tool surface. Set APP_MCP_URL to a publicly reachable tunnel URL (devtunnel/ngrok) to enable it.");
+    }
 
     var deployment = agentOptions.ModelDeploymentName!;
-    var notificationAgent = new CtAgNotification(aiProjectClient, deployment, [appMcpTool], loggerFactory.CreateLogger<CtAgNotification>());
-    var correspondenceAgent = new CtAgCorrespondence(aiProjectClient, deployment, [appMcpToolWithApproval], loggerFactory.CreateLogger<CtAgCorrespondence>());
-    var extractDiAgent = new CtAgExtractDI(aiProjectClient, deployment, [appMcpTool], loggerFactory.CreateLogger<CtAgExtractDI>());
+    var notificationAgent = new CtAgNotification(aiProjectClient, deployment, noApprovalTools, loggerFactory.CreateLogger<CtAgNotification>());
+    var correspondenceAgent = new CtAgCorrespondence(aiProjectClient, deployment, approvalTools, loggerFactory.CreateLogger<CtAgCorrespondence>());
+    var extractDiAgent = new CtAgExtractDI(aiProjectClient, deployment, noApprovalTools, loggerFactory.CreateLogger<CtAgExtractDI>());
     var extractCuAgent = new CtAgExtractCU(aiProjectClient, deployment, loggerFactory.CreateLogger<CtAgExtractCU>());
 
     var docService = app.Services.GetRequiredService<DocIntelligenceService>();

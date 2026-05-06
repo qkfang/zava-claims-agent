@@ -41,6 +41,24 @@ public class PaymentApprovalRecord
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? DecidedAt { get; set; }
     public DateTimeOffset? ReleasedAt { get; set; }
+
+    /// <summary>
+    /// Foundry response id captured at the end of the original
+    /// <c>/settlement/process</c> run. When present, the
+    /// <c>/settlement/payment/{id}/agent-approve</c> endpoint can resume the
+    /// same agent conversation with this id so the human-approval decision
+    /// flows back to the Settlement Agent and it can call the
+    /// <c>settlement_releasePayment</c> MCP tool to actually release the
+    /// payment.
+    /// </summary>
+    public string? PreviousResponseId { get; set; }
+
+    /// <summary>
+    /// Captured agent narrative produced by the resume turn (after the human
+    /// approves in the popup). Surfaced back to the page so the operator can
+    /// see what the agent did with the approval.
+    /// </summary>
+    public string? AgentResumeNotes { get; set; }
 }
 
 /// <summary>

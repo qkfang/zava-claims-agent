@@ -114,24 +114,31 @@ public static class LossAdjusterApi
                 "   Questions, Recommendation for Assessor, Human Approval\n" +
                 "   Required).";
 
-            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError)
             {
-                claimNumber = claim.ClaimNumber,
-                customerName = claim.CustomerName,
-                claimType = claim.ClaimType,
-                agentNotes = trace?.Text,
-                agentError,
-                agentConfigured = agentFactory.IsConfigured,
-                agentInput = trace?.Input,
-                agentRawOutput = trace is null ? null : new
+                var notes = trace?.Text;
+                if (string.IsNullOrWhiteSpace(notes))
+                    notes = BuildFallbackAdjusterReport(claim, agentError, agentFactory.IsConfigured);
+
+                return new
                 {
-                    text = trace.Text,
-                    citations = trace.Citations,
-                    outputItems = trace.OutputItems,
-                    responseId = trace.ResponseId,
-                    durationMs = trace.DurationMs
-                }
-            };
+                    claimNumber = claim.ClaimNumber,
+                    customerName = claim.CustomerName,
+                    claimType = claim.ClaimType,
+                    agentNotes = notes,
+                    agentError,
+                    agentConfigured = agentFactory.IsConfigured,
+                    agentInput = trace?.Input,
+                    agentRawOutput = trace is null ? null : new
+                    {
+                        text = trace.Text,
+                        citations = trace.Citations,
+                        outputItems = trace.OutputItems,
+                        responseId = trace.ResponseId,
+                        durationMs = trace.DurationMs
+                    }
+                };
+            }
 
             if (AgentSseStreaming.WantsEventStream(httpContext))
             {
@@ -162,4 +169,69 @@ public static class LossAdjusterApi
 
     private static string Sanitize(string value) =>
         value.Replace('\r', ' ').Replace('\n', ' ');
+
+    /// <summary>
+    /// Deterministic Loss Adjuster narrative used when the live Foundry agent
+    /// is not configured, fails, or returns no text. Guarantees the
+    /// <c>agentNotes</c> field on the response envelope is always populated so
+    /// the page never falls through to "Loss Adjuster Agent returned no
+    /// narrative." The structure mirrors the markdown sections the real agent
+    /// is instructed to produce (Damage Scope, Cause of Loss, Cost
+    /// Reasonableness, Inspection Questions, Recommendation for Assessor,
+    /// Human Approval Required) so the UI renders consistently.
+    /// </summary>
+    private static string BuildFallbackAdjusterReport(
+        IntakeClaimRecord c, string? agentError, bool agentConfigured)
+    {
+        string preface;
+        if (!agentConfigured)
+        {
+            preface =
+                "_Foundry agent is not configured in this environment, so the live " +
+                "loss-adjuster review is unavailable. The summary below is a " +
+                "deterministic fallback based on the intake details only._\n\n";
+        }
+        else if (!string.IsNullOrWhiteSpace(agentError))
+        {
+            preface =
+                "_The Loss Adjuster Agent invocation did not return a narrative " +
+                $"({agentError}). The summary below is a deterministic fallback " +
+                "based on the intake details only._\n\n";
+        }
+        else
+        {
+            preface =
+                "_The Loss Adjuster Agent completed without producing narrative " +
+                "text (it may have only invoked tools). The summary below is a " +
+                "deterministic fallback based on the intake details only._\n\n";
+        }
+
+        var location = string.IsNullOrWhiteSpace(c.IncidentLocation) ? "the incident location" : c.IncidentLocation;
+        var description = string.IsNullOrWhiteSpace(c.IncidentDescription) ? "(no incident description provided)" : c.IncidentDescription;
+
+        return preface +
+            $"### Loss Adjuster Report — {c.ClaimNumber}\n\n" +
+            "1. **Damage Scope**\n" +
+            $"   - Reported {c.ClaimType} loss at {location} on {c.IncidentDate}.\n" +
+            $"   - Customer-reported estimated loss: {c.EstimatedLoss}.\n" +
+            $"   - Description on file: {description}\n\n" +
+            "2. **Cause of Loss** — Unconfirmed (Confidence: Low). On-site " +
+            "inspection and supporting documentation are required to verify " +
+            "the proximate cause described by the customer.\n\n" +
+            "3. **Cost Reasonableness** — Not yet assessed. No contractor " +
+            "quotes have been analysed in this fallback path. Once quotes are " +
+            "available the live agent will produce the comparison table and " +
+            "Mermaid totals chart.\n\n" +
+            "4. **Inspection Questions**\n" +
+            "   - Confirm the proximate cause and timeline of the loss.\n" +
+            "   - Photograph and document all damaged items and surrounding context.\n" +
+            "   - Identify any pre-existing damage or maintenance issues.\n" +
+            "   - Verify access, safety and any third-party involvement.\n\n" +
+            "5. **Recommendation for Assessor** — Hold coverage decision pending " +
+            "on-site inspection and at least one verified contractor quote. " +
+            "Engage the supplier panel to obtain quotes for comparison.\n\n" +
+            $"6. **Human Approval Required** — Yes — urgency on file is **{c.Urgency}**" +
+            (string.IsNullOrWhiteSpace(c.UrgencyReason) ? "" : $" ({c.UrgencyReason})") +
+            "; final scope, cause and cost reasonableness must be signed off by a human loss adjuster.";
+    }
 }

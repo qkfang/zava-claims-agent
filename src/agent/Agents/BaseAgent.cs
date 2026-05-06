@@ -170,6 +170,64 @@ public abstract class BaseAgent
     }
 
     /// <summary>
+    /// Resumes a previous agent run by chaining a new user message off
+    /// <paramref name="previousResponseId"/> and then auto-approving any
+    /// further MCP tool calls until the model finishes. Used by the
+    /// Settlement Agent's "approve in popup" flow so the human-approval
+    /// decision flows back to the same agent in the same conversation and
+    /// it can call the payment-release MCP tool to actually release the
+    /// payment.
+    /// </summary>
+    public async Task<AgentTraceResult> ChatWithTraceAsync(string previousResponseId, string message)
+    {
+        if (string.IsNullOrWhiteSpace(previousResponseId))
+            throw new ArgumentException("previousResponseId is required", nameof(previousResponseId));
+
+        var sw = Stopwatch.StartNew();
+
+        CreateResponseOptions? nextOptions = new()
+        {
+            PreviousResponseId = previousResponseId,
+            InputItems = { ResponseItem.CreateUserMessageItem(message) }
+        };
+
+        ResponseResult? result = null;
+        var allOutputItems = new List<ResponseItem>();
+
+        while (nextOptions is not null)
+        {
+            result = await _responseClient.CreateResponseAsync(nextOptions);
+            nextOptions = null;
+
+            foreach (var item in result!.OutputItems)
+            {
+                allOutputItems.Add(item);
+                if (item is McpToolCallApprovalRequestItem mcpCall)
+                {
+                    _logger.LogInformation("Auto-approving MCP tool call on {ServerLabel} (resumed conversation)", mcpCall.ServerLabel);
+                    nextOptions ??= new CreateResponseOptions { PreviousResponseId = result.Id };
+                    nextOptions.InputItems.Add(ResponseItem.CreateMcpApprovalResponseItem(mcpCall.Id, approved: true));
+                }
+            }
+        }
+
+        sw.Stop();
+        _logger.LogInformation("Agent {AgentId} resume completed in {Duration}ms", _agentId, sw.ElapsedMilliseconds);
+
+        var text = result?.GetOutputText() ?? string.Empty;
+        var citations = ExtractCitations(result);
+        var rawItems = SerializeOutputItems(allOutputItems);
+
+        return new AgentTraceResult(
+            Input: message,
+            Text: text,
+            Citations: citations,
+            OutputItems: rawItems,
+            ResponseId: result?.Id,
+            DurationMs: sw.ElapsedMilliseconds);
+    }
+
+    /// <summary>
     /// Streams the agent's response and also yields a final <see cref="AgentStreamingCompleted"/>
     /// event carrying the full <see cref="AgentTraceResult"/> (text, citations, every
     /// output item, response id, and duration). This is what the "Try It Out" tab on each

@@ -36,7 +36,12 @@ if (string.IsNullOrWhiteSpace(deploymentName))
 
 var tenantId = config["AZURE_TENANT_ID"];
 
-var credentialOptions = new DefaultAzureCredentialOptions();
+var credentialOptions = new DefaultAzureCredentialOptions
+{
+    ExcludeVisualStudioCredential = true,
+    ExcludeVisualStudioCodeCredential = true,
+    ExcludeSharedTokenCacheCredential = true
+};
 if (!string.IsNullOrWhiteSpace(tenantId))
 {
     credentialOptions.TenantId = tenantId;

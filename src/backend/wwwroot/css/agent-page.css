@@ -538,6 +538,12 @@
     max-height: 70vh;
     margin: 0;
 }
+
+.engage-prompt-body {
+    height: 150px;
+    max-height: 150px;
+    overflow-y: auto;
+}
 .engage-empty {
     color: var(--zava-muted, #97a3b6);
     font-style: italic;

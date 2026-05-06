@@ -85,7 +85,12 @@ public class ClaimsAgentFactory
 
     private AIProjectClient CreateAIProjectClient()
     {
-        var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions();
+        var credentialOptions = new Azure.Identity.DefaultAzureCredentialOptions
+        {
+            ExcludeVisualStudioCredential = true,
+            ExcludeVisualStudioCodeCredential = true,
+            ExcludeSharedTokenCacheCredential = true
+        };
         if (!string.IsNullOrWhiteSpace(_options.TenantId))
         {
             credentialOptions.TenantId = _options.TenantId;

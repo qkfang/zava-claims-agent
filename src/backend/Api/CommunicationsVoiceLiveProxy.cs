@@ -160,6 +160,7 @@ public static class CommunicationsVoiceLiveProxy
     {
         var credentialOptions = new DefaultAzureCredentialOptions
         {
+            ExcludeVisualStudioCredential = true,
             ExcludeVisualStudioCodeCredential = true,
             ExcludeSharedTokenCacheCredential = true
         };

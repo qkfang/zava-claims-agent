@@ -276,6 +276,46 @@
                 </div>
             </div>
         </div>
+
+        <!-- Real popup: human approval for the payment MCP action.
+             Opens automatically when `humanApprovalRequired` is true after
+             the Settlement Agent has produced its plan, and chains the
+             approve/reject decision back to the same agent in the same
+             conversation so it can call settlement_releasePayment. -->
+        <div id="settlement-approval-modal" class="settlement-modal" hidden role="dialog" aria-modal="true" aria-labelledby="settlement-modal-title">
+            <div class="settlement-modal-backdrop" data-modal-dismiss></div>
+            <div class="settlement-modal-card" role="document">
+                <button type="button" class="settlement-modal-close" data-modal-dismiss aria-label="Close">×</button>
+                <div class="settlement-modal-header">
+                    <span class="settlement-modal-badge">!</span>
+                    <h3 id="settlement-modal-title">Human approval required</h3>
+                </div>
+                <p class="settlement-modal-reason" id="settlement-modal-reason"></p>
+                <div class="settlement-modal-meta">
+                    <div><span class="k">Claim</span><span id="settlement-modal-claim"></span></div>
+                    <div><span class="k">Customer</span><span id="settlement-modal-customer"></span></div>
+                    <div><span class="k">Policy</span><span id="settlement-modal-policy"></span></div>
+                    <div><span class="k">Approval id</span><code id="settlement-modal-approval-id"></code></div>
+                    <div class="span-2 amount-row"><span class="k">Payable</span><strong id="settlement-modal-amount"></strong></div>
+                </div>
+                <p class="settlement-modal-explainer">
+                    Approving here will resume the same Settlement Agent conversation
+                    and let it call the <code>settlement_releasePayment</code> MCP tool
+                    to actually release the payment. This is the human-in-the-loop step
+                    for the payment MCP action.
+                </p>
+                <div class="settlement-modal-status" id="settlement-modal-status" hidden></div>
+                <div class="settlement-modal-agent" id="settlement-modal-agent" hidden>
+                    <div class="settlement-modal-agent-label">Agent reply after approval</div>
+                    <div class="agent-md" id="settlement-modal-agent-body"></div>
+                </div>
+                <div class="settlement-modal-actions">
+                    <button type="button" id="settlement-modal-reject-btn" class="settlement-modal-reject">Reject</button>
+                    <button type="button" id="settlement-modal-cancel-btn" class="settlement-modal-cancel" data-modal-dismiss>Cancel</button>
+                    <button type="button" id="settlement-modal-approve-btn" class="settlement-modal-approve">Approve &amp; release payment</button>
+                </div>
+            </div>
+        </div>
     </section>
     </div>
 </div>
@@ -517,6 +557,128 @@
     .settlement-teams-release { background: var(--settlement-accent); color: #1a0633; }
     .settlement-teams-status { margin-top: 0.5rem; font-size: 0.85rem; color: rgba(238, 242, 247, 0.86); }
     .settlement-teams-status.error { color: #fca5a5; }
+
+    /* ── Real popup modal for human approval ─────────────────────── */
+    .settlement-modal[hidden] { display: none !important; }
+    .settlement-modal {
+        position: fixed; inset: 0;
+        z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 1.2rem;
+    }
+    .settlement-modal-backdrop {
+        position: absolute; inset: 0;
+        background: rgba(4, 8, 18, 0.72);
+        backdrop-filter: blur(3px);
+    }
+    .settlement-modal-card {
+        position: relative;
+        z-index: 1;
+        width: min(560px, 100%);
+        background: linear-gradient(180deg, rgba(28, 36, 58, 0.98), rgba(15, 22, 38, 0.98));
+        border: 1px solid color-mix(in srgb, var(--settlement-accent) 45%, rgba(120, 150, 200, 0.25));
+        border-radius: 14px;
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(168, 85, 247, 0.15);
+        padding: 1.2rem 1.3rem 1.1rem 1.3rem;
+        color: #fff;
+        max-height: calc(100vh - 2.4rem);
+        overflow-y: auto;
+    }
+    .settlement-modal-close {
+        position: absolute; top: 0.5rem; right: 0.6rem;
+        background: transparent; color: rgba(238, 242, 247, 0.7);
+        border: none; font-size: 1.4rem; line-height: 1;
+        cursor: pointer; padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+    }
+    .settlement-modal-close:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+    .settlement-modal-header { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.4rem; }
+    .settlement-modal-header h3 { margin: 0; font-size: 1.05rem; color: #fff; }
+    .settlement-modal-badge {
+        display: inline-grid; place-items: center;
+        width: 1.7rem; height: 1.7rem; border-radius: 50%;
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid rgba(239, 68, 68, 0.55);
+        color: #fca5a5; font-weight: 800; font-size: 0.95rem;
+    }
+    .settlement-modal-reason {
+        margin: 0.1rem 0 0.85rem 0;
+        font-size: 0.92rem;
+        color: rgba(238, 242, 247, 0.92);
+        line-height: 1.5;
+    }
+    .settlement-modal-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem 1rem;
+        font-size: 0.85rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.65rem 0.85rem;
+        margin-bottom: 0.7rem;
+    }
+    @@media (max-width: 600px) { .settlement-modal-meta { grid-template-columns: 1fr; } }
+    .settlement-modal-meta .span-2 { grid-column: span 2; }
+    @@media (max-width: 600px) { .settlement-modal-meta .span-2 { grid-column: span 1; } }
+    .settlement-modal-meta .k {
+        display: block;
+        color: var(--zava-muted, #97a3b6); font-weight: 700;
+        text-transform: uppercase; font-size: 0.62rem; letter-spacing: 0.1em;
+        margin-bottom: 0.15rem;
+    }
+    .settlement-modal-meta code { background: rgba(10, 16, 28, 0.6); padding: 1px 6px; border-radius: 4px; font-size: 0.78rem; }
+    .settlement-modal-meta .amount-row strong {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 1.15rem; color: #fff;
+    }
+    .settlement-modal-explainer {
+        margin: 0 0 0.7rem 0;
+        font-size: 0.82rem;
+        color: rgba(203, 213, 225, 0.85);
+        line-height: 1.45;
+    }
+    .settlement-modal-explainer code { background: rgba(168, 85, 247, 0.16); padding: 1px 6px; border-radius: 4px; font-size: 0.78rem; }
+    .settlement-modal-status {
+        margin-bottom: 0.6rem; font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    .settlement-modal-status.error { color: #fca5a5; }
+    .settlement-modal-status .spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        animation: settlement-spin 0.7s linear infinite;
+    }
+    .settlement-modal-agent {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.65rem 0.85rem;
+        margin-bottom: 0.7rem;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+    .settlement-modal-agent-label {
+        font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.4rem;
+    }
+    .settlement-modal-actions {
+        display: flex; flex-wrap: wrap; gap: 0.55rem; justify-content: flex-end;
+        margin-top: 0.3rem;
+    }
+    .settlement-modal-actions button {
+        border: none; border-radius: 8px;
+        padding: 0.55rem 1.1rem;
+        font-size: 0.88rem; font-weight: 700; cursor: pointer;
+    }
+    .settlement-modal-actions button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .settlement-modal-cancel { background: rgba(120, 150, 200, 0.14); color: #cbd5e1; }
+    .settlement-modal-cancel:hover:not(:disabled) { background: rgba(120, 150, 200, 0.22); }
+    .settlement-modal-reject { background: rgba(239, 68, 68, 0.85); color: #1a0707; }
+    .settlement-modal-reject:hover:not(:disabled) { filter: brightness(1.08); }
+    .settlement-modal-approve { background: var(--settlement-accent); color: #1a0633; }
+    .settlement-modal-approve:hover:not(:disabled) { filter: brightness(1.08); }
 </style>
 
 <script>
@@ -554,6 +716,23 @@
         const teamsReleaseBtn = $('#settlement-teams-release-btn');
         const teamsStatus = $('#settlement-teams-status');
         let currentApprovalId = null;
+
+        // Real popup modal for payment approval. Element refs + state.
+        const modalEl = $('#settlement-approval-modal');
+        const modalReason = $('#settlement-modal-reason');
+        const modalClaim = $('#settlement-modal-claim');
+        const modalCustomer = $('#settlement-modal-customer');
+        const modalPolicy = $('#settlement-modal-policy');
+        const modalApprovalIdEl = $('#settlement-modal-approval-id');
+        const modalAmount = $('#settlement-modal-amount');
+        const modalStatus = $('#settlement-modal-status');
+        const modalAgentBlock = $('#settlement-modal-agent');
+        const modalAgentBody = $('#settlement-modal-agent-body');
+        const modalApproveBtn = $('#settlement-modal-approve-btn');
+        const modalRejectBtn = $('#settlement-modal-reject-btn');
+        const modalCancelBtn = $('#settlement-modal-cancel-btn');
+        const modalCloseBtn = root.querySelector('.settlement-modal-close');
+        let modalApprovalContext = null;
 
         let claims = [];
         let selected = null;
@@ -730,6 +909,15 @@
                     const scope = document.querySelector('.settlement-panel .engage-tabs-scope');
                     window.engageTabsRender(scope, data);
                 }
+
+                // If the agent flagged human approval as required (e.g. the
+                // payable amount is at or above the authority threshold),
+                // open the real popup so the operator can approve/reject
+                // the payment MCP action — the decision flows back to the
+                // same Foundry agent in the same conversation.
+                if (data.humanApprovalRequired && data.paymentApproval && data.paymentApproval.approvalId) {
+                    openApprovalModal(data);
+                }
             } catch (err) {
                 processStatus.className = 'settlement-status error';
                 processStatus.textContent = 'Failed to process: ' + err.message;
@@ -832,12 +1020,141 @@
             }
         }
 
+        // ── Real popup modal for human approval ──────────────────────
+        function openApprovalModal(data) {
+            const approval = data && data.paymentApproval;
+            if (!approval || !approval.approvalId) return;
+            modalApprovalContext = approval;
+            modalReason.textContent = data.humanApprovalReason || approval.reason || 'Human approval required.';
+            modalClaim.textContent = data.claimNumber || '';
+            modalCustomer.textContent = data.customerName || '';
+            modalPolicy.textContent = data.policyNumber || '';
+            modalApprovalIdEl.textContent = approval.approvalId;
+            modalAmount.textContent = data.payableAmountFormatted || fmtMoney(data.payableAmount);
+            modalStatus.hidden = true;
+            modalStatus.className = 'settlement-modal-status';
+            modalStatus.textContent = '';
+            modalAgentBlock.hidden = true;
+            modalAgentBody.innerHTML = '';
+            modalApproveBtn.disabled = false;
+            modalRejectBtn.disabled = false;
+            modalApproveBtn.textContent = approval.agentResumeAvailable
+                ? 'Approve & release payment'
+                : 'Approve';
+            modalEl.hidden = false;
+            modalApproveBtn.focus();
+        }
+
+        function closeApprovalModal() {
+            modalEl.hidden = true;
+            modalApprovalContext = null;
+        }
+
+        async function approveViaModal() {
+            if (!modalApprovalContext) return;
+            const approvalId = modalApprovalContext.approvalId;
+            modalApproveBtn.disabled = true;
+            modalRejectBtn.disabled = true;
+            modalStatus.hidden = false;
+            modalStatus.className = 'settlement-modal-status';
+            modalStatus.innerHTML = '<span class="spinner"></span>Approving and resuming agent conversation…';
+            try {
+                const res = await fetch(`/settlement/payment/${encodeURIComponent(approvalId)}/agent-approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ decidedBy: 'Demo approver (popup)' })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                const approval = data.approval || {};
+                if (data.agentNarrative) {
+                    modalAgentBlock.hidden = false;
+                    if (window.zcRenderMarkdown) {
+                        window.zcRenderMarkdown(modalAgentBody, data.agentNarrative);
+                    } else {
+                        modalAgentBody.textContent = data.agentNarrative;
+                    }
+                }
+                let msg = `Approval recorded — status: ${approval.status || 'approved'}`;
+                if (approval.paymentReference) msg += `, payment reference: ${approval.paymentReference}`;
+                if (data.agentError) msg += `. (Agent resume failed: ${data.agentError})`;
+                modalStatus.textContent = msg + '.';
+
+                // Mirror the inline Teams card so the UI stays consistent.
+                if (currentApprovalId === approvalId) {
+                    updateTeamsPill(approval.status || 'approved', true);
+                    if ((approval.status || '').toLowerCase() === 'released') {
+                        teamsStatus.hidden = false;
+                        teamsStatus.className = 'settlement-teams-status';
+                        teamsStatus.textContent = `Payment released by agent. Reference: ${approval.paymentReference}.`;
+                        teamsReleaseBtn.hidden = true;
+                    } else {
+                        teamsReleaseBtn.hidden = false;
+                        teamsReleaseBtn.disabled = false;
+                    }
+                    teamsApproveBtn.disabled = true;
+                    teamsRejectBtn.disabled = true;
+                }
+            } catch (err) {
+                modalStatus.className = 'settlement-modal-status error';
+                modalStatus.textContent = 'Failed: ' + err.message;
+                modalApproveBtn.disabled = false;
+                modalRejectBtn.disabled = false;
+            }
+        }
+
+        async function rejectViaModal() {
+            if (!modalApprovalContext) return;
+            const approvalId = modalApprovalContext.approvalId;
+            modalApproveBtn.disabled = true;
+            modalRejectBtn.disabled = true;
+            modalStatus.hidden = false;
+            modalStatus.className = 'settlement-modal-status';
+            modalStatus.innerHTML = '<span class="spinner"></span>Recording rejection…';
+            try {
+                const res = await fetch(`/settlement/payment/${encodeURIComponent(approvalId)}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ decidedBy: 'Demo approver (popup)' })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                modalStatus.textContent = `Rejection recorded — status: ${data.status}.`;
+
+                if (currentApprovalId === approvalId) {
+                    updateTeamsPill(data.status, true);
+                    teamsApproveBtn.disabled = true;
+                    teamsRejectBtn.disabled = true;
+                }
+            } catch (err) {
+                modalStatus.className = 'settlement-modal-status error';
+                modalStatus.textContent = 'Failed: ' + err.message;
+                modalApproveBtn.disabled = false;
+                modalRejectBtn.disabled = false;
+            }
+        }
+
         select.addEventListener('change', () => selectClaim(select.value));
         refreshBtn.addEventListener('click', loadClaims);
         processBtn.addEventListener('click', processSettlement);
         teamsApproveBtn.addEventListener('click', () => decideApproval('approve'));
         teamsRejectBtn.addEventListener('click', () => decideApproval('reject'));
         teamsReleaseBtn.addEventListener('click', releasePayment);
+
+        // Real popup modal event wiring.
+        modalApproveBtn.addEventListener('click', approveViaModal);
+        modalRejectBtn.addEventListener('click', rejectViaModal);
+        modalCancelBtn.addEventListener('click', closeApprovalModal);
+        if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeApprovalModal);
+        modalEl.addEventListener('click', (ev) => {
+            if (ev.target && ev.target.matches && ev.target.matches('[data-modal-dismiss]')) {
+                closeApprovalModal();
+            }
+        });
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && !modalEl.hidden) closeApprovalModal();
+        });
 
         loadClaims();
         }

@@ -45,18 +45,32 @@ public static class SettlementApi
         // the SettlementMcpTools served from /mcp on this app. We always
         // require human approval for every tool call so the operator sees
         // and authorises every payment-flow action the agent attempts.
-        var mcpUrlBase = (app.Configuration["APP_MCP_URL"] ?? "http://localhost:5000").TrimEnd('/');
+        //
+        // APP_MCP_URL must be a publicly reachable URL (devtunnel/ngrok)
+        // because the Foundry Responses API enumerates MCP tools from the
+        // cloud — it cannot reach http://localhost on the developer's
+        // machine. When unset, the Settlement Agent runs without the MCP
+        // tool surface rather than failing on an unreachable URL.
+        var configuredMcpUrl = app.Configuration["APP_MCP_URL"];
         ResponseTool? settlementMcpTool = null;
-        try
+        if (!string.IsNullOrWhiteSpace(configuredMcpUrl))
         {
-            settlementMcpTool = ResponseTool.CreateMcpTool(
-                serverLabel: "settlement-mcp",
-                serverUri: new Uri($"{mcpUrlBase}/mcp"),
-                toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.AlwaysRequireApproval));
+            var mcpUrlBase = configuredMcpUrl.TrimEnd('/');
+            try
+            {
+                settlementMcpTool = ResponseTool.CreateMcpTool(
+                    serverLabel: "settlement-mcp",
+                    serverUri: new Uri($"{mcpUrlBase}/mcp"),
+                    toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.AlwaysRequireApproval));
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to construct settlement MCP tool descriptor; agent will run without it.");
+            }
         }
-        catch (Exception ex)
+        else
         {
-            logger.LogWarning(ex, "Failed to construct settlement MCP tool descriptor; agent will run without it.");
+            logger.LogWarning("APP_MCP_URL is not configured; Settlement Agent will run without the settlement-mcp tool surface. Set APP_MCP_URL to a publicly reachable tunnel URL (devtunnel/ngrok) to enable it.");
         }
         // List the claims currently held in memory by the intake demo,
         // newest first. The shape is intentionally compact — just what
@@ -214,50 +228,67 @@ public static class SettlementApi
                 "request, settlement letter draft, and human-approval " +
                 "decision).";
 
-            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
-            {
-                claimNumber = record.ClaimNumber,
-                customerName = record.CustomerName,
-                policyNumber = record.PolicyNumber,
-                claimType = record.ClaimType,
-                inputs = new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError) {
+                // Capture the agent's response id so the popup-driven
+                // /settlement/payment/{id}/agent-approve endpoint can
+                // resume the same conversation and let the agent call
+                // settlement_releasePayment after the human approves.
+                if (trace?.ResponseId is { Length: > 0 } responseId)
+                    apiApproval.PreviousResponseId = responseId;
+
+                return new
                 {
-                    approvedAmount = approved,
-                    policyLimit,
-                    excess,
-                    depreciation,
-                    priorPayments
-                },
-                calculation,
-                payableAmount = payable,
-                payableAmountFormatted = FormatMoney(payable),
-                humanApprovalRequired,
-                humanApprovalReason,
-                settlementLetter,
-                agentNotes = trace?.Text,
-                agentConfigured = agentFactory.IsConfigured,
-                agentError,
-                agentInput = trace?.Input,
-                agentRawOutput = trace is null ? null : new
-                {
-                    text = trace.Text,
-                    citations = trace.Citations,
-                    outputItems = trace.OutputItems,
-                    responseId = trace.ResponseId,
-                    durationMs = trace.DurationMs
-                },
-                paymentApproval = new
-                {
-                    approvalId = apiApproval.ApprovalId,
-                    status = apiApproval.Status.ToString().ToLowerInvariant(),
-                    teamsSent = teamsResult.Sent,
-                    teamsChannel = teamsResult.Channel,
-                    teamsConfigured = teamsService.IsConfigured,
-                    approvalUrl = teamsResult.ApprovalUrl,
-                    teamsMessage = teamsResult.Message
-                },
-                mcpConfigured = settlementMcpTool != null
-            };
+                    claimNumber = record.ClaimNumber,
+                    customerName = record.CustomerName,
+                    policyNumber = record.PolicyNumber,
+                    claimType = record.ClaimType,
+                    inputs = new
+                    {
+                        approvedAmount = approved,
+                        policyLimit,
+                        excess,
+                        depreciation,
+                        priorPayments
+                    },
+                    calculation,
+                    payableAmount = payable,
+                    payableAmountFormatted = FormatMoney(payable),
+                    humanApprovalRequired,
+                    humanApprovalReason,
+                    settlementLetter,
+                    agentNotes = trace?.Text,
+                    agentConfigured = agentFactory.IsConfigured,
+                    agentError,
+                    agentInput = trace?.Input,
+                    agentRawOutput = trace is null ? null : new
+                    {
+                        text = trace.Text,
+                        citations = trace.Citations,
+                        outputItems = trace.OutputItems,
+                        responseId = trace.ResponseId,
+                        durationMs = trace.DurationMs
+                    },
+                    paymentApproval = new
+                    {
+                        approvalId = apiApproval.ApprovalId,
+                        status = apiApproval.Status.ToString().ToLowerInvariant(),
+                        teamsSent = teamsResult.Sent,
+                        teamsChannel = teamsResult.Channel,
+                        teamsConfigured = teamsService.IsConfigured,
+                        approvalUrl = teamsResult.ApprovalUrl,
+                        teamsMessage = teamsResult.Message,
+                        // Surface previousResponseId so the page knows the
+                        // popup approval can chain back into the agent.
+                        previousResponseId = apiApproval.PreviousResponseId,
+                        agentResumeAvailable = apiApproval.PreviousResponseId is { Length: > 0 } && agentFactory.IsConfigured,
+                        payableAmount = apiApproval.PayableAmount,
+                        payableAmountFormatted = FormatMoney(apiApproval.PayableAmount),
+                        payeeName = apiApproval.PayeeName,
+                        reason = apiApproval.Reason
+                    },
+                    mcpConfigured = settlementMcpTool != null
+                };
+            }
 
             logger.LogInformation("Settlement process: claim={ClaimNumber} payable={Payable} approvalId={ApprovalId}",
                 Sanitize(record.ClaimNumber), payable, Sanitize(apiApproval.ApprovalId));
@@ -367,6 +398,87 @@ public static class SettlementApi
                 Sanitize(record.ApprovalId), Sanitize(record.PaymentReference));
             return Results.Ok(SerializeApproval(record));
         });
+
+        // Popup-driven approval: the operator clicks Approve in the
+        // Settlement page modal, the approval record flips to Approved AND
+        // the same Foundry agent conversation is resumed (via the response
+        // id captured at /settlement/process time) so the agent can call
+        // settlement_releasePayment over MCP to actually release the
+        // payment. Returns the updated approval + the agent narrative.
+        app.MapPost("/settlement/payment/{approvalId}/agent-approve",
+            async (string approvalId, SettlementApprovalDecisionRequest? body) =>
+        {
+            var record = paymentStore.Get(approvalId);
+            if (record is null)
+                return Results.NotFound(new { error = $"approval '{approvalId}' not found" });
+            if (record.Status == PaymentApprovalStatus.Released)
+                return Results.Conflict(new { error = "payment already released" });
+            if (record.Status == PaymentApprovalStatus.Rejected)
+                return Results.Conflict(new { error = "payment already rejected" });
+
+            // Flip to Approved first so the settlement_releasePayment MCP
+            // tool will accept the release call when the agent retries.
+            record.Status = PaymentApprovalStatus.Approved;
+            record.Decision = "approved";
+            record.DecidedBy = string.IsNullOrWhiteSpace(body?.DecidedBy) ? "Popup approver" : body!.DecidedBy;
+            record.DecidedAt = DateTimeOffset.UtcNow;
+            logger.LogInformation("Settlement popup approval granted: {ApprovalId} by {By}",
+                Sanitize(record.ApprovalId), Sanitize(record.DecidedBy ?? string.Empty));
+
+            string? agentNarrative = null;
+            string? agentError = null;
+            string? agentResponseId = null;
+
+            if (!string.IsNullOrWhiteSpace(record.PreviousResponseId) && agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var extraTools = settlementMcpTool != null
+                        ? new List<ResponseTool> { settlementMcpTool }
+                        : null;
+                    var agent = agentFactory.Create("settlement", extraTools);
+                    var resumeMessage =
+                        "HUMAN APPROVAL DECISION\n" +
+                        "=======================\n" +
+                        $"The human approver has APPROVED the payment release.\n" +
+                        $"Approval id: {record.ApprovalId}\n" +
+                        $"Approved by: {record.DecidedBy}\n" +
+                        $"Approved at: {record.DecidedAt:O}\n" +
+                        (string.IsNullOrWhiteSpace(body?.Comment) ? string.Empty : $"Approver comment: {body!.Comment}\n") +
+                        $"Payable amount: {FormatMoney(record.PayableAmount)}\n" +
+                        $"Payee: {record.PayeeName}\n\n" +
+                        "Please now call the settlement_releasePayment MCP tool with " +
+                        $"approvalId='{record.ApprovalId}' to actually release the payment, " +
+                        "then briefly summarise the outcome (release status, payment reference, " +
+                        "and what the customer will see next).";
+                    var trace = await agent.ChatWithTraceAsync(record.PreviousResponseId!, resumeMessage);
+                    agentNarrative = trace.Text;
+                    agentResponseId = trace.ResponseId;
+                    record.AgentResumeNotes = trace.Text;
+                    if (!string.IsNullOrEmpty(trace.ResponseId))
+                        record.PreviousResponseId = trace.ResponseId;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Settlement agent resume after popup approval failed for {ApprovalId}", Sanitize(record.ApprovalId));
+                    agentError = ex.Message;
+                }
+            }
+
+            // Re-read the record in case the agent's MCP tool transitioned
+            // it to Released while running settlement_releasePayment.
+            var refreshed = paymentStore.Get(approvalId) ?? record;
+
+            return Results.Ok(new
+            {
+                approval = SerializeApproval(refreshed),
+                agentConfigured = agentFactory.IsConfigured,
+                agentResumeAttempted = !string.IsNullOrWhiteSpace(record.PreviousResponseId) || agentFactory.IsConfigured,
+                agentNarrative,
+                agentResponseId,
+                agentError
+            });
+        });
     }
 
     private static object SerializeApproval(PaymentApprovalRecord r) => new
@@ -390,6 +502,8 @@ public static class SettlementApi
         teamsChannel = r.TeamsChannel,
         teamsMessage = r.TeamsMessage,
         approvalUrl = r.ApprovalUrl,
+        previousResponseId = r.PreviousResponseId,
+        agentResumeNotes = r.AgentResumeNotes,
         createdAt = r.CreatedAt
     };
 
