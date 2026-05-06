@@ -95,14 +95,27 @@ public static class LossAdjusterApi
                         "INCIDENT DESCRIPTION\n" +
                         "--------------------\n" +
                         claim.IncidentDescription + "\n\n" +
+                        "AVAILABLE QUOTE DOCUMENTS (call analyzeQuote on each)\n" +
+                        "----------------------------------------------------\n" +
+                        "- /loss-adjuster/samples/quote-acme-restoration.json\n" +
+                        "- /loss-adjuster/samples/quote-bayside-build.json\n" +
+                        "- /loss-adjuster/samples/quote-sunrise-home.json\n\n" +
                         "TASK\n" +
                         "----\n" +
-                        "Investigate the damage / complex loss on this claim. Review the\n" +
-                        "available report and site evidence, validate the scope and\n" +
-                        "quantum, and produce your structured Loss Adjuster Report\n" +
-                        "(Damage Scope, Cause of Loss, Cost Reasonableness, Inspection\n" +
-                        "Questions, Recommendation for Assessor, recommended reserve,\n" +
-                        "and Human Approval Required).";
+                        "Investigate the damage / complex loss on this claim.\n" +
+                        "1. Call the analyzeQuote MCP tool for each quote URL above.\n" +
+                        "2. Call compareQuotes with the resulting JSON array to get a\n" +
+                        "   markdown comparison table, a Mermaid bar-chart diagram of\n" +
+                        "   totals, and flagged anomalies. Embed those verbatim in\n" +
+                        "   the 'Cost Reasonableness' section of your report.\n" +
+                        "3. Call generateClaimExcel with the claim summary, the quotes\n" +
+                        "   array, and your recommendations. Include the returned\n" +
+                        "   download URL as a markdown link in the 'Recommendation\n" +
+                        "   for Assessor' section.\n" +
+                        "4. Produce your structured Loss Adjuster Report (Damage\n" +
+                        "   Scope, Cause of Loss, Cost Reasonableness, Inspection\n" +
+                        "   Questions, Recommendation for Assessor, Human Approval\n" +
+                        "   Required).";
 
                     var agent = agentFactory.Create("loss-adjuster");
                     var result = await agent.RunWithTraceAsync(brief);
