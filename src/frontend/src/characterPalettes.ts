@@ -81,42 +81,45 @@ export const PALETTES: Record<string, VoxelCharacterPalette> = {
   },
 
   // ----- Staff (mapped to docs/characters.md staff cast) -----
-  // Iris — Claims Intake Officer (warm, ponytail + dress)
+  // Staff shirts are deliberately matched to each cubicle's accent floor
+  // mat colour (see `cubicles` in officeScene.ts) so each role reads
+  // visually with their department zone at a glance.
+  // Iris — Claims Intake Officer (intake blue cubicle)
   intakeOfficer: {
-    skin: "#f3c79b", hair: "#3a2418", shirt: "#f4c463", pants: "#3a2a55",
-    shoes: "#1a1a1a", accent: "#b8454a", hairStyle: "ponytail",
+    skin: "#f3c79b", hair: "#3a2418", shirt: "#3a5fb0", pants: "#3a2a55",
+    shoes: "#1a1a1a", accent: "#f4c463", hairStyle: "ponytail",
     lowerBody: "dress",
   },
-  // Adam — Claims Assessor (analytical, glasses)
+  // Adam — Claims Assessor (assessor light-blue cubicle)
   claimsAssessor: {
-    skin: "#e8b48a", hair: "#1a1a1a", shirt: "#5fb8a8", pants: "#2d3344",
+    skin: "#e8b48a", hair: "#1a1a1a", shirt: "#6ec1ff", pants: "#2d3344",
     shoes: "#1a1a1a", accent: "#1c2230", hairStyle: "short", glasses: true,
     shirtLogo: true,
   },
-  // Lara — Loss Adjuster (field-oriented, bun)
+  // Lara — Loss Adjuster (loss-adjuster orange cubicle)
   lossAdjuster: {
-    skin: "#d9a37e", hair: "#2d1a10", shirt: "#7a9c5a", pants: "#3a2f24",
+    skin: "#d9a37e", hair: "#2d1a10", shirt: "#ffb347", pants: "#3a2f24",
     shoes: "#1a1a1a", accent: "#3a2a20", hairStyle: "bun",
   },
-  // Felix — Fraud Investigator (sharp purple suit, long hair, glasses)
+  // Felix — Fraud Investigator (fraud red cubicle)
   fraudInvestigator: {
-    skin: "#e8b48a", hair: "#1a1a1a", shirt: "#7a4f9c", pants: "#1c2230",
+    skin: "#e8b48a", hair: "#1a1a1a", shirt: "#e8504c", pants: "#1c2230",
     shoes: "#1a1a1a", accent: "#ffd166", hairStyle: "long", glasses: true,
   },
-  // Sam — Supplier Coordinator (warm orange polo, cap + beard)
+  // Sam — Supplier Coordinator (supplier green cubicle)
   supplierCoord: {
-    skin: "#f3c79b", hair: "#cfa050", shirt: "#e07a3a", pants: "#3a3a44",
+    skin: "#f3c79b", hair: "#cfa050", shirt: "#2e8a6e", pants: "#3a3a44",
     shoes: "#1a1a1a", accent: "#ffffff", hairStyle: "cap", facial: "beard",
     shirtLogo: true,
   },
-  // Seth — Settlement Officer (corporate blue button-down, short hair)
+  // Seth — Settlement Officer (settlement brown cubicle)
   settlementOfficer: {
-    skin: "#f5d2b3", hair: "#3a2418", shirt: "#3a5fb0", pants: "#1c2230",
+    skin: "#f5d2b3", hair: "#3a2418", shirt: "#a06a4c", pants: "#1c2230",
     shoes: "#1a1a1a", accent: "#ffb347", hairStyle: "short",
   },
-  // Cara — Customer Communications Specialist (friendly magenta, bun)
+  // Cara — Customer Communications Specialist (comms magenta cubicle)
   commsSpecialist: {
-    skin: "#e8c69a", hair: "#5a3a25", shirt: "#c14a7a", pants: "#3a3a44",
+    skin: "#e8c69a", hair: "#5a3a25", shirt: "#b56fbf", pants: "#3a3a44",
     shoes: "#1a1a1a", accent: "#ffffff", hairStyle: "bun", lowerBody: "skirt",
   },
   // Theo — Claims Team Leader (grey suit, beard, confident)

@@ -178,7 +178,24 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
     var intakeFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
     app.MapIntakeEndpoints(intakeStore, intakeFactory, intakeLogger);
+    app.MapLossAdjusterEndpoints(intakeStore, intakeFactory, intakeLogger);
     app.MapTeamLeaderEndpoints(intakeStore, intakeFactory, intakeLogger);
+}
+
+// ── Claims Assessment demo endpoints (Try It Out tab on /agents/claims-assessment) ──
+{
+    var assessmentLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    var assessmentStore = app.Services.GetRequiredService<IntakeClaimStore>();
+    var assessmentFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
+    app.MapAssessmentEndpoints(assessmentStore, assessmentFactory, assessmentLogger);
+}
+
+// ── Settlement demo endpoints (Try It Out tab on /agents/settlement) ────────
+{
+    var settlementLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    var settlementStore = app.Services.GetRequiredService<IntakeClaimStore>();
+    var settlementFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
+    app.MapSettlementEndpoints(settlementStore, settlementFactory, settlementLogger);
 }
 
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────

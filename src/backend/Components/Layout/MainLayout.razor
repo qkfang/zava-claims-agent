@@ -12,6 +12,28 @@
     </main>
 </div>
 
+@* ── Full-page toggle: collapses the left nav for a wider stage. ── *@
+<button id="full-page-toggle"
+        class="full-page-toggle"
+        type="button"
+        title="Full page view (hide navigation)"
+        aria-label="Hide navigation panel for full page view"
+        aria-pressed="false"
+        onclick="(function(b){var h=document.body.classList.toggle('left-nav-hidden');b.setAttribute('aria-pressed',h?'true':'false');b.setAttribute('aria-label',h?'Show navigation panel':'Hide navigation panel for full page view');b.setAttribute('title',h?'Exit full page view':'Full page view (hide navigation)');})(this)">
+    <svg class="icon-expand" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="4 9 4 4 9 4"></polyline>
+        <polyline points="20 9 20 4 15 4"></polyline>
+        <polyline points="4 15 4 20 9 20"></polyline>
+        <polyline points="20 15 20 20 15 20"></polyline>
+    </svg>
+    <svg class="icon-collapse" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="9 4 4 4 4 9"></polyline>
+        <polyline points="15 4 20 4 20 9"></polyline>
+        <polyline points="9 20 4 20 4 15"></polyline>
+        <polyline points="15 20 20 20 20 15"></polyline>
+    </svg>
+</button>
+
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>

@@ -104,7 +104,9 @@ aside h2 {
   color: var(--muted);
 }
 
-#agents-panel { top: 84px; left: 16px; max-height: calc(100vh - 160px); overflow-y: auto; }
+#agents-panel { top: 84px; left: 16px; max-height: calc(100vh - 160px); overflow-y: auto; padding: 6px 8px; }
+#agents-panel .panel-header { margin-bottom: 3px; }
+#agents-panel h2 { margin: 0; font-size: 12px; }
 #log-panel { top: 84px; right: 16px; max-height: calc(100vh - 160px); display: flex; flex-direction: column; }
 
 /* Collapsible panel header + toggle button */
@@ -147,24 +149,24 @@ aside h2 {
   overflow: hidden;
 }
 
-#agents-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+#agents-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
 .agent-card {
   display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 10px;
+  grid-template-columns: 30px 1fr auto;
+  gap: 6px;
   align-items: center;
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 3px 6px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 .agent-card .swatch {
-  width: 22px; height: 22px; border-radius: 6px;
+  width: 18px; height: 18px; border-radius: 5px;
   border: 2px solid rgba(0, 0, 0, 0.35);
 }
 .agent-card .figure {
-  width: 40px; height: 40px;
-  border-radius: 8px;
+  width: 30px; height: 30px;
+  border-radius: 6px;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -176,11 +178,11 @@ aside h2 {
   image-rendering: crisp-edges;
   shape-rendering: crispEdges;
 }
-.agent-card .name { font-weight: 600; font-size: 13px; }
-.agent-card .role { font-size: 11px; color: var(--muted); }
+.agent-card .name { font-weight: 600; font-size: 12px; line-height: 1.15; }
+.agent-card .role { font-size: 10px; color: var(--muted); line-height: 1.15; }
 .agent-card .status {
-  font-size: 10px;
-  padding: 3px 7px;
+  font-size: 9px;
+  padding: 2px 6px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--muted);
@@ -317,6 +319,43 @@ body[data-scene="neighbourhood"] #log-panel,
 body[data-scene="neighbourhood"] .metrics {
   display: none;
 }
+
+/* Full-page view toggle — hides the left AI Agents nav for more stage space. */
+.left-nav-toggle {
+  pointer-events: auto;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  cursor: pointer;
+  margin-left: 14px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+    transform 0.15s ease;
+}
+.left-nav-toggle svg { width: 22px; height: 22px; }
+.left-nav-toggle:hover {
+  color: #fff;
+  background: rgba(255, 179, 71, 0.18);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.left-nav-toggle .icon-collapse { display: none; }
+body.left-nav-hidden .left-nav-toggle .icon-expand { display: none; }
+body.left-nav-hidden .left-nav-toggle .icon-collapse { display: inline-block; }
+body.left-nav-hidden .left-nav-toggle {
+  color: #1c2230;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+body.left-nav-hidden #agents-panel { display: none; }
+body.left-nav-hidden #log-panel { display: none; }
 
 /* ----- Scene transition fade overlay ----- */
 .scene-fade {
@@ -1031,6 +1070,22 @@ body[data-scene="neighbourhood"] .metrics {
   color: var(--muted);
   line-height: 1.35;
   margin-top: 1px;
+}
+.activity-walkthrough {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-2);
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+  width: fit-content;
+}
+.activity-walkthrough:hover {
+  border-bottom-color: var(--accent-2);
+  filter: brightness(1.1);
 }
 
 /* Hide ambient HUD pieces during a scripted scenario so the focus is on

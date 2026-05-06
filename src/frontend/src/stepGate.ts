@@ -51,7 +51,7 @@ export interface StageInfo {
  * `.env.local` for local development, or via the
  * `.github/workflows/21_deploy_frontend.yml` workflow for deployments.
  */
-const APP_BASE_URL: string = (
+export const APP_BASE_URL: string = (
   (import.meta as unknown as { env?: Record<string, string> }).env
     ?.VITE_APP_BASE_URL ?? ""
 ).replace(/\/+$/, "");

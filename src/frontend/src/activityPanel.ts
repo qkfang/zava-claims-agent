@@ -10,7 +10,7 @@
  * The panel is hidden whenever no scripted scenario is in flight, so the
  * UI focuses on the case being played out rather than ambient activity.
  */
-import type { StageInfo } from "./stepGate";
+import { APP_BASE_URL, type StageInfo } from "./stepGate";
 import { PALETTES } from "./characterPalettes";
 import { findStaffByRole, type StaffRole } from "./personaData";
 
@@ -21,6 +21,8 @@ export interface ActivityPanelStage {
   staffPaletteKey: string;
   narration: string;
   agents: { name: string; description: string }[];
+  /** Agent id used to deep-link the walkthrough page in the `src/backend` site. */
+  appAgentId: string;
 }
 
 /** Map a StageInfo (from stepGate) to the activity panel view-model. */
@@ -33,6 +35,7 @@ export function stageToActivity(stage: StageInfo): ActivityPanelStage {
     staffPaletteKey: persona.palette as string,
     narration: stage.narration,
     agents: stage.agents,
+    appAgentId: stage.appAgentId,
   };
 }
 
@@ -82,6 +85,12 @@ export class ActivityPanel {
       <p class="activity-narration"></p>
       <div class="activity-agents-label">AI sub-agents on this step</div>
       <ul class="activity-agents"></ul>
+      <a class="activity-walkthrough"
+         href="#"
+         target="_blank"
+         rel="noopener noreferrer">
+        See how this team uses these agents <span aria-hidden="true">↗</span>
+      </a>
     `;
     document.body.appendChild(el);
     this.el = el;
@@ -99,6 +108,14 @@ export class ActivityPanel {
       stage.staffRole;
     (this.el.querySelector(".activity-narration") as HTMLElement).textContent =
       stage.narration;
+
+    const walkthrough = this.el.querySelector(
+      ".activity-walkthrough",
+    ) as HTMLAnchorElement;
+    walkthrough.href = `${APP_BASE_URL}/agents/${encodeURIComponent(
+      stage.appAgentId,
+    )}`;
+    walkthrough.title = `Open ${stage.staffRole} walkthrough in a new tab`;
 
     const list = this.el.querySelector(".activity-agents") as HTMLUListElement;
     list.innerHTML = "";
