@@ -17,10 +17,11 @@ public class ClaimsAgentOptions
 
     /// <summary>
     /// Base URL of the in-process MCP server exposed by this app
-    /// (e.g. <c>http://localhost:5000</c>). When set, the loss-adjuster
-    /// agent registers an MCP tool pointing at <c>{AppMcpUrl}/mcp</c> so
-    /// it can call <c>analyzeQuote</c> / <c>compareQuotes</c> /
-    /// <c>generateClaimExcel</c>.
+    /// (e.g. <c>http://localhost:5000</c>). When set, agents that opt-in
+    /// register an MCP tool pointing at <c>{AppMcpUrl}/mcp</c> — the
+    /// Supplier Coordinator uses <c>lookupSuppliers</c> /
+    /// <c>generateQuoteRequestPdf</c>, and the Loss Adjuster uses
+    /// <c>analyzeQuote</c> / <c>compareQuotes</c> / <c>generateClaimExcel</c>.
     /// </summary>
     public string? AppMcpUrl { get; set; }
 

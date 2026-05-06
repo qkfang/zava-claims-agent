@@ -65,7 +65,9 @@ public class ClaimsAgentFactory
             "fraud" or "fraud-investigation"
                 => new FraudInvestigationAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<FraudInvestigationAgent>()),
             "supplier" or "supplier-coordination"
-                => new SupplierCoordinatorAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<SupplierCoordinatorAgent>()),
+                => new SupplierCoordinatorAgent(client, deployment, search, index, bing,
+                    string.IsNullOrWhiteSpace(_options.AppMcpUrl) ? null : $"{_options.AppMcpUrl!.TrimEnd('/')}/mcp",
+                    _loggerFactory.CreateLogger<SupplierCoordinatorAgent>()),
             "settlement"
                 => new SettlementAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<SettlementAgent>()),
             "communications" or "customer-communications"

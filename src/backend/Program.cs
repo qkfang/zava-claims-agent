@@ -38,13 +38,16 @@ builder.Services.AddSingleton<ClaimsAgentFactory>();
 // HttpClient factory for MCP tools (e.g. fetching quote documents from URLs).
 builder.Services.AddHttpClient();
 
-// MCP server for the in-process tool surface used by Foundry agents. The
-// loss-adjuster agent always uses this server (analyzeQuote / compareQuotes /
-// generateClaimExcel). The notice intelligence flow conditionally adds its
-// own AgentDiMcpTools below when its Azure resources are configured.
+// MCP server for the in-process tool surface used by Foundry agents.
+// Always registered:
+//   - LossAdjusterMcpTools (analyzeQuote / compareQuotes / generateClaimExcel)
+//   - SupplierMcpTools (lookupSuppliers / generateQuoteRequestPdf)
+// The notice intelligence flow conditionally adds AgentDiMcpTools below when
+// its Azure resources are configured.
 var mcpBuilder = builder.Services.AddMcpServer()
     .WithHttpTransport(options => { options.Stateless = true; })
-    .WithTools<LossAdjusterMcpTools>();
+    .WithTools<LossAdjusterMcpTools>()
+    .WithTools<ZavaClaims.App.Mcp.SupplierMcpTools>();
 builder.Services.AddCors();
 
 // In-memory store of claim cases minted by the Claims Intake demo's
@@ -63,6 +66,11 @@ builder.Services.AddSingleton<FraudDocumentVerifier>(sp => new FraudDocumentVeri
     sp.GetRequiredService<IConfiguration>(),
     sp.GetRequiredService<ILogger<FraudDocumentVerifier>>(),
     sp.GetService<ContentUnderstandingService>()));
+
+// Quote-request PDF generator used by both the deterministic
+// /supplier/process flow and the SupplierMcpTools MCP tool surface so the
+// Supplier Coordinator agent can produce a downloadable PDF for the demo.
+builder.Services.AddSingleton<QuoteRequestPdfService>();
 
 // ── Notice intelligence integration (ported from demo-foundry-document-intelligence/agentdi)
 // Only enabled when the required Azure resources are configured. When enabled,
@@ -118,13 +126,16 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseAntiforgery();
 
 // CORS + MCP Accept-header normalisation are always enabled because the MCP
-// server is always registered (loss-adjuster tools). Notice intelligence
-// optionally adds more tools to the same server below.
+// server is always registered (loss-adjuster + supplier tools). Notice
+// intelligence optionally adds more tools to the same server below.
 app.UseCors(policy => policy
     .AllowAnyOrigin()
     .AllowAnyMethod()
     .AllowAnyHeader());
 
+// Normalize Accept header for MCP requests so Foundry agent / browser
+// clients negotiate against the streaming + JSON content type the
+// ModelContextProtocol server expects.
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/mcp"))
@@ -137,6 +148,11 @@ app.Use(async (context, next) =>
     }
     await next();
 });
+
+// MCP server is registered unconditionally so SupplierMcpTools and
+// LossAdjusterMcpTools are always available; AgentDi tools join the same
+// /mcp endpoint when noticeEnabled.
+app.MapMcp("/mcp");
 
 // Serve dynamically-generated loss-adjuster output files (Excel workbooks
 // produced by the generateClaimExcel MCP tool) from wwwroot/loss-adjuster/output/.
