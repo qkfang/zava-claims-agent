@@ -122,6 +122,10 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+// Enable WebSocket support for the Voice Live proxy that powers the
+// Customer Communications agent's voice chat tab.
+app.UseWebSockets();
+
 // ── Markdown rendering endpoint (used by per-agent pages to format agent output) ──
 app.MapMarkdownEndpoints();
 
@@ -221,6 +225,11 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
     var commsFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
     app.MapCommunicationsEndpoints(intakeStore, commsFactory, commsLogger);
+
+    // Voice Live (real-time speech-to-speech) proxy + config for the
+    // Customer Communications voice chat tab.
+    var commsLoggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+    app.MapCommunicationsVoiceLiveEndpoints(agentOptions, commsFactory, commsLoggerFactory);
 }
 
 // ── Supplier Coordination demo endpoints (Try It Out tab on
