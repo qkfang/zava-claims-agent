@@ -16,13 +16,12 @@
 </div>
 
 <div class="agent-tabs" role="tablist" aria-label="Claims Intake views">
-    <button type="button" class="agent-tab active" role="tab"
-            aria-selected="true" data-tab="overview">Overview</button>
-    <button type="button" class="agent-tab" role="tab"
-            aria-selected="false" data-tab="tryit">Try It Out</button>
+    <span class="agent-tab active" role="tab" aria-selected="true">Overview</span>
+    <a class="agent-tab" role="tab" aria-selected="false"
+       href="/agents/claims-intake/demo">Try It Out →</a>
 </div>
 
-<div class="agent-tab-panel tab-panel-overview active" data-panel="overview">
+<div class="agent-tab-panel standalone" data-panel="overview">
     <section class="panel" style="--accent: #0ea5e9">
         <h2>What this agent does</h2>
         <p>
@@ -81,23 +80,3 @@
     <OtherAgentsBar CurrentId="claims-intake" />
 </div>
 
-<div class="agent-tab-panel tab-panel-tryit" data-panel="tryit">
-    <ClaimsIntakeDemo />
-</div>
-
-<script>
-    (function () {
-        const tabs = document.querySelectorAll('.agent-tabs .agent-tab');
-        if (!tabs.length) return;
-        const panels = document.querySelectorAll('.agent-tab-panel');
-        tabs.forEach(t => t.addEventListener('click', () => {
-            const target = t.dataset.tab;
-            tabs.forEach(x => {
-                const on = x === t;
-                x.classList.toggle('active', on);
-                x.setAttribute('aria-selected', on ? 'true' : 'false');
-            });
-            panels.forEach(p => p.classList.toggle('active', p.dataset.panel === target));
-        }));
-    })();
-</script>
