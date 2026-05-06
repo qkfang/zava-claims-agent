@@ -15,7 +15,13 @@
     </div>
 </div>
 
-<div class="agent-tab-panel standalone">
+<div class="agent-tab-scope" style="--accent: #14b8a6">
+    <nav class="agent-tabs" role="tablist" aria-label="Team Leader agent details">
+        <button type="button" class="agent-tab active" data-tab="overview" role="tab" aria-selected="true" tabindex="0">Overview</button>
+        <button type="button" class="agent-tab" data-tab="try" role="tab" aria-selected="false" tabindex="-1">Try it out</button>
+    </nav>
+
+    <div class="agent-tab-panel active" data-panel="overview" role="tabpanel">
     <section class="panel" style="--accent: #14b8a6">
         <h2>What this agent does</h2>
         <p>
@@ -70,4 +76,428 @@
             </p>
         </div>
     </section>
+
+    </div>
+
+    <div class="agent-tab-panel" data-panel="try" role="tabpanel">
+    <section class="panel leader-panel" style="--accent: #14b8a6">
+        <h2>Try It Out — Team Leader Demo</h2>
+        <p class="muted leader-help">
+            Walk through how Theo's team-leader agent picks up a claim that
+            Claims Intake has just lodged, reviews the case from a leader's
+            perspective, and produces a structured workload / escalation /
+            approval briefing. All steps run live against the
+            <code>/team-leader/*</code> endpoints in this app.
+        </p>
+
+        <!-- Step 1 — pick a Claim ID -->
+        <div class="leader-step" data-step="1">
+            <div class="leader-step-head">
+                <span class="leader-step-num">1</span>
+                <h3>Pick a Claim ID</h3>
+            </div>
+            <p class="muted">
+                Theo works from the queue of claims already lodged by Iris's
+                Claims Intake Agent. Pick one of the claim cases held in memory
+                for this demo.
+            </p>
+            <div class="leader-claim-row">
+                <select id="leader-claim-select" aria-label="Claim ID">
+                    <option value="">— Select a claim —</option>
+                </select>
+                <button type="button" id="leader-refresh-btn" class="leader-secondary"
+                        title="Reload the list of claims">↻ Refresh</button>
+            </div>
+            <p class="muted leader-empty" id="leader-empty" hidden>
+                No claims yet. Run the
+                <a href="/agents/claims-intake">Claims Intake Try It Out</a>
+                tab first to lodge a claim, then come back here.
+            </p>
+            <div class="leader-claim-card" id="leader-claim-card" hidden>
+                <div class="leader-claim-num" id="leader-claim-num"></div>
+                <div class="leader-claim-grid">
+                    <div><span class="k">Customer</span><span id="leader-claim-customer"></span></div>
+                    <div><span class="k">Policy</span><span id="leader-claim-policy"></span></div>
+                    <div><span class="k">Claim type</span><span id="leader-claim-type"></span></div>
+                    <div><span class="k">Incident date</span><span id="leader-claim-date"></span></div>
+                    <div class="span-2"><span class="k">Incident location</span><span id="leader-claim-location"></span></div>
+                    <div class="span-2"><span class="k">Description</span><span id="leader-claim-desc"></span></div>
+                    <div><span class="k">Estimated loss</span><span id="leader-claim-loss"></span></div>
+                    <div><span class="k">Urgency</span><span id="leader-claim-urgency"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 — engage the agent -->
+        <div class="leader-step" data-step="2">
+            <div class="leader-step-head">
+                <span class="leader-step-num">2</span>
+                <h3>Engage Team Leader Agent</h3>
+            </div>
+            <p class="muted">
+                The agent loads the selected claim's details and produces a
+                structured Team Leader briefing — workload summary, escalations,
+                approval queue, coaching insights, and recommended priorities.
+            </p>
+            <button id="leader-process-btn" type="button" disabled>Process with Team Leader Agent</button>
+            <div id="leader-process-status" class="leader-status" hidden></div>
+
+            <div class="engage-tabs-scope" data-engage-role="team-leader">
+                <div class="engage-tabs" role="tablist">
+                    <button type="button" class="engage-tab-btn active" data-engage-tab="prompt">Agent Prompt &amp; Tools</button>
+                    <button type="button" class="engage-tab-btn" data-engage-tab="input">Agent Input</button>
+                    <button type="button" class="engage-tab-btn" data-engage-tab="output">Raw Output</button>
+                </div>
+
+                <div class="engage-tab-panel active" data-engage-tab="prompt">
+                    <div class="engage-info-block">
+                        <h4>Agent metadata</h4>
+                        <div class="engage-info-meta engage-meta"></div>
+                    </div>
+                    <div class="engage-info-block">
+                        <h4>System prompt</h4>
+                        <pre class="engage-pre engage-prompt-body">Loading…</pre>
+                    </div>
+                    <div class="engage-info-block">
+                        <h4>Tools available</h4>
+                        <ul class="engage-tools-list"><li class="engage-empty">Loading…</li></ul>
+                    </div>
+                </div>
+
+                <div class="engage-tab-panel" data-engage-tab="input">
+                    <div class="engage-info-block">
+                        <h4>Prompt sent to the agent</h4>
+                        <pre class="engage-pre engage-input-body engage-empty">Engage the agent to capture the input that was sent.</pre>
+                    </div>
+                </div>
+
+                <div class="engage-tab-panel" data-engage-tab="output">
+                    <div class="engage-info-block">
+                        <h4>Raw agent output (text, citations, every output item including tool / function calls)</h4>
+                        <div class="json-viewer engage-output-body"><div class="engage-empty">Engage the agent to see the full raw response.</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 — team leader briefing -->
+        <div class="leader-step leader-report" data-step="3" id="leader-report" hidden>
+            <div class="leader-step-head">
+                <span class="leader-step-num">3</span>
+                <h3>Team Leader Briefing</h3>
+            </div>
+            <div class="leader-notes-label">Agent narrative</div>
+            <div id="leader-notes-body" class="agent-md"></div>
+            <p class="muted leader-handoff">
+                Held in memory for the rest of the demo. The team leader can
+                approve high-value items, reassign overloaded queues, or
+                escalate vulnerable-customer cases, with the agent's working
+                attached for the audit trail.
+            </p>
+        </div>
+    </section>
+    </div>
 </div>
+
+<style>
+    .leader-panel { --leader-accent: #14b8a6; }
+    .leader-help { margin-bottom: 0.9rem; }
+    .leader-help code { background: rgba(245, 158, 11, 0.12); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
+
+    .leader-step {
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        background: rgba(15, 22, 38, 0.4);
+        border-radius: 12px;
+        padding: 0.95rem 1.1rem 1rem 1.1rem;
+        margin-top: 0.9rem;
+    }
+    .leader-step-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; }
+    .leader-step-head h3 { margin: 0; color: #fff; font-size: 1rem; }
+    .leader-step-num {
+        display: inline-grid; place-items: center;
+        width: 1.55rem; height: 1.55rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--leader-accent) 22%, rgba(20, 28, 46, 0.7));
+        border: 1px solid color-mix(in srgb, var(--leader-accent) 55%, transparent);
+        color: var(--leader-accent);
+        font-size: 0.78rem; font-weight: 700;
+    }
+    .leader-step .muted { color: var(--zava-muted, #97a3b6); font-size: 0.9rem; margin: 0.35rem 0 0.7rem 0; }
+
+    .leader-claim-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .leader-claim-row select {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        color: #fff;
+        padding: 0.5rem 0.7rem;
+        font-size: 0.9rem;
+        min-width: 280px;
+    }
+    .leader-claim-row select:focus {
+        outline: none;
+        border-color: var(--leader-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--leader-accent) 25%, transparent);
+    }
+    .leader-secondary {
+        background: transparent;
+        color: rgba(238, 242, 247, 0.86);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+    .leader-secondary:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+    .leader-empty { margin-top: 0.6rem; }
+    .leader-empty a { color: var(--leader-accent); }
+
+    .leader-claim-card {
+        margin-top: 0.8rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.8rem 0.95rem;
+    }
+    .leader-claim-num {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: var(--leader-accent);
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 0.45rem;
+    }
+    .leader-claim-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem 0.85rem;
+        font-size: 0.85rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    @@media (max-width: 820px) { .leader-claim-grid { grid-template-columns: 1fr; } }
+    .leader-claim-grid .span-2 { grid-column: span 2; }
+    @@media (max-width: 820px) { .leader-claim-grid .span-2 { grid-column: span 1; } }
+    .leader-claim-grid .k {
+        display: inline-block;
+        min-width: 110px;
+        color: var(--zava-muted, #97a3b6);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.66rem;
+        letter-spacing: 0.08em;
+        margin-right: 0.5rem;
+    }
+
+    #leader-process-btn {
+        background: var(--leader-accent);
+        color: #1a1100;
+        border: none;
+        border-radius: 8px;
+        padding: 0.55rem 1.1rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.35rem;
+    }
+    #leader-process-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+    #leader-process-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .leader-status {
+        margin-top: 0.6rem; font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    .leader-status.error { color: #fca5a5; }
+    .leader-status .spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        animation: leader-spin 0.7s linear infinite;
+    }
+    @@keyframes leader-spin { to { transform: rotate(360deg); } }
+
+    .leader-report {
+        background: color-mix(in srgb, var(--leader-accent) 8%, rgba(15, 22, 38, 0.4));
+        border-color: color-mix(in srgb, var(--leader-accent) 35%, transparent);
+    }
+    .leader-notes-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
+    }
+    .leader-report pre {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.8rem 0.95rem;
+        color: rgba(238, 242, 247, 0.92);
+        font-size: 0.85rem;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        max-height: 480px;
+        overflow: auto;
+    }
+    .leader-handoff { margin-top: 0.7rem; }
+    .leader-handoff a { color: var(--leader-accent); }
+</style>
+
+<script>
+    (function () {
+        function init() {
+        const root = document.querySelector('.leader-panel');
+        if (!root || root.dataset.wired === '1') return;
+        root.dataset.wired = '1';
+
+        const $ = sel => root.querySelector(sel);
+        const selectEl = $('#leader-claim-select');
+        const refreshBtn = $('#leader-refresh-btn');
+        const emptyEl = $('#leader-empty');
+        const cardEl = $('#leader-claim-card');
+        const processBtn = $('#leader-process-btn');
+        const processStatus = $('#leader-process-status');
+        const reportEl = $('#leader-report');
+        const notesBody = $('#leader-notes-body');
+
+        let selectedClaim = null;
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        function setSelectedClaim(claim) {
+            selectedClaim = claim;
+            if (!claim) {
+                cardEl.hidden = true;
+                processBtn.disabled = true;
+                return;
+            }
+            $('#leader-claim-num').textContent = claim.claimNumber;
+            $('#leader-claim-customer').textContent = claim.customerName || '—';
+            $('#leader-claim-policy').textContent   = claim.policyNumber || '—';
+            $('#leader-claim-type').textContent     = claim.claimType || '—';
+            $('#leader-claim-date').textContent     = claim.incidentDate || '—';
+            $('#leader-claim-location').textContent = claim.incidentLocation || '—';
+            $('#leader-claim-desc').textContent     = claim.incidentDescription || '—';
+            $('#leader-claim-loss').textContent     = claim.estimatedLoss || '—';
+            $('#leader-claim-urgency').textContent  = claim.urgency || '—';
+            cardEl.hidden = false;
+            processBtn.disabled = false;
+        }
+
+        async function loadClaims() {
+            selectEl.innerHTML = '<option value="">— Loading… —</option>';
+            emptyEl.hidden = true;
+            cardEl.hidden = true;
+            processBtn.disabled = true;
+            reportEl.hidden = true;
+            processStatus.hidden = true;
+
+            try {
+                const res = await fetch('/team-leader/claims');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const claims = await res.json();
+                if (!claims.length) {
+                    selectEl.innerHTML = '<option value="">— No claims available —</option>';
+                    emptyEl.hidden = false;
+                    return;
+                }
+                selectEl.innerHTML = '<option value="">— Select a claim —</option>' +
+                    claims.map(c =>
+                        `<option value="${escapeHtml(c.claimNumber)}">` +
+                        `${escapeHtml(c.claimNumber)} — ${escapeHtml(c.customerName)} (${escapeHtml(c.claimType)})` +
+                        `</option>`).join('');
+            } catch (err) {
+                selectEl.innerHTML = '<option value="">— Failed to load —</option>';
+                processStatus.hidden = false;
+                processStatus.className = 'leader-status error';
+                processStatus.textContent = 'Failed to load claims: ' + err.message;
+            }
+        }
+
+        async function selectClaim(claimNumber) {
+            reportEl.hidden = true;
+            processStatus.hidden = true;
+            if (!claimNumber) {
+                setSelectedClaim(null);
+                return;
+            }
+            try {
+                const res = await fetch(`/team-leader/claims/${encodeURIComponent(claimNumber)}`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const claim = await res.json();
+                setSelectedClaim(claim);
+            } catch (err) {
+                setSelectedClaim(null);
+                processStatus.hidden = false;
+                processStatus.className = 'leader-status error';
+                processStatus.textContent = 'Failed to load claim: ' + err.message;
+            }
+        }
+
+        async function processClaim() {
+            if (!selectedClaim) return;
+            processBtn.disabled = true;
+            processStatus.hidden = false;
+            processStatus.className = 'leader-status';
+            processStatus.innerHTML = '<span class="spinner"></span>Engaging Team Leader Agent…';
+            reportEl.hidden = true;
+
+            try {
+                const res = await fetch('/team-leader/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claimNumber: selectedClaim.claimNumber })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                if (data.agentNotes) {
+                    window.zcRenderMarkdown(notesBody, data.agentNotes);
+                    reportEl.hidden = false;
+                    processStatus.textContent = 'Team Leader Agent produced a report.';
+                    reportEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (!data.agentConfigured) {
+                    processStatus.className = 'leader-status error';
+                    processStatus.textContent =
+                        'Team Leader Foundry agent is not configured. ' +
+                        'Set AZURE_AI_PROJECT_ENDPOINT and AZURE_AI_MODEL_DEPLOYMENT_NAME to enable it.';
+                } else {
+                    processStatus.className = 'leader-status error';
+                    processStatus.textContent = data.agentError
+                        ? 'Team Leader Agent failed: ' + data.agentError
+                        : 'Team Leader Agent returned no narrative.';
+                }
+
+                // Surface input + raw output in the Engage Agent sub-tabs.
+                if (window.engageTabsRender) {
+                    const scope = document.querySelector('.leader-panel .engage-tabs-scope');
+                    window.engageTabsRender(scope, data);
+                }
+            } catch (err) {
+                processStatus.className = 'leader-status error';
+                processStatus.textContent = 'Failed to process: ' + err.message;
+            } finally {
+                processBtn.disabled = !selectedClaim;
+            }
+        }
+
+        selectEl.addEventListener('change', () => selectClaim(selectEl.value));
+        refreshBtn.addEventListener('click', loadClaims);
+        processBtn.addEventListener('click', processClaim);
+
+        loadClaims();
+        }
+
+        init();
+
+        if (!window.__teamLeaderDemoEnhancedHook) {
+            window.__teamLeaderDemoEnhancedHook = true;
+            const hook = () => init();
+            if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
+                Blazor.addEventListener('enhancedload', hook);
+            } else {
+                document.addEventListener('enhancedload', hook);
+            }
+        }
+    })();
+</script>

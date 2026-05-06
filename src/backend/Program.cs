@@ -188,6 +188,7 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
 
     app.MapIntakeEndpoints(intakeStore, intakeFactory, intakeLogger);
     app.MapLossAdjusterEndpoints(intakeStore, intakeFactory, intakeLogger);
+    app.MapTeamLeaderEndpoints(intakeStore, intakeFactory, intakeLogger);
 }
 
 // ── Claims Assessment demo endpoints (Try It Out tab on /agents/claims-assessment) ──
