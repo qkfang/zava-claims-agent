@@ -146,6 +146,14 @@ export class ProfileCard {
       ? `<h3>Recent claims</h3><ul class="profile-claims">${claimsList}</ul>`
       : "";
 
+    const agentLinkBlock =
+      p.kind === "staff" && p.agentUrl
+        ? `<a class="profile-agent-link" href="${escape(p.agentUrl)}" target="_blank" rel="noopener noreferrer">
+            <span aria-hidden="true">↗</span>
+            Open agent walkthrough
+          </a>`
+        : "";
+
     this.el.innerHTML = `
       <header style="border-color:${headerColor}">
         <div class="figure">${renderCharacterFigureSvg(p.palette, headerColor)}</div>
@@ -176,6 +184,7 @@ export class ProfileCard {
             : ""
         }
         ${claimsHeading}
+        ${agentLinkBlock}
       </section>
     `;
 

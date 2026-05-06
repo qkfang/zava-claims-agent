@@ -20,6 +20,7 @@ import {
   type StaffPersona,
 } from "./personaData";
 import { getScenario } from "./scenarios";
+import { APP_BASE_URL } from "./stepGate";
 
 /**
  * Claims-industry staff roles, mirroring the cast in
@@ -1125,6 +1126,9 @@ export class ClaimSimulation {
         scenarioName: "",
         currentHandler: null,
         activeClaim: null,
+        agentUrl: `${APP_BASE_URL}/agents/${encodeURIComponent(
+          staff.persona.app_agent_id,
+        )}`,
       };
     }
 
@@ -1163,6 +1167,7 @@ export class ClaimSimulation {
           amount: customer.claim.amount,
           status: customer.claim.status,
         },
+        agentUrl: null,
       };
     }
 
@@ -1337,6 +1342,12 @@ export interface CharacterProfile {
     amount: number;
     status: ClaimStatus;
   } | null;
+  /**
+   * Staff only — absolute URL to the matching agent walkthrough page in the
+   * companion `src/backend` Blazor site (`/agents/{app_agent_id}`). Null for
+   * customers.
+   */
+  agentUrl: string | null;
 }
 
 function describeTask(task: Task): string {
