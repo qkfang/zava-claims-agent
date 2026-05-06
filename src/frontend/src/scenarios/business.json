@@ -1,6 +1,7 @@
 {
   "id": "business",
   "scenarioNumber": 3,
+  "caseId": "CLM-20260506-DEMO04",
   "customerId": "business",
   "incidentZone": "business",
   "approveAtAssessor": true,

@@ -78,6 +78,12 @@ export interface ScriptExtraBeat {
 
 export interface ClaimScript {
   scenarioId: ScenarioId;
+  /**
+   * Fixed claim id used for the spawned customer's claim folder. Mirrors
+   * the seeded record in the backend so the on-screen claim id matches
+   * the mock data shown on the agent demo pages.
+   */
+  caseId: string;
   /** Force assessor to approve (true) or reject (false). */
   approveAtAssessor: boolean;
   /** Sequential extra consultations between assessor approval & settlement. */
@@ -330,7 +336,7 @@ export class ClaimSimulation {
     const amount = Math.round(
       scenario.min + Math.random() * (scenario.max - scenario.min),
     );
-    const claimId = `C-${nextClaimNum++}`;
+    const claimId = script?.caseId ?? `C-${nextClaimNum++}`;
     const claim: Claim = {
       id: claimId,
       type: scenario.type,
@@ -1378,6 +1384,7 @@ function buildScriptForScenario(p: CustomerPersona): ClaimScript {
   const def = getScenario(p.id);
   return {
     scenarioId: def.id,
+    caseId: def.caseId,
     approveAtAssessor: def.approveAtAssessor,
     extras: def.extras.map((c) => ({
       role: c.role as AgentRole,

@@ -327,3 +327,154 @@
 .agent-tab-panel { display: none; }
 .agent-tab-panel.active { display: block; }
 .agent-tab-panel.standalone { display: block; }
+
+/* ── Engage Agent panel sub-tabs ──────────────────────────────────────
+   Used inside the "Try It Out" panel on every agent page to flip
+   between the live demo, the agent's system prompt + tools, the
+   exact input that was sent, and the raw output (with function
+   calls). Driven by wwwroot/js/engage-tabs.js. */
+.engage-tabs-scope {
+    margin-top: 0.9rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed rgba(120, 150, 200, 0.22);
+}
+.engage-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    border-bottom: 1px solid rgba(120, 150, 200, 0.18);
+    margin: 0.4rem 0 0.9rem 0;
+}
+.engage-tab-btn {
+    background: transparent;
+    border: none;
+    color: rgba(214, 228, 245, 0.7);
+    padding: 0.5rem 0.95rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.engage-tab-btn:hover { color: #fff; }
+.engage-tab-btn.active {
+    color: #fff;
+    border-bottom-color: var(--accent, #ffb347);
+}
+.engage-tab-panel { display: none; }
+.engage-tab-panel.active { display: block; }
+
+.engage-info-block {
+    background: rgba(10, 16, 28, 0.7);
+    border: 1px solid rgba(120, 150, 200, 0.18);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.8rem;
+}
+.engage-info-block h4 {
+    margin: 0 0 0.4rem 0;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--zava-muted, #97a3b6);
+    font-weight: 700;
+}
+.engage-info-block p { margin: 0.2rem 0; color: rgba(238, 242, 247, 0.9); font-size: 0.9rem; }
+.engage-info-block ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
+.engage-info-block ul li {
+    color: rgba(238, 242, 247, 0.9);
+    font-size: 0.88rem;
+    margin-bottom: 0.2rem;
+}
+.engage-info-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.45rem 1rem;
+    font-size: 0.85rem;
+    color: rgba(238, 242, 247, 0.86);
+}
+.engage-info-meta .k {
+    display: block;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--zava-muted, #97a3b6);
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+}
+
+.engage-pre {
+    background: rgba(8, 12, 22, 0.85);
+    border: 1px solid rgba(120, 150, 200, 0.18);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    color: rgba(238, 242, 247, 0.92);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    max-height: 70vh;
+    margin: 0;
+}
+.engage-empty {
+    color: var(--zava-muted, #97a3b6);
+    font-style: italic;
+    font-size: 0.88rem;
+    padding: 0.5rem 0;
+}
+
+/* JSON viewer (collapsible). */
+.json-viewer {
+    background: rgba(8, 12, 22, 0.85);
+    border: 1px solid rgba(120, 150, 200, 0.18);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    color: rgba(238, 242, 247, 0.92);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    overflow-x: auto;
+    max-height: 70vh;
+}
+.json-viewer .jv-toggle {
+    cursor: pointer;
+    user-select: none;
+    color: rgba(214, 228, 245, 0.6);
+    width: 1em;
+    display: inline-block;
+    text-align: center;
+    margin-right: 0.1rem;
+}
+.json-viewer .jv-toggle:hover { color: #fff; }
+.json-viewer .jv-key { color: #93c5fd; }
+.json-viewer .jv-string { color: #86efac; word-break: break-word; }
+.json-viewer .jv-number { color: #fcd34d; }
+.json-viewer .jv-boolean { color: #f0abfc; }
+.json-viewer .jv-null { color: #fca5a5; font-style: italic; }
+.json-viewer .jv-bracket { color: rgba(238, 242, 247, 0.7); }
+.json-viewer .jv-comma { color: rgba(238, 242, 247, 0.5); }
+.json-viewer .jv-summary { color: var(--zava-muted, #97a3b6); font-style: italic; margin-left: 0.25rem; }
+.json-viewer .jv-block { display: block; }
+.json-viewer .jv-block.collapsed > .jv-children { display: none; }
+.json-viewer .jv-block.collapsed > .jv-summary { display: inline; }
+.json-viewer .jv-block:not(.collapsed) > .jv-summary { display: none; }
+.json-viewer .jv-line { display: block; padding-left: 1.25rem; }
+.json-viewer .jv-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.78rem;
+}
+.json-viewer .jv-controls button {
+    background: rgba(20, 28, 46, 0.7);
+    border: 1px solid rgba(120, 150, 200, 0.32);
+    color: rgba(238, 242, 247, 0.86);
+    border-radius: 6px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    font-size: 0.78rem;
+}
+.json-viewer .jv-controls button:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }

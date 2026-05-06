@@ -22,6 +22,12 @@ public static class AgentMetadataApi
         string Instructions,
         string[] DefaultTools);
 
+    private static readonly string[] DefaultTools =
+    [
+        "Azure AI Search — Zava claims knowledge base (policy wordings, scenarios, supplier directory)",
+        "Bing Grounding — open-web grounding for current-events context"
+    ];
+
     private static readonly Dictionary<string, RoleMetadata> _catalog = new(StringComparer.OrdinalIgnoreCase)
     {
         ["claims-intake"] = new(
@@ -49,12 +55,6 @@ public static class AgentMetadataApi
             "team-leader", "Theo", "Claims Team Leader", "Team Leader Office",
             "team-leader-agent", TeamLeaderAgent.Instructions, DefaultTools),
     };
-
-    private static readonly string[] DefaultTools =
-    [
-        "Azure AI Search — Zava claims knowledge base (policy wordings, scenarios, supplier directory)",
-        "Bing Grounding — open-web grounding for current-events context"
-    ];
 
     public static void MapAgentMetadataEndpoints(this WebApplication app, ClaimsAgentOptions options)
     {

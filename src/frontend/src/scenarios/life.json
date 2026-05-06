@@ -1,6 +1,7 @@
 {
   "id": "life",
   "scenarioNumber": 5,
+  "caseId": "CLM-20260502-DEMO05",
   "customerId": "life",
   "incidentZone": "life",
   "approveAtAssessor": true,
