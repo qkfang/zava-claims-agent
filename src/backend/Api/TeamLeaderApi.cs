@@ -39,7 +39,7 @@ public static class TeamLeaderApi
 
         // Engage the Team Leader Agent on a single claim that was minted by
         // the intake demo. The agent reviews the case, flags SLA / quality /
-        // vulnerability risks and proposes a next-best-action.
+        // vulnerability risks and proposes a next-best-action across stages.
         app.MapPost("/team-leader/process", async (TeamLeaderProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.ClaimNumber))
