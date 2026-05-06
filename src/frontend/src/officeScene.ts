@@ -336,20 +336,23 @@ export function buildOffice(scene: Scene): OfficeLayout {
   // pose; openOffset is added/subtracted to slide them into the
   // adjacent wall.
   const doorFrame = mat("doorFrame", "#7a8aa6");
+  // The entrance gap between the front-left/right walls spans x = -2..+2
+  // (4 units wide). Each door is sized to cover half of that gap so the
+  // closed doorway has no visible side gaps.
   const leftDoor = MeshBuilder.CreateBox(
     "leftDoor",
-    { width: 1.0, height: 2.4, depth: 0.15 },
+    { width: 2.0, height: 2.4, depth: 0.15 },
     scene,
   );
-  leftDoor.position = new Vector3(-0.55, 1.2, -15);
+  leftDoor.position = new Vector3(-1.0, 1.2, -15);
   leftDoor.material = doorFrame;
   const rightDoor = leftDoor.clone("rightDoor");
-  rightDoor.position.x = 0.55;
+  rightDoor.position.x = 1.0;
   const doorGlassPanes: Mesh[] = [];
   for (const d of [leftDoor, rightDoor]) {
     const glass = MeshBuilder.CreateBox(
       `${d.name}_glass`,
-      { width: 0.8, height: 1.6, depth: 0.05 },
+      { width: 1.6, height: 1.6, depth: 0.05 },
       scene,
     );
     glass.material = windowMat;
@@ -368,9 +371,9 @@ export function buildOffice(scene: Scene): OfficeLayout {
   // to the scene as TransformNodes named "char_*" by VoxelCharacter,
   // so we can detect them generically without coupling to the
   // simulation layer.
-  const leftDoorClosedX = -0.55;
-  const rightDoorClosedX = 0.55;
-  const doorOpenOffset = 0.95; // slide each door ~0.95 units into the wall
+  const leftDoorClosedX = -1.0;
+  const rightDoorClosedX = 1.0;
+  const doorOpenOffset = 1.8; // slide each door ~1.8 units behind the adjacent wall
   const triggerRadius = 3.2; // metres around the entrance
   const doorwayPosition = new Vector3(0, 0, -15);
   let doorOpenAmount = 0; // 0 = closed, 1 = fully open
@@ -776,29 +779,36 @@ function buildCubicle(
 
   // Sign mounted ABOVE the back partition (top of partition is at y≈1.8;
   // the sign sits with its bottom edge resting on that lip and reads from
-  // a distance). Larger mesh + larger texture so the department label is
-  // legible from the orbit camera.
+  // a distance). The sign is enlarged and tilted 30° upward so the face
+  // angles toward the overhead orbit camera, making the department label
+  // far easier to read from a distance.
   const sign = MeshBuilder.CreateBox(
     `cubSign_${label}`,
-    { width: 5.6, height: 1.05, depth: 0.08 },
+    { width: 6.4, height: 1.6, depth: 0.08 },
     scene,
   );
-  sign.position = new Vector3(cx, 2.45, cz + 2.55);
-  drawSignTexture(scene, sign, 1280, 240, (ctx) => {
+  // Tilt the sign's top backward so its front face aims up toward the
+  // bird's-eye camera. With a 30° tilt the bottom edge of the sign moves
+  // forward and the top edge moves back, so we offset the centre slightly
+  // to keep the bottom resting just above the partition lip.
+  sign.rotation.x = Math.PI / 6; // 30 degrees
+  sign.position = new Vector3(cx, 2.55, cz + 2.4);
+  drawSignTexture(scene, sign, 1280, 320, (ctx) => {
     ctx.fillStyle = "#3a5fb0";
-    ctx.fillRect(0, 0, 1280, 240);
+    ctx.fillRect(0, 0, 1280, 320);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 110px sans-serif";
+    ctx.font = "bold 160px sans-serif";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    ctx.fillText(signText, 640, 130);
+    ctx.fillText(signText, 640, 170);
   });
 
   // Slim accent strip directly under the sign so the larger sign visually
-  // ties back to the cubicle's accent colour.
+  // ties back to the cubicle's accent colour. Widened to match the new
+  // sign and kept flat on the partition top.
   const signUnderline = MeshBuilder.CreateBox(
     `cubSignAccent_${label}`,
-    { width: 5.6, height: 0.08, depth: 0.1 },
+    { width: 6.4, height: 0.08, depth: 0.1 },
     scene,
   );
   signUnderline.position = new Vector3(cx, 1.88, cz + 2.55);
