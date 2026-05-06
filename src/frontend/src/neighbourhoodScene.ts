@@ -16,7 +16,6 @@ import {
   buildVanMeshes,
   buildJeepMeshes,
   buildTowTruckMeshes,
-  makeBurstPipeIncident,
   makeCalmGlowIncident,
   makeLuggageIncident,
   makeRearEndIncident,
@@ -1585,8 +1584,12 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // These are populated as each zone is built below, then handed to the
   // ambient controller at the very end so each scenario can replay its
   // "story of the accident" animation when started.
-  let homePuddle: Mesh | null = null;
-  let homeKitchenSource: Vector3 | null = null;
+  //
+  // The home zone uses the always-on `addBustedPipeline` voxel scene
+  // (dirt mound + broken pipe stubs + perimeter cones + pulsing geyser),
+  // so we only need to capture its centre here and register it with the
+  // ambient controller after construction.
+  let homeBurstCenter: [number, number] | null = null;
   let motorLeadCar: TransformNode[] = [];
   let motorRearCar: TransformNode[] = [];
   let motorContact: Vector3 | null = null;
@@ -1635,12 +1638,12 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeBox("nh_van_body", 2.6, 1.2, 1.4, new Vector3(zx + 3.6, 0.7, zz - 4.5), "#3a8fd6");
     makeBox("nh_van_roof", 2.4, 0.6, 1.3, new Vector3(zx + 3.2, 1.55, zz - 4.5), "#3a8fd6");
     makeBox("nh_van_window", 1.0, 0.5, 1.3, new Vector3(zx + 4.3, 1.05, zz - 4.5), "#cfe7ff");
-    // Water puddle
-    const puddle = makeBox("nh_puddle", 1.6, 0.05, 1.0, new Vector3(zx - 0.5, 0.07, zz - 3.5), "#6cb8e8");
-    homePuddle = puddle;
-    // Source of the burst — a point inside the kitchen wall, just under
-    // the south window, where the water visibly spurts upward.
-    homeKitchenSource = new Vector3(zx - 0.5, 1.6, zz - 1.8);
+    // Burst water main in the front yard. The dirt mound, broken pipe
+    // stubs, perimeter traffic cones, wet patch and pulsing geyser are
+    // all built by `ambient.addBustedPipeline` below — we only record
+    // its centre here so the rest of the home zone can be laid out
+    // around it.
+    homeBurstCenter = [zx - 0.5, zz - 3.5];
 
     // Neighbouring house — also gets a real gable roof + chimney.
     makeBox("nh_home_h2_found", 4.6, 0.4, 4.0, new Vector3(zx + 8, 0.2, zz), "#9a8f7a");
@@ -1686,9 +1689,8 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeScaffold(zx + 2.6, zz, 2.4, 4.4);
     makeSkip(zx - 4.5, zz + 1.5);
     makeCementMixer(zx + 4, zz + 2.5);
-    // A pair of cones marking the work area on the kerb
-    makeCone(zx - 2.6, zz - 4.6);
-    makeCone(zx - 1.4, zz - 4.6);
+    // (The busted-pipeline scene below already draws four perimeter
+    // cones around the burst, so no extra kerb cones are needed here.)
 
     // Incident marker over house 1
     makeIncidentMarker(zx, 5.2, zz, "water");
@@ -2810,13 +2812,17 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   // patch) — purely scene dressing, not tied to any scenario.
   ambient.addBustedPipeline("birch_main", [-12, -6]);
 
-  // Register per-scenario incident animations.
-  if (homePuddle && homeKitchenSource) {
-    ambient.registerIncident(
-      "home",
-      makeBurstPipeIncident(scene, root, homePuddle, homeKitchenSource),
-    );
+  // Home Claims (Michael) burst pipe — same voxel busted-pipeline scene
+  // staged in the front yard of house 1 so the cause of the kitchen
+  // water damage is visible at a glance: dirt mound + snapped pipe
+  // stubs + four perimeter cones + pulsing geyser + recycling droplets.
+  if (homeBurstCenter) {
+    ambient.addBustedPipeline("home_burst", homeBurstCenter);
   }
+
+  // Register per-scenario incident animations. (The home zone uses the
+  // always-on busted-pipeline scene above instead of a one-shot jet,
+  // so no per-scenario animation is needed for "home".)
   if (motorLeadCar.length && motorRearCar.length && motorContact) {
     ambient.registerIncident(
       "motor",

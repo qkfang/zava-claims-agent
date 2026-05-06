@@ -318,6 +318,42 @@ body[data-scene="neighbourhood"] .metrics {
   display: none;
 }
 
+/* Full-page view toggle — hides the left AI Agents nav for more stage space. */
+.left-nav-toggle {
+  pointer-events: auto;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  cursor: pointer;
+  margin-left: 14px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+    transform 0.15s ease;
+}
+.left-nav-toggle svg { width: 22px; height: 22px; }
+.left-nav-toggle:hover {
+  color: #fff;
+  background: rgba(255, 179, 71, 0.18);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.left-nav-toggle .icon-collapse { display: none; }
+body.left-nav-hidden .left-nav-toggle .icon-expand { display: none; }
+body.left-nav-hidden .left-nav-toggle .icon-collapse { display: inline-block; }
+body.left-nav-hidden .left-nav-toggle {
+  color: #1c2230;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+body.left-nav-hidden #agents-panel { display: none; }
+
 /* ----- Scene transition fade overlay ----- */
 .scene-fade {
   position: fixed;

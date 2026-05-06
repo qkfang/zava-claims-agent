@@ -18,8 +18,8 @@ import { VoxelCharacter } from "./voxelCharacter";
  * (60 × 40 units, x∈[-30, 30], z∈[-15, 25]):
  *
  *   z = +25 ┌────────────────────────────────────────────────────────────────┐
- *           │ IT / Cloud Infra Room │ Filing │ Meeting Room │ Kitchen / Break │
- *           ├───────────────────────┴────────┴──────────────┴────────────────┤
+ *           │ IT / Cloud Infra Room │   MEETING ROOMS (A + B)  │ Kitchen     │
+ *           ├───────────────────────┴──────────────────────────┴─────────────┤
  *           │ Team Leader   │ Assessor │ Loss Adj. │ Fraud Inv │ Coffee Area │  back row
  *           │ (exec office) │  Dept    │   Dept    │   Dept    │ (Café)      │
  *           ├───────────────┼──────────┼───────────┼───────────┼─────────────┤
@@ -31,7 +31,12 @@ import { VoxelCharacter } from "./voxelCharacter";
  *           x = -30                                                     x = +30
  *
  * Each numbered department is its own zone, separated from neighbours by
- * tall office-screen partitions and a coloured floor accent.
+ * tall office-screen partitions and a coloured floor accent. Cubicle
+ * centres are spaced 10 units apart (front row at x = -21, -11, -1, +9 ;
+ * back row at x = -11, -1, +9 with the Team Leader executive office at
+ * x = -21, z = 10) so each booth has clear breathing room. The dedicated
+ * Meeting Rooms section sits centre-back at z ≈ 19.5 between the back-row
+ * cubicles and the filing cabinets.
  */
 export interface OfficeLayout {
   /** World position where customers spawn outside the door. */
@@ -545,16 +550,22 @@ export function buildOffice(scene: Scene): OfficeLayout {
     cz: number;
     sign: string;
   };
+  // Cubicle centres are spaced 10 units apart (was 8) so each booth has
+  // visible breathing room between its accent floor and its neighbour's
+  // partition wall — keeps the diorama feeling spacious rather than
+  // cramped now that we have a dedicated meeting-rooms section.
   const cubicles: CubicleSpec[] = [
-    // Front row (z = 0)
-    { label: "intake",         accent: "#3a5fb0", cx: -21, cz: 0, sign: "CLAIMS INTAKE OFFICER" },
-    { label: "supplier",       accent: "#2e8a6e", cx: -13, cz: 0, sign: "SUPPLIER COORDINATOR" },
-    { label: "settlement",     accent: "#a06a4c", cx:  -5, cz: 0, sign: "SETTLEMENT OFFICER" },
-    { label: "communications", accent: "#b56fbf", cx:   3, cz: 0, sign: "CUSTOMER COMMUNICATIONS" },
+    // Front row (z = 0). Sign text is the key role only (no "Officer" /
+    // "Coordinator" / "Investigator" suffixes) so the label always fits
+    // on the desk sign and stays readable from the orbit camera.
+    { label: "intake",         accent: "#3a5fb0", cx: -21, cz: 0, sign: "INTAKE" },
+    { label: "supplier",       accent: "#2e8a6e", cx: -11, cz: 0, sign: "SUPPLIER" },
+    { label: "settlement",     accent: "#a06a4c", cx:  -1, cz: 0, sign: "SETTLEMENT" },
+    { label: "communications", accent: "#b56fbf", cx:   9, cz: 0, sign: "COMMS" },
     // Back row (z = 10) — Team Leader gets the executive corner office
-    { label: "assessor",     accent: "#6ec1ff", cx: -13, cz: 10, sign: "CLAIMS ASSESSOR" },
-    { label: "lossAdjuster", accent: "#ffb347", cx:  -5, cz: 10, sign: "LOSS ADJUSTER" },
-    { label: "fraud",        accent: "#e8504c", cx:   3, cz: 10, sign: "FRAUD INVESTIGATOR" },
+    { label: "assessor",     accent: "#6ec1ff", cx: -11, cz: 10, sign: "ASSESSOR" },
+    { label: "lossAdjuster", accent: "#ffb347", cx:  -1, cz: 10, sign: "LOSS ADJUSTER" },
+    { label: "fraud",        accent: "#e8504c", cx:   9, cz: 10, sign: "FRAUD" },
   ];
   for (const c of cubicles) {
     buildDepartmentZone(scene, mat, c.label, c.cx, c.cz, c.sign, c.accent);
@@ -563,8 +574,12 @@ export function buildOffice(scene: Scene): OfficeLayout {
   // ----- Team Leader executive office (back-far-left) -----
   buildTeamLeaderOffice(scene, mat, new Vector3(-21, 0, 10));
 
-  // ----- Meeting Room (back glass room, mid) -----
-  buildMeetingRoom(scene, mat, new Vector3(11, 0, 19.5));
+  // ----- Meeting Rooms section (back, mid) -----
+  // Two glass-walled meeting rooms sit side-by-side along the back of the
+  // office, between the back-row cubicles and the filing cabinets. The
+  // section is unified by a shared accent floor strip and an overhead
+  // "MEETING ROOMS" banner mounted on the back wall.
+  buildMeetingRoomSection(scene, mat, new Vector3(2.5, 0, 19.5));
 
   // ----- Filing cabinets / archive shelves (along the back wall) -----
   for (let col = 0; col < 6; col++) {
@@ -607,20 +622,22 @@ export function buildOffice(scene: Scene): OfficeLayout {
   coolerTop.position = new Vector3(-2.5, 1.65, 23);
   coolerTop.material = mat("coolerTop", "#7fb6e3");
 
-  // Printer station tucked between the back rows
+  // Printer station tucked alongside the right-hand walkway, between the
+  // Fraud Investigation booth and the cafe zone (out of the cubicles
+  // since the booths are now spaced further apart).
   const printer = MeshBuilder.CreateBox(
     "printer",
     { width: 1.0, height: 0.7, depth: 0.7 },
     scene,
   );
-  printer.position = new Vector3(8.5, 0.45, 10.0);
+  printer.position = new Vector3(15.0, 0.45, 10.0);
   printer.material = mat("printer", "#3a3a44");
   const printerTop = MeshBuilder.CreateBox(
     "printerTop",
     { width: 0.9, height: 0.1, depth: 0.6 },
     scene,
   );
-  printerTop.position = new Vector3(8.5, 0.85, 10.0);
+  printerTop.position = new Vector3(15.0, 0.85, 10.0);
   printerTop.material = mat("printerTop", "#22252e");
 
   // ----- Customer-facing welcome counters in the lobby -----
@@ -644,13 +661,14 @@ export function buildOffice(scene: Scene): OfficeLayout {
   buildFramedArt(scene, mat, "recArt1", new Vector3(0.5, 3.0, 24.84), 1.6, 1.2, "#3a5fb0");
   buildFramedArt(scene, mat, "recArt2", new Vector3(2.5, 3.0, 24.84), 1.6, 1.2, "#2e8a6e");
 
-  // Decorative plants in walkways
-  buildPlant(scene, mat, new Vector3(-9.0, 0, -4.5));
-  buildPlant(scene, mat, new Vector3(-1.0, 0, -4.5));
-  buildPlant(scene, mat, new Vector3(7.0, 0, -4.5));
-  buildPlant(scene, mat, new Vector3(-9.0, 0, 5.0));
-  buildPlant(scene, mat, new Vector3(-1.0, 0, 5.0));
-  buildPlant(scene, mat, new Vector3(7.0, 0, 5.0));
+  // Decorative plants in walkways — placed in the gaps between cubicles
+  // (now 10 units apart) and along the right-side circulation routes.
+  buildPlant(scene, mat, new Vector3(-16.0, 0, -4.5));
+  buildPlant(scene, mat, new Vector3(-6.0, 0, -4.5));
+  buildPlant(scene, mat, new Vector3(4.0, 0, -4.5));
+  buildPlant(scene, mat, new Vector3(-16.0, 0, 5.0));
+  buildPlant(scene, mat, new Vector3(-6.0, 0, 5.0));
+  buildPlant(scene, mat, new Vector3(4.0, 0, 5.0));
   buildPlant(scene, mat, new Vector3(17.0, 0, 4.5));
   buildPlant(scene, mat, new Vector3(17.0, 0, 14.5));
   buildPlant(scene, mat, new Vector3(-17.0, 0, 4.5));
@@ -664,12 +682,12 @@ export function buildOffice(scene: Scene): OfficeLayout {
     receptionPoint: new Vector3(-13.5, 0, -9.5),
     exitPoint: new Vector3(0, 0, -18),
     intakeDeskPoint: new Vector3(-21, 0, -0.6),
-    assessorDeskPoint: new Vector3(-13, 0, 9.4),
-    lossAdjusterDeskPoint: new Vector3(-5, 0, 9.4),
-    fraudDeskPoint: new Vector3(3, 0, 9.4),
-    supplierDeskPoint: new Vector3(-13, 0, -0.6),
-    settlementDeskPoint: new Vector3(-5, 0, -0.6),
-    communicationsDeskPoint: new Vector3(3, 0, -0.6),
+    assessorDeskPoint: new Vector3(-11, 0, 9.4),
+    lossAdjusterDeskPoint: new Vector3(-1, 0, 9.4),
+    fraudDeskPoint: new Vector3(9, 0, 9.4),
+    supplierDeskPoint: new Vector3(-11, 0, -0.6),
+    settlementDeskPoint: new Vector3(-1, 0, -0.6),
+    communicationsDeskPoint: new Vector3(9, 0, -0.6),
     teamLeaderDeskPoint: new Vector3(-21, 0, 9.5),
     inboxPoint: new Vector3(-14.0, 1.25, -10.4),
     archivePoint: new Vector3(5.0, 1.4, 1.0),
@@ -797,7 +815,7 @@ function buildCubicle(
     ctx.fillStyle = "#3a5fb0";
     ctx.fillRect(0, 0, 1280, 320);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 160px sans-serif";
+    ctx.font = "bold 140px sans-serif";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
     ctx.fillText(signText, 640, 170);
@@ -1094,49 +1112,123 @@ function buildTeamLeaderOffice(
 }
 
 /** Glass-walled meeting room with a long table and chairs. */
-function buildMeetingRoom(
+/**
+ * Build a section of two glass-walled meeting rooms side-by-side along the
+ * back of the office, unified by a shared accent floor and an overhead
+ * "MEETING ROOMS" banner. Each room has its own conference table, chairs,
+ * wall display and pendant lamps. The section is positioned by its
+ * mid-point; the two rooms are placed symmetrically to its left and right.
+ */
+function buildMeetingRoomSection(
   scene: Scene,
   mat: MaterialFactory,
   origin: Vector3,
 ): void {
-  const glass = mat("mrGlass", "#cfe7ff");
-  const frame = mat("mrFrame", "#2a3a5c");
+  // Shared accent floor under both rooms (slate blue) so the section reads
+  // as one unified zone from the bird's-eye camera.
+  const sectionFloor = MeshBuilder.CreateBox(
+    "mrSectionFloor",
+    { width: 16.4, height: 0.05, depth: 5.4 },
+    scene,
+  );
+  sectionFloor.position = new Vector3(origin.x, 0.13, origin.z + 0.2);
+  sectionFloor.material = mat("mrSectionFloorMat", "#3b4d72");
+
+  // Overhead "MEETING ROOMS" banner mounted on the back wall, above the
+  // shared cabinet line, so the section is clearly labelled from a
+  // distance.
+  const banner = MeshBuilder.CreateBox(
+    "mrSectionBanner",
+    { width: 8.0, height: 0.9, depth: 0.08 },
+    scene,
+  );
+  banner.position = new Vector3(origin.x, 4.1, 24.78);
+  drawSignTexture(scene, banner, 1024, 140, (ctx) => {
+    ctx.fillStyle = "#2a3a5c";
+    ctx.fillRect(0, 0, 1024, 140);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 78px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("MEETING ROOMS", 512, 76);
+  });
+
+  // Two rooms 9 units apart, centred on the section origin
+  buildMeetingRoom(
+    scene,
+    mat,
+    new Vector3(origin.x - 4.5, 0, origin.z),
+    "mrA",
+    "MEETING ROOM A",
+  );
+  buildMeetingRoom(
+    scene,
+    mat,
+    new Vector3(origin.x + 4.5, 0, origin.z),
+    "mrB",
+    "MEETING ROOM B",
+  );
+}
+
+function buildMeetingRoom(
+  scene: Scene,
+  mat: MaterialFactory,
+  origin: Vector3,
+  tag: string = "mr",
+  title: string = "MEETING ROOM",
+): void {
+  const glass = mat(`${tag}Glass`, "#cfe7ff");
+  const frame = mat(`${tag}Frame`, "#2a3a5c");
 
   // Glass walls (3 sides — back is the office wall)
   const front = MeshBuilder.CreateBox(
-    "mrFront",
+    `${tag}_front`,
     { width: 7.0, height: 2.4, depth: 0.1 },
     scene,
   );
   front.position = new Vector3(origin.x, 1.2, origin.z - 2.5);
   front.material = glass;
   const left = MeshBuilder.CreateBox(
-    "mrLeft",
+    `${tag}_left`,
     { width: 0.1, height: 2.4, depth: 5.0 },
     scene,
   );
   left.position = new Vector3(origin.x - 3.5, 1.2, origin.z);
   left.material = glass;
+  const right = MeshBuilder.CreateBox(
+    `${tag}_right`,
+    { width: 0.1, height: 2.4, depth: 5.0 },
+    scene,
+  );
+  right.position = new Vector3(origin.x + 3.5, 1.2, origin.z);
+  right.material = glass;
 
   // Frames
   const frontFrame = MeshBuilder.CreateBox(
-    "mrFrontFrame",
+    `${tag}_frontFrame`,
     { width: 7.0, height: 0.12, depth: 0.14 },
     scene,
   );
   frontFrame.position = new Vector3(origin.x, 2.4, origin.z - 2.5);
   frontFrame.material = frame;
   const leftFrame = MeshBuilder.CreateBox(
-    "mrLeftFrame",
+    `${tag}_leftFrame`,
     { width: 0.14, height: 0.12, depth: 5.0 },
     scene,
   );
   leftFrame.position = new Vector3(origin.x - 3.5, 2.4, origin.z);
   leftFrame.material = frame;
+  const rightFrame = MeshBuilder.CreateBox(
+    `${tag}_rightFrame`,
+    { width: 0.14, height: 0.12, depth: 5.0 },
+    scene,
+  );
+  rightFrame.position = new Vector3(origin.x + 3.5, 2.4, origin.z);
+  rightFrame.material = frame;
 
   // Sign above
   const sign = MeshBuilder.CreateBox(
-    "mrSign",
+    `${tag}_sign`,
     { width: 3.2, height: 0.55, depth: 0.06 },
     scene,
   );
@@ -1145,40 +1237,40 @@ function buildMeetingRoom(
     ctx.fillStyle = "#2a3a5c";
     ctx.fillRect(0, 0, 512, 96);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 50px sans-serif";
+    ctx.font = "bold 44px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("MEETING ROOM", 256, 50);
+    ctx.fillText(title, 256, 50);
   });
 
   // Conference table
   const table = MeshBuilder.CreateBox(
-    "mrTable",
+    `${tag}_table`,
     { width: 4.5, height: 0.15, depth: 1.6 },
     scene,
   );
   table.position = new Vector3(origin.x, 0.85, origin.z + 0.5);
-  table.material = mat("mrTableMat", "#bca78a");
+  table.material = mat(`${tag}_tableMat`, "#bca78a");
   const tableBase = MeshBuilder.CreateBox(
-    "mrTableBase",
+    `${tag}_tableBase`,
     { width: 4.0, height: 0.85, depth: 0.5 },
     scene,
   );
   tableBase.position = new Vector3(origin.x, 0.43, origin.z + 0.5);
-  tableBase.material = mat("mrTableBaseMat", "#7d4f33");
+  tableBase.material = mat(`${tag}_tableBaseMat`, "#7d4f33");
 
   // Chairs around the table
   for (const cz of [-0.4, 1.4]) {
     for (const cx of [-1.5, 0, 1.5]) {
       const seat = MeshBuilder.CreateBox(
-        `mrChair_${cx}_${cz}`,
+        `${tag}_chair_${cx}_${cz}`,
         { width: 0.55, height: 0.1, depth: 0.55 },
         scene,
       );
       seat.position = new Vector3(origin.x + cx, 0.55, origin.z + cz);
-      seat.material = mat("mrChairMat", "#1c2230");
+      seat.material = mat(`${tag}_chairMat`, "#1c2230");
       const back = MeshBuilder.CreateBox(
-        `mrChairBack_${cx}_${cz}`,
+        `${tag}_chairBack_${cx}_${cz}`,
         { width: 0.55, height: 0.65, depth: 0.1 },
         scene,
       );
@@ -1187,13 +1279,13 @@ function buildMeetingRoom(
         0.93,
         origin.z + cz + (cz > 0 ? 0.25 : -0.25),
       );
-      back.material = mat("mrChairBackMat", "#1c2230");
+      back.material = mat(`${tag}_chairBackMat`, "#1c2230");
     }
   }
 
   // Wall-mounted display on back wall
   const tv = MeshBuilder.CreateBox(
-    "mrTV",
+    `${tag}_tv`,
     { width: 3.0, height: 1.6, depth: 0.08 },
     scene,
   );
@@ -1217,8 +1309,8 @@ function buildMeetingRoom(
 
   // Voxel-pack flair: pendant lamp above the table, laptops + mugs at each
   // chair, and a centerpiece plant.
-  buildPendantLamp(scene, mat, "mrPendantA", new Vector3(origin.x - 1.0, 3.6, origin.z + 0.5), "#ffb347");
-  buildPendantLamp(scene, mat, "mrPendantB", new Vector3(origin.x + 1.0, 3.6, origin.z + 0.5), "#ffb347");
+  buildPendantLamp(scene, mat, `${tag}_pendantA`, new Vector3(origin.x - 1.0, 3.6, origin.z + 0.5), "#ffb347");
+  buildPendantLamp(scene, mat, `${tag}_pendantB`, new Vector3(origin.x + 1.0, 3.6, origin.z + 0.5), "#ffb347");
   const laptopColors = ["#3a5fb0", "#e8504c", "#2e8a6e", "#a06a4c", "#b56fbf", "#1a1f2c"];
   let i = 0;
   for (const cz of [-0.4, 1.4]) {
@@ -1226,7 +1318,7 @@ function buildMeetingRoom(
       buildLaptop(
         scene,
         mat,
-        `mrLaptop_${cx}_${cz}`,
+        `${tag}_laptop_${cx}_${cz}`,
         new Vector3(origin.x + cx, 0.93, origin.z + cz + (cz > 0 ? -0.2 : 0.2)),
         cz > 0,
         laptopColors[i % laptopColors.length],
