@@ -41,6 +41,14 @@ public static class AgentMetadataApi
         "MCP · settlement_releasePayment — release the payment (gated, requires prior approval)"
     ];
 
+    private static readonly string[] SupplierTools =
+    [
+        "Azure AI Search — Zava claims knowledge base (policy wordings, scenarios, supplier directory)",
+        "Bing Grounding — open-web grounding for current-events context",
+        "MCP lookupSuppliers — Zava approved-network supplier directory with indicative pricing (best-price match)",
+        "MCP generateQuoteRequestPdf — generates a Zava quote-request PDF and returns a downloadable URL"
+    ];
+
     private static readonly Dictionary<string, RoleMetadata> _catalog = new(StringComparer.OrdinalIgnoreCase)
     {
         ["claims-intake"] = new(
@@ -57,7 +65,7 @@ public static class AgentMetadataApi
             "fraud-investigation-agent", FraudInvestigationAgent.Instructions, DefaultTools),
         ["supplier"] = new(
             "supplier", "Sam", "Supplier Coordinator", "Supplier Coordination",
-            "supplier-coordination-agent", SupplierCoordinatorAgent.Instructions, DefaultTools),
+            "supplier-coordination-agent", SupplierCoordinatorAgent.Instructions, SupplierTools),
         ["settlement"] = new(
             "settlement", "Seth", "Settlement Officer", "Settlement",
             "settlement-agent", SettlementAgent.Instructions, SettlementTools),

@@ -66,7 +66,7 @@ ClaimsAgent? agent = flag switch
     "--fraud"
         => new FraudInvestigationAgent(aiProjectClient, deploymentName, searchConnectionId, searchIndexName, bingConnectionId, loggerFactory.CreateLogger<FraudInvestigationAgent>()),
     "--supplier"
-        => new SupplierCoordinatorAgent(aiProjectClient, deploymentName, searchConnectionId, searchIndexName, bingConnectionId, loggerFactory.CreateLogger<SupplierCoordinatorAgent>()),
+        => new SupplierCoordinatorAgent(aiProjectClient, deploymentName, searchConnectionId, searchIndexName, bingConnectionId, mcpServerUri: null, logger: loggerFactory.CreateLogger<SupplierCoordinatorAgent>()),
     "--settlement"
         => new SettlementAgent(aiProjectClient, deploymentName, searchConnectionId, searchIndexName, bingConnectionId, loggerFactory.CreateLogger<SettlementAgent>()),
     "--communications"
