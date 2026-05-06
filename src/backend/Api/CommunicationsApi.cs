@@ -4,6 +4,8 @@ namespace ZavaClaims.App.Api;
 
 record CommunicationsProcessRequest(string ClaimNumber);
 
+record CommunicationsVoiceRequest(string Message, string? ClaimNumber, string? ConversationId);
+
 /// <summary>
 /// HTTP endpoints that back the "Try It Out" tab on the Customer
 /// Communications agent page (<c>/agents/customer-communications</c>).
@@ -137,6 +139,129 @@ public static class CommunicationsApi
                 agentRawOutput
             });
         });
+
+        // Voice chat endpoint — backs the "Voice chat" tab on the
+        // Customer Communications agent page. Accepts a transcribed user
+        // message (the browser does the speech-to-text) along with an
+        // optional claim context and conversation id, and returns a short
+        // plain-English reply that the browser then speaks aloud via the
+        // Web Speech API. When the Foundry agent is configured the live
+        // Customer Communications Agent generates the reply; otherwise a
+        // deterministic, empathetic fallback is returned so the demo
+        // always works end-to-end.
+        app.MapPost("/communications/voice", async (CommunicationsVoiceRequest request) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Message))
+                return Results.BadRequest(new { error = "message is required" });
+
+            // Pull optional claim context to ground the reply.
+            IntakeClaimRecord? record = null;
+            if (!string.IsNullOrWhiteSpace(request.ClaimNumber))
+                record = claimStore.Get(request.ClaimNumber);
+
+            logger.LogInformation(
+                "Communications voice: claimNumber={ClaimNumber}, conversationId={ConversationId}",
+                Sanitize(request.ClaimNumber ?? "(none)"),
+                Sanitize(request.ConversationId ?? "(new)"));
+
+            string reply;
+            string? conversationId = request.ConversationId;
+            bool agentUsed = false;
+
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var prompt =
+                        "You are Cara, the Customer Communications Specialist at Zava Insurance. " +
+                        "You are speaking with the customer over a voice call, so reply in short, " +
+                        "warm, plain-English sentences (no markdown, no bullet points, no headings). " +
+                        "Keep replies to 2-4 sentences. Never invent claim facts; if you don't know, " +
+                        "say you'll check and follow up. If the situation sounds sensitive, be empathetic " +
+                        "and offer to escalate to a human teammate.\n\n";
+
+                    if (record is not null)
+                    {
+                        prompt +=
+                            "CURRENT CLAIM CONTEXT\n" +
+                            $"Claim number   : {record.ClaimNumber}\n" +
+                            $"Customer       : {record.CustomerName}\n" +
+                            $"Policy         : {record.PolicyNumber}\n" +
+                            $"Claim type     : {record.ClaimType}\n" +
+                            $"Incident       : {record.IncidentDate} · {record.IncidentLocation}\n" +
+                            $"Description    : {record.IncidentDescription}\n" +
+                            $"Urgency        : {record.Urgency}\n" +
+                            $"Stage          : Lodged, awaiting Claims Assessment\n\n";
+                    }
+
+                    prompt += "CUSTOMER SAID (over voice):\n" + request.Message;
+
+                    var agent = agentFactory.Create("communications");
+                    var result = await agent.RunWithTraceAsync(prompt, conversationId);
+                    reply = StripMarkdown(result.Text);
+                    // NOTE: each turn currently runs stateless; we keep
+                    // whatever conversationId the caller supplied so the
+                    // browser can still group messages on its side.
+                    agentUsed = true;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Customer Communications voice agent invocation failed; using fallback reply");
+                    reply = FallbackVoiceReply(request.Message, record);
+                }
+            }
+            else
+            {
+                reply = FallbackVoiceReply(request.Message, record);
+            }
+
+            return Results.Ok(new
+            {
+                reply,
+                conversationId,
+                agentConfigured = agentFactory.IsConfigured,
+                agentUsed
+            });
+        });
+    }
+
+    // Strip very basic markdown so the reply sounds natural when read aloud
+    // by the browser's speech synthesiser. Removes leading list markers,
+    // headings, emphasis characters and code fences.
+    private static string StripMarkdown(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        var cleaned = new List<string>(lines.Length);
+        foreach (var raw in lines)
+        {
+            var line = raw.TrimStart();
+            if (line.StartsWith("```")) continue;
+            // Strip heading markers (# foo) and list markers (- foo, * foo, 1. foo)
+            while (line.StartsWith("#")) line = line[1..];
+            if (line.StartsWith("- ") || line.StartsWith("* ")) line = line[2..];
+            line = System.Text.RegularExpressions.Regex.Replace(line, @"^\d+\.\s+", "");
+            // Drop emphasis chars
+            line = line.Replace("**", "").Replace("__", "").Replace("`", "");
+            cleaned.Add(line.Trim());
+        }
+        return string.Join(" ", cleaned.Where(l => l.Length > 0)).Trim();
+    }
+
+    private static string FallbackVoiceReply(string message, IntakeClaimRecord? record)
+    {
+        var who = record?.CustomerName?.Split(' ').FirstOrDefault();
+        var greet = string.IsNullOrEmpty(who) ? "Hi there" : $"Hi {who}";
+        if (record is null)
+        {
+            return $"{greet}, this is Cara from Zava Insurance Customer Communications. " +
+                   "I heard you, and I'd be glad to help. Could you share the claim number you're calling about so I can pull up the details?";
+        }
+
+        var stage = "lodged and awaiting our Claims Assessment team";
+        return $"{greet}, this is Cara from Zava Insurance. " +
+               $"Your claim {record.ClaimNumber} for the {record.ClaimType.ToLowerInvariant()} incident is {stage}. " +
+               "I've noted what you just told me, and I'll make sure the team has it before they reach out next. Is there anything else I can help with right now?";
     }
 
     private static string Sanitize(string value) =>
