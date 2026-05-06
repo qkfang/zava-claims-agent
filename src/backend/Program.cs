@@ -51,6 +51,7 @@ builder.Services.AddCors();
 // "Try It Out" tab. Lets later agents in the demo flow look the case up
 // by claim number.
 builder.Services.AddSingleton<IntakeClaimStore>();
+builder.Services.AddSingleton<TeamLeaderGroupChatService>();
 
 // Fraud Investigation document-authenticity demo: loads the static sample
 // manifest from wwwroot/fraud/samples/manifest.json and tracks per-claim
@@ -212,6 +213,9 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     app.MapIntakeEndpoints(intakeStore, intakeFactory, intakeLogger);
     app.MapLossAdjusterEndpoints(intakeStore, intakeFactory, intakeLogger);
     app.MapTeamLeaderEndpoints(intakeStore, intakeFactory, intakeLogger);
+
+    var groupChatService = app.Services.GetRequiredService<TeamLeaderGroupChatService>();
+    app.MapTeamLeaderGroupChatEndpoints(groupChatService, intakeLogger);
 }
 
 // ── MCP server endpoint (always on; loss-adjuster MCP tools live here, and
