@@ -28,6 +28,19 @@ public static class AgentMetadataApi
         "Bing Grounding — open-web grounding for current-events context"
     ];
 
+    private static readonly string[] SettlementTools =
+    [
+        "Azure AI Search — Zava claims knowledge base (policy wordings, scenarios, supplier directory)",
+        "Bing Grounding — open-web grounding for current-events context",
+        "MCP · settlement_validatePayee — confirm payee matches the customer on the claim",
+        "MCP · settlement_matchInvoice — match supplier invoice against approved scope",
+        "MCP · settlement_checkAuthorityLimit — flag amounts at/above the authority threshold",
+        "MCP · settlement_calculateSettlement — transparent payable-amount calculation",
+        "MCP · settlement_requestPaymentApproval — raise approval and post Adaptive Card to Microsoft Teams",
+        "MCP · settlement_getApprovalStatus — poll the approval state",
+        "MCP · settlement_releasePayment — release the payment (gated, requires prior approval)"
+    ];
+
     private static readonly string[] SupplierTools =
     [
         "Azure AI Search — Zava claims knowledge base (policy wordings, scenarios, supplier directory)",
@@ -55,7 +68,7 @@ public static class AgentMetadataApi
             "supplier-coordination-agent", SupplierCoordinatorAgent.Instructions, SupplierTools),
         ["settlement"] = new(
             "settlement", "Seth", "Settlement Officer", "Settlement",
-            "settlement-agent", SettlementAgent.Instructions, DefaultTools),
+            "settlement-agent", SettlementAgent.Instructions, SettlementTools),
         ["communications"] = new(
             "communications", "Cara", "Customer Communications Specialist", "Customer Communications",
             "customer-communications-agent", CustomerCommunicationsAgent.Instructions, DefaultTools),
