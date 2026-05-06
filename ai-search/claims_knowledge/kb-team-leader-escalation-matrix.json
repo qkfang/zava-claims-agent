@@ -1,0 +1,13 @@
+{
+  "id": "kb-team-leader-escalation-matrix",
+  "title": "Team Leader escalation matrix — when to escalate to a human reviewer",
+  "category": "Operations Playbook",
+  "claimType": "all",
+  "claimNumber": "",
+  "policyNumber": "",
+  "content": "The Claims Team Leader uses this matrix to decide which claims need a human reviewer. Auto-escalate to a senior assessor when: (a) reserve exceeds $250,000, (b) claim involves a vulnerable customer per the Zava vulnerable-customer register, (c) any fatality or serious injury, (d) suspected fraud signals raised by the Fraud Investigation Agent reach a confidence score of 0.7+, (e) the customer has lodged a complaint or used the words 'AFCA' or 'ombudsman', (f) coverage is ambiguous and the Claims Assessment Agent has flagged Section 54 considerations under the Insurance Contracts Act, (g) emergency accommodation has run beyond 14 days, (h) the claim has been open longer than the SLA target for its product line (motor 30 days, home 60 days, business 120 days, travel 21 days, life 14 days). The Team Leader Agent monitors workloads and rebalances queues if any officer's open caseload exceeds 35 active claims.",
+  "severity": "medium",
+  "department": "Team Leader",
+  "tags": ["team-leader", "escalation", "vulnerable-customer", "afca", "section-54", "sla"],
+  "lastUpdated": "2026-03-01T09:00:00Z"
+}
