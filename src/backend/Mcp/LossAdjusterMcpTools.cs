@@ -383,8 +383,10 @@ public class LossAdjusterMcpTools
         if (documentUrl.StartsWith("/", StringComparison.Ordinal))
         {
             var rel = documentUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
-            var local = Path.Combine(_environment.WebRootPath ?? "wwwroot", rel);
-            var fullRoot = Path.GetFullPath(_environment.WebRootPath ?? "wwwroot");
+            var webRoot = _environment.WebRootPath ?? "wwwroot";
+            var local = Path.Combine(webRoot, rel);
+            var fullRoot = Path.GetFullPath(webRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
             var fullLocal = Path.GetFullPath(local);
             if (!fullLocal.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
                 return null; // path traversal guard
