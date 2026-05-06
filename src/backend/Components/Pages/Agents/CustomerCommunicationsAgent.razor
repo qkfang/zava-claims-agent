@@ -19,6 +19,7 @@
     <nav class="agent-tabs" role="tablist" aria-label="Customer Communications agent details">
         <button type="button" class="agent-tab active" data-tab="overview" role="tab" aria-selected="true" tabindex="0">Overview</button>
         <button type="button" class="agent-tab" data-tab="try" role="tab" aria-selected="false" tabindex="-1">Try it out</button>
+        <button type="button" class="agent-tab" data-tab="voice" role="tab" aria-selected="false" tabindex="-1">Voice chat</button>
     </nav>
 
     <div class="agent-tab-panel active" data-panel="overview" role="tabpanel">
@@ -227,6 +228,58 @@
                 <div class="comms-agent-notes-label">Foundry agent narrative</div>
                 <div id="comms-agent-notes-body" class="agent-md"></div>
             </div>
+        </div>
+    </section>
+    </div>
+
+    <div class="agent-tab-panel" data-panel="voice" role="tabpanel">
+    <section class="panel voice-panel" style="--accent: #ec4899">
+        <h2>Voice chat with Cara</h2>
+        <p class="muted voice-help">
+            Talk to Cara directly from your browser. Press the mic, speak naturally, and Cara will
+            reply out loud in plain English. Optionally pick a claim first so Cara has the context.
+            Voice input uses your browser's Web Speech API — works best in Chrome / Edge on
+            <code>localhost</code> or over <code>https</code>. You can also type if you'd rather
+            not use the mic.
+        </p>
+
+        <div class="voice-context-row">
+            <label class="voice-context-label" for="voice-claim-select">Claim context (optional)</label>
+            <select id="voice-claim-select" class="comms-select voice-select" disabled>
+                <option value="">Loading claims…</option>
+            </select>
+            <button type="button" id="voice-refresh-btn" class="comms-secondary" title="Refresh claim list">↻ Refresh</button>
+        </div>
+
+        <div class="voice-stage" aria-live="polite">
+            <button type="button" id="voice-mic-btn" class="voice-mic" aria-pressed="false" aria-label="Start talking to Cara">
+                <span class="voice-mic-icon" aria-hidden="true">
+                    <i class="fa-solid fa-microphone"></i>
+                </span>
+                <span class="voice-mic-label">Press to talk</span>
+            </button>
+
+            <div class="voice-wave" id="voice-wave" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span>
+            </div>
+
+            <div class="voice-status" id="voice-status">Idle. Press the mic and start speaking — Cara is listening.</div>
+        </div>
+
+        <div class="voice-text-row">
+            <input type="text" id="voice-text-input" class="voice-text-input" placeholder="…or type a message and press Enter" />
+            <button type="button" id="voice-text-send" class="voice-text-send">Send</button>
+            <label class="voice-toggle">
+                <input type="checkbox" id="voice-tts-toggle" checked />
+                <span>Speak replies</span>
+            </label>
+        </div>
+
+        <div class="voice-transcript" id="voice-transcript" role="log" aria-live="polite">
+            <div class="voice-empty">Your conversation with Cara will appear here.</div>
         </div>
     </section>
     </div>
@@ -450,6 +503,212 @@
         margin: 0;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
+
+    /* Voice chat tab */
+    .voice-panel { --voice-accent: #ec4899; }
+    .voice-help { margin-bottom: 0.9rem; }
+    .voice-help code {
+        background: rgba(236, 72, 153, 0.12);
+        padding: 1px 6px; border-radius: 4px; font-size: 0.85rem;
+    }
+
+    .voice-context-row {
+        display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center;
+        margin-bottom: 0.85rem;
+    }
+    .voice-context-label {
+        color: var(--zava-muted, #97a3b6);
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .voice-select { flex: 1 1 320px; }
+
+    .voice-stage {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 0.85rem;
+        padding: 1.4rem 1rem 1.2rem 1rem;
+        border: 1px solid color-mix(in srgb, var(--voice-accent) 28%, transparent);
+        background:
+            radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--voice-accent) 14%, transparent) 0%, transparent 65%),
+            rgba(10, 16, 28, 0.7);
+        border-radius: 14px;
+    }
+
+    .voice-mic {
+        width: 96px; height: 96px;
+        border-radius: 50%;
+        border: 1px solid color-mix(in srgb, var(--voice-accent) 55%, transparent);
+        background:
+            radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--voice-accent) 70%, #1b0a18) 0%, color-mix(in srgb, var(--voice-accent) 30%, #100716) 70%);
+        color: #fff;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.8rem;
+        gap: 0.25rem;
+        box-shadow: 0 6px 22px color-mix(in srgb, var(--voice-accent) 28%, transparent);
+        transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.2s ease;
+        position: relative;
+    }
+    .voice-mic:hover { transform: translateY(-1px); }
+    .voice-mic:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--voice-accent) 40%, transparent),
+                    0 6px 22px color-mix(in srgb, var(--voice-accent) 28%, transparent);
+    }
+    .voice-mic-icon { font-size: 1.85rem; line-height: 1; }
+    .voice-mic-label { font-size: 0.78rem; letter-spacing: 0.04em; }
+    .voice-mic.listening {
+        background:
+            radial-gradient(circle at 50% 35%, #ff5a8a 0%, #b42463 70%);
+        animation: voice-mic-pulse 1.4s ease-in-out infinite;
+    }
+    .voice-mic.speaking {
+        background:
+            radial-gradient(circle at 50% 35%, #6ee7b7 0%, #047857 70%);
+        border-color: rgba(110, 231, 183, 0.55);
+        box-shadow: 0 6px 22px rgba(110, 231, 183, 0.28);
+    }
+    .voice-mic.disabled, .voice-mic[disabled] { opacity: 0.55; cursor: not-allowed; }
+
+    @@keyframes voice-mic-pulse {
+        0%, 100% { box-shadow: 0 6px 22px color-mix(in srgb, var(--voice-accent) 28%, transparent); }
+        50%      { box-shadow: 0 6px 22px color-mix(in srgb, var(--voice-accent) 60%, transparent),
+                               0 0 0 8px color-mix(in srgb, var(--voice-accent) 18%, transparent); }
+    }
+
+    .voice-wave {
+        display: flex; align-items: center; gap: 4px;
+        height: 56px;
+        width: 100%; max-width: 420px;
+        justify-content: center;
+    }
+    .voice-wave span {
+        display: block;
+        width: 5px;
+        height: 8px;
+        border-radius: 3px;
+        background: linear-gradient(180deg,
+            color-mix(in srgb, var(--voice-accent) 90%, #fff),
+            color-mix(in srgb, var(--voice-accent) 50%, #1a0a18));
+        opacity: 0.55;
+        transform-origin: center;
+        transition: height 0.08s ease;
+    }
+    .voice-wave.active span { animation: voice-wave-bounce 1s ease-in-out infinite; opacity: 0.9; }
+    .voice-wave.active span:nth-child(odd)  { animation-duration: 0.9s; }
+    .voice-wave.active span:nth-child(even) { animation-duration: 1.15s; }
+    .voice-wave.active span:nth-child(3n)   { animation-delay: 0.15s; }
+    .voice-wave.active span:nth-child(4n)   { animation-delay: 0.3s; }
+    .voice-wave.active span:nth-child(5n)   { animation-delay: 0.45s; }
+    .voice-wave.speaking span {
+        background: linear-gradient(180deg, #6ee7b7, #047857);
+    }
+
+    @@keyframes voice-wave-bounce {
+        0%, 100% { height: 8px; }
+        50%      { height: 46px; }
+    }
+
+    .voice-status {
+        font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.88);
+        text-align: center;
+        min-height: 1.2em;
+    }
+    .voice-status.error { color: #fca5a5; }
+
+    .voice-text-row {
+        display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center;
+        margin-top: 0.9rem;
+    }
+    .voice-text-input {
+        flex: 1 1 280px;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.28);
+        color: #fff;
+        font-size: 0.9rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 6px;
+        font-family: inherit;
+    }
+    .voice-text-input:focus {
+        outline: none;
+        border-color: var(--voice-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--voice-accent) 25%, transparent);
+    }
+    .voice-text-send {
+        background: var(--voice-accent);
+        color: #2a0418;
+        border: none;
+        border-radius: 6px;
+        padding: 0.55rem 1rem;
+        font-size: 0.88rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .voice-text-send:disabled { opacity: 0.5; cursor: not-allowed; }
+    .voice-toggle {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        font-size: 0.82rem;
+        color: rgba(238, 242, 247, 0.85);
+        cursor: pointer;
+    }
+    .voice-toggle input { accent-color: var(--voice-accent); }
+
+    .voice-transcript {
+        margin-top: 1rem;
+        background: rgba(10, 16, 28, 0.6);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 10px;
+        padding: 0.75rem 0.85rem;
+        max-height: 320px;
+        overflow-y: auto;
+        display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .voice-transcript .voice-empty {
+        color: var(--zava-muted, #97a3b6);
+        font-size: 0.85rem;
+        font-style: italic;
+        text-align: center;
+        padding: 0.8rem 0;
+    }
+    .voice-msg {
+        max-width: 82%;
+        padding: 0.5rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.88rem;
+        line-height: 1.45;
+        color: rgba(238, 242, 247, 0.92);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        background: rgba(15, 22, 38, 0.7);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .voice-msg.user {
+        align-self: flex-end;
+        background: color-mix(in srgb, var(--voice-accent) 18%, rgba(15, 22, 38, 0.85));
+        border-color: color-mix(in srgb, var(--voice-accent) 40%, transparent);
+        color: #fff;
+    }
+    .voice-msg.cara {
+        align-self: flex-start;
+        background: rgba(15, 22, 38, 0.85);
+    }
+    .voice-msg.interim {
+        opacity: 0.65;
+        font-style: italic;
+    }
+    .voice-msg-role {
+        display: block;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 700;
+        color: var(--zava-muted, #97a3b6);
+        margin-bottom: 0.2rem;
+    }
+    .voice-msg.user .voice-msg-role { color: #ffd6e9; }
 </style>
 
 <script>
@@ -619,6 +878,321 @@
         if (!window.__commsDemoEnhancedHook) {
             window.__commsDemoEnhancedHook = true;
             const hook = () => init();
+            if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
+                Blazor.addEventListener('enhancedload', hook);
+            } else {
+                document.addEventListener('enhancedload', hook);
+            }
+        }
+    })();
+</script>
+
+<script>
+    // Voice chat tab — Web Speech API for STT, speechSynthesis for TTS,
+    // Web Audio analyser drives the wave visualiser.
+    (function () {
+        function initVoice() {
+            const root = document.querySelector('.voice-panel');
+            if (!root || root.dataset.wired === '1') return;
+            root.dataset.wired = '1';
+
+            const $ = sel => root.querySelector(sel);
+            const claimSelect = $('#voice-claim-select');
+            const refreshBtn = $('#voice-refresh-btn');
+            const micBtn = $('#voice-mic-btn');
+            const micLabel = micBtn.querySelector('.voice-mic-label');
+            const wave = $('#voice-wave');
+            const statusEl = $('#voice-status');
+            const textInput = $('#voice-text-input');
+            const sendBtn = $('#voice-text-send');
+            const ttsToggle = $('#voice-tts-toggle');
+            const transcriptEl = $('#voice-transcript');
+
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = null;
+            let listening = false;
+            let conversationId = null;
+            let pending = false;
+            let audioCtx = null;
+            let analyser = null;
+            let micStream = null;
+            let waveRaf = 0;
+            const waveBars = Array.from(wave.querySelectorAll('span'));
+
+            function escapeHtml(s) {
+                return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+            }
+
+            function setStatus(text, isError) {
+                statusEl.textContent = text;
+                statusEl.classList.toggle('error', !!isError);
+            }
+
+            function clearEmpty() {
+                const empty = transcriptEl.querySelector('.voice-empty');
+                if (empty) empty.remove();
+            }
+
+            function appendMessage(role, text, opts) {
+                opts = opts || {};
+                clearEmpty();
+                const div = document.createElement('div');
+                div.className = 'voice-msg ' + (role === 'user' ? 'user' : 'cara') + (opts.interim ? ' interim' : '');
+                if (opts.id) div.id = opts.id;
+                div.innerHTML =
+                    '<span class="voice-msg-role">' + (role === 'user' ? 'You' : 'Cara') + '</span>' +
+                    escapeHtml(text);
+                transcriptEl.appendChild(div);
+                transcriptEl.scrollTop = transcriptEl.scrollHeight;
+                return div;
+            }
+
+            // ------- Claim list (shared with Try It Out tab but populated independently) -------
+            async function loadClaims() {
+                claimSelect.disabled = true;
+                claimSelect.innerHTML = '<option value="">Loading claims…</option>';
+                try {
+                    const res = await fetch('/communications/claims');
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const claims = await res.json();
+                    const opts = ['<option value="">No claim context — open conversation</option>']
+                        .concat(claims.map(c => '<option value="' + escapeHtml(c.claimNumber) + '">' +
+                            escapeHtml(c.claimNumber) + ' · ' + escapeHtml(c.customerName) + ' · ' + escapeHtml(c.claimType) +
+                            '</option>'));
+                    claimSelect.innerHTML = opts.join('');
+                    claimSelect.disabled = false;
+                } catch (err) {
+                    claimSelect.innerHTML = '<option value="">No claim context — open conversation</option>';
+                    claimSelect.disabled = false;
+                }
+            }
+
+            // ------- Wave visualiser driven by mic levels -------
+            async function startWave() {
+                try {
+                    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (audioCtx.state === 'suspended') await audioCtx.resume();
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const source = audioCtx.createMediaStreamSource(micStream);
+                    analyser = audioCtx.createAnalyser();
+                    analyser.fftSize = 64;
+                    source.connect(analyser);
+                    const buf = new Uint8Array(analyser.frequencyBinCount);
+                    wave.classList.add('active');
+                    wave.classList.remove('speaking');
+                    const tick = () => {
+                        if (!analyser) return;
+                        analyser.getByteFrequencyData(buf);
+                        for (let i = 0; i < waveBars.length; i++) {
+                            const v = buf[i % buf.length] / 255;
+                            const h = Math.max(8, Math.min(46, 8 + v * 60));
+                            waveBars[i].style.height = h + 'px';
+                        }
+                        waveRaf = requestAnimationFrame(tick);
+                    };
+                    waveRaf = requestAnimationFrame(tick);
+                } catch (err) {
+                    // Mic blocked or unsupported — still show CSS wave animation.
+                    wave.classList.add('active');
+                }
+            }
+
+            function stopWave() {
+                if (waveRaf) cancelAnimationFrame(waveRaf);
+                waveRaf = 0;
+                if (micStream) {
+                    micStream.getTracks().forEach(t => t.stop());
+                    micStream = null;
+                }
+                analyser = null;
+                wave.classList.remove('active', 'speaking');
+                waveBars.forEach(b => { b.style.height = ''; });
+            }
+
+            function speakingWave(on) {
+                if (on) {
+                    wave.classList.add('active', 'speaking');
+                    let i = 0;
+                    if (waveRaf) cancelAnimationFrame(waveRaf);
+                    const tick = () => {
+                        i++;
+                        for (let k = 0; k < waveBars.length; k++) {
+                            const h = 10 + Math.abs(Math.sin((i + k * 1.4) / 3)) * 36;
+                            waveBars[k].style.height = h + 'px';
+                        }
+                        waveRaf = requestAnimationFrame(tick);
+                    };
+                    waveRaf = requestAnimationFrame(tick);
+                } else {
+                    if (waveRaf) cancelAnimationFrame(waveRaf);
+                    waveRaf = 0;
+                    wave.classList.remove('active', 'speaking');
+                    waveBars.forEach(b => { b.style.height = ''; });
+                }
+            }
+
+            // ------- Speech recognition -------
+            function setupRecognition() {
+                if (!SR) return null;
+                const r = new SR();
+                r.continuous = false;
+                r.interimResults = true;
+                r.lang = (navigator.language || 'en-US');
+
+                let interimEl = null;
+
+                r.onstart = () => {
+                    listening = true;
+                    micBtn.classList.add('listening');
+                    micBtn.setAttribute('aria-pressed', 'true');
+                    micLabel.textContent = 'Listening…';
+                    setStatus('Listening — speak now. Tap the mic again to stop.');
+                    startWave();
+                };
+                r.onerror = (e) => {
+                    setStatus('Mic error: ' + (e.error || 'unknown') + '. You can still type below.', true);
+                };
+                r.onend = () => {
+                    listening = false;
+                    micBtn.classList.remove('listening');
+                    micBtn.setAttribute('aria-pressed', 'false');
+                    micLabel.textContent = 'Press to talk';
+                    stopWave();
+                    if (interimEl && interimEl.parentNode) interimEl.remove();
+                    interimEl = null;
+                };
+                r.onresult = (event) => {
+                    let interim = '';
+                    let finalText = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const t = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) finalText += t;
+                        else interim += t;
+                    }
+                    if (interim) {
+                        if (!interimEl) interimEl = appendMessage('user', interim, { interim: true });
+                        else interimEl.innerHTML =
+                            '<span class="voice-msg-role">You</span>' + escapeHtml(interim);
+                        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+                    }
+                    if (finalText) {
+                        if (interimEl && interimEl.parentNode) interimEl.remove();
+                        interimEl = null;
+                        sendMessage(finalText.trim());
+                    }
+                };
+                return r;
+            }
+
+            function toggleListen() {
+                if (pending) return;
+                if (!recognition) {
+                    setStatus('Voice recognition is not available in this browser. Use the text box below.', true);
+                    return;
+                }
+                if (listening) {
+                    try { recognition.stop(); } catch (_) {}
+                } else {
+                    try { recognition.start(); }
+                    catch (e) {
+                        setStatus('Could not start mic: ' + (e.message || e), true);
+                    }
+                }
+            }
+
+            // ------- Send to backend + speak the reply -------
+            async function sendMessage(text) {
+                if (!text) return;
+                if (pending) return;
+                pending = true;
+                appendMessage('user', text);
+                setStatus('Cara is thinking…');
+                try {
+                    const res = await fetch('/communications/voice', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: text,
+                            claimNumber: claimSelect.value || null,
+                            conversationId: conversationId
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                    conversationId = data.conversationId || conversationId;
+                    const reply = data.reply || '(no reply)';
+                    appendMessage('cara', reply);
+                    if (!data.agentConfigured) {
+                        setStatus('Cara replied (Foundry agent not configured — using deterministic demo reply).');
+                    } else {
+                        setStatus('Cara replied.');
+                    }
+                    if (ttsToggle.checked) speak(reply);
+                } catch (err) {
+                    setStatus('Failed to reach Cara: ' + err.message, true);
+                } finally {
+                    pending = false;
+                }
+            }
+
+            function speak(text) {
+                if (!('speechSynthesis' in window)) return;
+                try {
+                    window.speechSynthesis.cancel();
+                    const u = new SpeechSynthesisUtterance(text);
+                    u.rate = 1.0;
+                    u.pitch = 1.05;
+                    // Prefer an English female-sounding voice if available.
+                    const voices = window.speechSynthesis.getVoices();
+                    const preferred = voices.find(v => /en[-_]/i.test(v.lang) && /female|samantha|aria|jenny|zira|karen/i.test(v.name))
+                                   || voices.find(v => /en[-_]/i.test(v.lang));
+                    if (preferred) u.voice = preferred;
+                    micBtn.classList.add('speaking');
+                    speakingWave(true);
+                    u.onend = () => { micBtn.classList.remove('speaking'); speakingWave(false); };
+                    u.onerror = () => { micBtn.classList.remove('speaking'); speakingWave(false); };
+                    window.speechSynthesis.speak(u);
+                } catch (_) {}
+            }
+
+            // ------- Wire up -------
+            recognition = setupRecognition();
+            if (!recognition) {
+                micBtn.classList.add('disabled');
+                micBtn.disabled = true;
+                micLabel.textContent = 'Mic unavailable';
+                setStatus('Your browser does not support speech recognition. Use the text box below to chat with Cara.', true);
+            }
+
+            micBtn.addEventListener('click', toggleListen);
+            refreshBtn.addEventListener('click', loadClaims);
+            sendBtn.addEventListener('click', () => {
+                const v = textInput.value.trim();
+                if (!v) return;
+                textInput.value = '';
+                sendMessage(v);
+            });
+            textInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendBtn.click();
+                }
+            });
+
+            // Prime voices list (Chrome loads them async).
+            if ('speechSynthesis' in window && typeof speechSynthesis.onvoiceschanged !== 'undefined') {
+                speechSynthesis.onvoiceschanged = () => {};
+                speechSynthesis.getVoices();
+            }
+
+            loadClaims();
+        }
+
+        initVoice();
+
+        if (!window.__commsVoiceEnhancedHook) {
+            window.__commsVoiceEnhancedHook = true;
+            const hook = () => initVoice();
             if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
                 Blazor.addEventListener('enhancedload', hook);
             } else {
