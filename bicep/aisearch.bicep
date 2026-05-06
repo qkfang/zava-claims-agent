@@ -23,7 +23,7 @@ param partitionCount int = 1
 // system-assigned managed identities.
 resource searchService 'Microsoft.Search/searchServices@2024-06-01-preview' = {
   name: name
-  location: location
+  location: 'westus2'
   tags: union(tags, { securityControl: 'Ignore' })
   identity: {
     type: 'SystemAssigned'

@@ -17,7 +17,7 @@ var uniqueSuffix = substring(uniqueString(resourceGroup().id, baseName), 0, 6)
 
 // Standard Azure resource naming using the base abbreviation (e.g. "zc").
 var foundryName = 'aif-${baseName}'
-var aiSearchName = toLower('srch-${baseName}-${uniqueSuffix}')
+var aiSearchName = toLower('search-${baseName}')
 var logAnalyticsName = 'log-${baseName}'
 var appInsightsName = 'appi-${baseName}'
 var storageAccountName = toLower('st${baseName}')
