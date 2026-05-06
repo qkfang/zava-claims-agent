@@ -1,0 +1,471 @@
+@*
+    Interactive "Try It Out" demo for the Team Leader Agent.
+
+    Step 1 — pick a Claim ID from a dropdown of claims that were lodged via
+             the Claims Intake demo and held in memory by IntakeClaimStore.
+    Step 2 — engage the Team Leader Agent. The backend loads the claim's
+             details, runs Theo's TeamLeaderAgent (Foundry) for a narrative,
+             and returns a structured summary across all claim stages plus
+             flagged risks and a proposed next-best-action.
+*@
+
+<section class="panel leader-panel">
+    <h2>Try It Out — Team Leader Demo</h2>
+    <p class="muted leader-help">
+        Theo's team-leader agent picks up any claim that was lodged via the
+        <a href="/agents/claims-intake">Claims Intake demo</a> and held in
+        memory. It summarises case status across all stages, flags
+        escalation, SLA and quality risks, and proposes the next-best-action.
+        All steps run live against the <code>/team-leader/*</code> endpoints.
+    </p>
+
+    <!-- Step 1 — pick a claim from the in-memory store -->
+    <div class="leader-step" data-step="1">
+        <div class="leader-step-head">
+            <span class="leader-step-num">1</span>
+            <h3>Pick a Claim ID</h3>
+        </div>
+        <p class="muted">
+            Claims listed here were minted by the Claims Intake "Try It Out"
+            tab during this session. Run that demo first if the dropdown is
+            empty.
+        </p>
+        <div class="leader-pick">
+            <label class="leader-pick-label">
+                Claim
+                <select id="leader-claim-select">
+                    <option value="">— select a claim —</option>
+                </select>
+            </label>
+            <button id="leader-refresh-btn" type="button" class="leader-refresh">Refresh list</button>
+        </div>
+        <div id="leader-claim-summary" class="leader-claim-summary" hidden></div>
+    </div>
+
+    <!-- Step 2 — engage the agent -->
+    <div class="leader-step" data-step="2">
+        <div class="leader-step-head">
+            <span class="leader-step-num">2</span>
+            <h3>Engage Team Leader Agent</h3>
+        </div>
+        <p class="muted">
+            The agent loads the case, walks every stage, and returns a
+            workload summary, escalation list and recommended next-best-action.
+        </p>
+        <button id="leader-process-btn" type="button" disabled>Engage Team Leader Agent</button>
+        <div id="leader-process-status" class="leader-status" hidden></div>
+    </div>
+
+    <!-- Step 3 — agent output panel -->
+    <div class="leader-step leader-output" data-step="3" id="leader-output" hidden>
+        <div class="leader-step-head">
+            <span class="leader-step-num">3</span>
+            <h3>Team Leader review</h3>
+        </div>
+
+        <div class="leader-headline">
+            <div>
+                <div class="leader-k">Claim</div>
+                <div class="leader-v" id="leader-headline-claim"></div>
+            </div>
+            <div>
+                <div class="leader-k">Customer</div>
+                <div class="leader-v" id="leader-headline-customer"></div>
+            </div>
+            <div>
+                <div class="leader-k">Claim type</div>
+                <div class="leader-v" id="leader-headline-type"></div>
+            </div>
+            <div>
+                <div class="leader-k">Lodged</div>
+                <div class="leader-v" id="leader-headline-age"></div>
+            </div>
+            <div>
+                <div class="leader-k">Urgency</div>
+                <div class="leader-v"><span class="leader-urgency-pill" id="leader-headline-urgency"></span></div>
+            </div>
+        </div>
+
+        <div class="leader-block">
+            <div class="leader-block-label">SLA position</div>
+            <div class="leader-block-body" id="leader-sla"></div>
+        </div>
+
+        <div class="leader-block">
+            <div class="leader-block-label">Stages across the claim</div>
+            <ul class="leader-stages" id="leader-stages"></ul>
+        </div>
+
+        <div class="leader-block">
+            <div class="leader-block-label">Risks &amp; escalations</div>
+            <ul class="leader-risks" id="leader-risks"></ul>
+        </div>
+
+        <div class="leader-block leader-next">
+            <div class="leader-block-label">Recommended next-best-action</div>
+            <p id="leader-next-action"></p>
+        </div>
+
+        <div class="leader-block" id="leader-agent-notes-wrap" hidden>
+            <div class="leader-block-label">Agent narrative</div>
+            <pre id="leader-agent-notes"></pre>
+        </div>
+
+        <button id="leader-reset-btn" type="button" class="leader-reset">Run another claim</button>
+    </div>
+</section>
+
+<style>
+    .leader-panel { --leader-accent: #14b8a6; }
+    .leader-help { margin-bottom: 0.9rem; }
+    .leader-help code { background: rgba(20, 184, 166, 0.14); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .leader-help a { color: #5eead4; }
+
+    .leader-step {
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        background: rgba(15, 22, 38, 0.4);
+        border-radius: 12px;
+        padding: 0.95rem 1.1rem 1rem 1.1rem;
+        margin-top: 0.9rem;
+    }
+    .leader-step-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; }
+    .leader-step-head h3 { margin: 0; color: #fff; font-size: 1rem; }
+    .leader-step-num {
+        display: inline-grid; place-items: center;
+        width: 1.55rem; height: 1.55rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--leader-accent) 22%, rgba(20, 28, 46, 0.7));
+        border: 1px solid color-mix(in srgb, var(--leader-accent) 55%, transparent);
+        color: var(--leader-accent);
+        font-size: 0.78rem; font-weight: 700;
+    }
+    .leader-step .muted { color: var(--zava-muted, #97a3b6); font-size: 0.9rem; margin: 0.35rem 0 0.7rem 0; }
+
+    .leader-pick {
+        display: flex; flex-wrap: wrap; align-items: end; gap: 0.7rem;
+    }
+    .leader-pick-label {
+        display: block;
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700;
+        flex: 1; min-width: 260px;
+    }
+    .leader-pick select {
+        display: block; width: 100%;
+        margin-top: 0.3rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.22);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 0.9rem;
+        padding: 0.55rem 0.7rem;
+        font-family: inherit; text-transform: none; letter-spacing: normal;
+    }
+    .leader-pick select:focus {
+        outline: none;
+        border-color: var(--leader-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--leader-accent) 25%, transparent);
+    }
+    .leader-refresh {
+        background: transparent;
+        color: rgba(238, 242, 247, 0.86);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        padding: 0.5rem 0.85rem;
+        font-size: 0.82rem; cursor: pointer;
+    }
+    .leader-refresh:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+    .leader-claim-summary {
+        margin-top: 0.7rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+        font-size: 0.85rem;
+        color: rgba(238, 242, 247, 0.86);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0.4rem 0.9rem;
+    }
+    .leader-claim-summary .k {
+        display: block;
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.15rem;
+    }
+
+    #leader-process-btn {
+        background: var(--leader-accent);
+        color: #001f1c;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.88rem; font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.35rem;
+    }
+    #leader-process-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #leader-process-btn:hover:not(:disabled) { filter: brightness(1.08); }
+
+    .leader-status {
+        margin-top: 0.6rem; font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    .leader-status.error { color: #fca5a5; }
+    .leader-status .spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        animation: leader-spin 0.7s linear infinite;
+    }
+    @@keyframes leader-spin { to { transform: rotate(360deg); } }
+
+    .leader-headline {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.5rem 0.9rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+        margin-top: 0.4rem;
+    }
+    .leader-headline .leader-k {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.15rem;
+    }
+    .leader-headline .leader-v { color: #fff; font-size: 0.92rem; font-weight: 600; }
+    .leader-urgency-pill {
+        display: inline-block;
+        padding: 0.1rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .leader-urgency-pill.high   { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .leader-urgency-pill.medium { background: rgba(245, 158, 11, 0.18); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .leader-urgency-pill.low    { background: rgba(34, 197, 94, 0.16); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+
+    .leader-block {
+        margin-top: 0.85rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+    .leader-block-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.4rem;
+    }
+    .leader-block-body { color: rgba(238, 242, 247, 0.88); font-size: 0.9rem; line-height: 1.45; }
+
+    .leader-stages { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+    .leader-stages li {
+        display: grid;
+        grid-template-columns: 12rem 7rem 1fr;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.86rem;
+        color: rgba(238, 242, 247, 0.88);
+        padding: 0.3rem 0;
+        border-bottom: 1px dashed rgba(120, 150, 200, 0.12);
+    }
+    .leader-stages li:last-child { border-bottom: none; }
+    .leader-stages .stage-name { color: #fff; font-weight: 600; }
+    .leader-stages .stage-status {
+        display: inline-block;
+        padding: 0.05rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.08em;
+        text-align: center;
+    }
+    .leader-stages .stage-status.completed   { background: rgba(34, 197, 94, 0.16); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .leader-stages .stage-status.in-progress { background: rgba(110, 193, 255, 0.16); color: #93c5fd; border: 1px solid rgba(110, 193, 255, 0.4); }
+    .leader-stages .stage-status.queued      { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.4); }
+    @@media (max-width: 720px) {
+        .leader-stages li { grid-template-columns: 1fr; gap: 0.15rem; padding: 0.5rem 0; }
+    }
+
+    .leader-risks { margin: 0; padding-left: 1.1rem; color: rgba(238, 242, 247, 0.88); font-size: 0.9rem; line-height: 1.5; }
+    .leader-risks li { margin: 0.15rem 0; }
+
+    .leader-next p {
+        margin: 0;
+        color: rgba(238, 242, 247, 0.92);
+        font-size: 0.94rem;
+        line-height: 1.5;
+    }
+    .leader-next {
+        background: color-mix(in srgb, var(--leader-accent) 12%, rgba(15, 22, 38, 0.7));
+        border-color: color-mix(in srgb, var(--leader-accent) 38%, transparent);
+    }
+
+    #leader-agent-notes {
+        color: rgba(238, 242, 247, 0.86);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .leader-reset {
+        margin-top: 0.85rem;
+        background: transparent;
+        color: rgba(238, 242, 247, 0.86);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        padding: 0.4rem 0.85rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+    .leader-reset:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+</style>
+
+<script>
+    (function () {
+        const root = document.querySelector('.leader-panel');
+        if (!root || root.dataset.wired === '1') return;
+        root.dataset.wired = '1';
+
+        const $ = sel => root.querySelector(sel);
+        const selectEl = $('#leader-claim-select');
+        const refreshBtn = $('#leader-refresh-btn');
+        const summaryEl = $('#leader-claim-summary');
+        const processBtn = $('#leader-process-btn');
+        const processStatus = $('#leader-process-status');
+        const outputEl = $('#leader-output');
+        const resetBtn = $('#leader-reset-btn');
+
+        let claims = [];
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        function renderSummary(c) {
+            if (!c) { summaryEl.hidden = true; return; }
+            summaryEl.hidden = false;
+            summaryEl.innerHTML = `
+                <div><span class="k">Customer</span>${escapeHtml(c.customerName || '—')}</div>
+                <div><span class="k">Claim type</span>${escapeHtml(c.claimType || '—')}</div>
+                <div><span class="k">Policy</span>${escapeHtml(c.policyNumber || '—')}</div>
+                <div><span class="k">Urgency</span>${escapeHtml(c.urgency || '—')}</div>`;
+        }
+
+        async function loadClaims() {
+            selectEl.innerHTML = '<option value="">Loading…</option>';
+            try {
+                const res = await fetch('/team-leader/claims');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                claims = await res.json();
+                if (!Array.isArray(claims) || claims.length === 0) {
+                    selectEl.innerHTML = '<option value="">— no claims yet — run the Claims Intake demo first —</option>';
+                    processBtn.disabled = true;
+                    summaryEl.hidden = true;
+                    return;
+                }
+                selectEl.innerHTML = '<option value="">— select a claim —</option>' +
+                    claims.map(c => `<option value="${escapeHtml(c.claimNumber)}">${escapeHtml(c.claimNumber)} — ${escapeHtml(c.customerName || '')} (${escapeHtml(c.claimType || '')})</option>`).join('');
+                processBtn.disabled = true;
+                summaryEl.hidden = true;
+            } catch (err) {
+                selectEl.innerHTML = `<option value="">Failed to load: ${escapeHtml(err.message)}</option>`;
+                processBtn.disabled = true;
+            }
+        }
+
+        function onSelect() {
+            const id = selectEl.value;
+            const c = claims.find(x => x.claimNumber === id);
+            renderSummary(c);
+            processBtn.disabled = !c;
+            outputEl.hidden = true;
+            processStatus.hidden = true;
+        }
+
+        function renderStages(stages) {
+            const wrap = $('#leader-stages');
+            wrap.innerHTML = (stages || []).map(s => {
+                const cls = String(s.status || '').toLowerCase().replace(/\s+/g, '-');
+                return `<li>
+                    <span class="stage-name">${escapeHtml(s.stage)}</span>
+                    <span class="stage-status ${escapeHtml(cls)}">${escapeHtml(s.status)}</span>
+                    <span class="stage-note">${escapeHtml(s.note || '')}</span>
+                </li>`;
+            }).join('');
+        }
+
+        async function processClaim() {
+            const id = selectEl.value;
+            if (!id) return;
+            processBtn.disabled = true;
+            processStatus.hidden = false;
+            processStatus.className = 'leader-status';
+            processStatus.innerHTML = '<span class="spinner"></span>Engaging Team Leader Agent…';
+            outputEl.hidden = true;
+            try {
+                const res = await fetch('/team-leader/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claimNumber: id })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                processStatus.textContent = data.agentConfigured
+                    ? 'Team Leader Agent reviewed the case.'
+                    : 'Reviewed (Foundry agent not configured — using deterministic demo summary).';
+
+                $('#leader-headline-claim').textContent    = data.claimNumber;
+                $('#leader-headline-customer').textContent = data.customerName || '—';
+                $('#leader-headline-type').textContent     = data.claimType || '—';
+                $('#leader-headline-age').textContent      = data.ageLabel || '—';
+                const pill = $('#leader-headline-urgency');
+                const urg = (data.urgency || 'Medium').toString();
+                pill.textContent = urg;
+                pill.className = 'leader-urgency-pill ' + urg.toLowerCase();
+                $('#leader-sla').textContent = data.slaState || '';
+
+                renderStages(data.stages);
+
+                const risksEl = $('#leader-risks');
+                risksEl.innerHTML = (data.risks || []).map(r => `<li>${escapeHtml(r)}</li>`).join('');
+                $('#leader-next-action').textContent = data.nextAction || '';
+
+                const notesWrap = $('#leader-agent-notes-wrap');
+                if (data.agentNotes) {
+                    notesWrap.hidden = false;
+                    $('#leader-agent-notes').textContent = data.agentNotes;
+                } else {
+                    notesWrap.hidden = true;
+                }
+
+                outputEl.hidden = false;
+                outputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (err) {
+                processStatus.className = 'leader-status error';
+                processStatus.textContent = 'Failed to process: ' + err.message;
+            } finally {
+                processBtn.disabled = !selectEl.value;
+            }
+        }
+
+        function reset() {
+            selectEl.value = '';
+            summaryEl.hidden = true;
+            processBtn.disabled = true;
+            processStatus.hidden = true;
+            outputEl.hidden = true;
+            selectEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        selectEl.addEventListener('change', onSelect);
+        refreshBtn.addEventListener('click', loadClaims);
+        processBtn.addEventListener('click', processClaim);
+        resetBtn.addEventListener('click', reset);
+
+        loadClaims();
+    })();
+</script>
