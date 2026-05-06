@@ -15,13 +15,13 @@
     </div>
 </div>
 
-<div class="agent-tabs" role="tablist" aria-label="Customer Communications views">
-    <span class="agent-tab active" role="tab" aria-selected="true">Overview</span>
-    <a class="agent-tab" role="tab" aria-selected="false"
-       href="/agents/customer-communications/demo">Try It Out →</a>
-</div>
+<div class="agent-tab-scope" style="--accent: #ec4899">
+    <nav class="agent-tabs" role="tablist" aria-label="Customer Communications agent details">
+        <button type="button" class="agent-tab active" data-tab="overview" role="tab" aria-selected="true" tabindex="0">Overview</button>
+        <button type="button" class="agent-tab" data-tab="try" role="tab" aria-selected="false" tabindex="-1">Try it out</button>
+    </nav>
 
-<div class="agent-tab-panel standalone" data-panel="overview">
+    <div class="agent-tab-panel active" data-panel="overview" role="tabpanel">
     <section class="panel" style="--accent: #ec4899">
         <h2>What this agent does</h2>
         <p>
@@ -58,7 +58,7 @@
     </section>
 
     <section class="panel" style="--accent: #ec4899">
-        <h2>Demo: how this agent helps with the claim</h2>
+        <h2>How this agent helps with the claim</h2>
         <div class="demo">
             <p>
                 Whenever a claim moves to a new stage, Cara's communications agent drafts the
@@ -76,5 +76,511 @@
         </div>
     </section>
 
-    <OtherAgentsBar CurrentId="customer-communications" />
+    </div>
+
+    <div class="agent-tab-panel" data-panel="try" role="tabpanel">
+    <section class="panel comms-panel" style="--accent: #ec4899">
+        <h2>Try It Out — Customer Communications Demo</h2>
+        <p class="muted comms-help">
+            Pick a claim Iris has already lodged from the
+            <a href="/agents/claims-intake">Claims Intake</a> demo, and watch
+            Cara draft the customer-facing updates — clear, empathetic, and
+            compliance-checked. All steps run live against the
+            <code>/communications/*</code> endpoints in this app.
+        </p>
+
+        <!-- Step 1 — pick a claim -->
+        <div class="comms-step" data-step="1">
+            <div class="comms-step-head">
+                <span class="comms-step-num">1</span>
+                <h3>Select a claim</h3>
+            </div>
+            <p class="muted">
+                The dropdown is populated from claims minted by the Claims Intake
+                demo. If it's empty, run an intake sample first.
+            </p>
+            <div class="comms-pick-row">
+                <select id="comms-claim-select" class="comms-select" disabled>
+                    <option value="">Loading claims…</option>
+                </select>
+                <button type="button" id="comms-refresh-btn" class="comms-secondary" title="Refresh claim list">↻ Refresh</button>
+            </div>
+            <div class="comms-claim-summary" id="comms-claim-summary" hidden>
+                <div class="comms-claim-summary-grid">
+                    <div><span class="k">Customer</span><span id="comms-cust-name"></span></div>
+                    <div><span class="k">Policy</span><span id="comms-cust-policy"></span></div>
+                    <div><span class="k">Claim type</span><span id="comms-cust-type"></span></div>
+                    <div><span class="k">Urgency</span><span id="comms-cust-urgency"></span></div>
+                    <div class="span-2"><span class="k">Incident</span><span id="comms-cust-incident"></span></div>
+                    <div class="span-2"><span class="k">Preferred contact</span><span id="comms-cust-pref"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 — engage the agent -->
+        <div class="comms-step" data-step="2">
+            <div class="comms-step-head">
+                <span class="comms-step-num">2</span>
+                <h3>Engage Customer Communications Agent</h3>
+            </div>
+            <p class="muted">
+                Cara reads the claim, drafts customer-facing updates across the most
+                appropriate channels, summarises what comes next, and flags anything
+                that needs a human reviewer before it's sent.
+            </p>
+            <button id="comms-process-btn" type="button" disabled>Draft customer updates with Cara</button>
+            <div id="comms-process-status" class="comms-status" hidden></div>
+        </div>
+
+        <!-- Step 3 — drafts -->
+        <div class="comms-step" data-step="3" id="comms-results" hidden>
+            <div class="comms-step-head">
+                <span class="comms-step-num">3</span>
+                <h3>Cara's drafts</h3>
+            </div>
+
+            <div class="comms-summary-card">
+                <div class="comms-summary-head">
+                    <span class="comms-summary-label">Status &amp; next steps</span>
+                    <span class="comms-stage-pill" id="comms-stage-pill"></span>
+                </div>
+                <p id="comms-summary-text"></p>
+                <ul id="comms-next-steps" class="comms-next-steps"></ul>
+            </div>
+
+            <div class="comms-flags" id="comms-flags" hidden>
+                <div class="comms-flags-head">
+                    <span class="comms-flags-icon" aria-hidden="true">⚠️</span>
+                    <span class="comms-flags-title">Vulnerability flags — human review</span>
+                    <span class="comms-approval-pill" id="comms-approval-pill"></span>
+                </div>
+                <ul id="comms-flags-list"></ul>
+                <p class="muted" id="comms-approval-reason"></p>
+            </div>
+
+            <div class="comms-channels">
+                <div class="comms-channel">
+                    <div class="comms-channel-head">
+                        <span class="comms-channel-icon" aria-hidden="true">✉️</span>
+                        <span class="comms-channel-title">Email draft</span>
+                    </div>
+                    <div class="comms-email-subject"><span class="k">Subject</span><span id="comms-email-subject"></span></div>
+                    <div class="comms-channel-body agent-md" id="comms-email-body"></div>
+                </div>
+
+                <div class="comms-channel">
+                    <div class="comms-channel-head">
+                        <span class="comms-channel-icon" aria-hidden="true">📱</span>
+                        <span class="comms-channel-title">SMS draft</span>
+                    </div>
+                    <div class="comms-channel-body comms-sms agent-md" id="comms-sms-body"></div>
+                </div>
+
+                <div class="comms-channel">
+                    <div class="comms-channel-head">
+                        <span class="comms-channel-icon" aria-hidden="true">🔔</span>
+                        <span class="comms-channel-title">Portal status</span>
+                    </div>
+                    <div class="comms-portal-heading" id="comms-portal-heading"></div>
+                    <div class="comms-channel-body agent-md" id="comms-portal-body"></div>
+                </div>
+            </div>
+
+            <div class="comms-agent-notes" id="comms-agent-notes" hidden>
+                <div class="comms-agent-notes-label">Foundry agent narrative</div>
+                <div id="comms-agent-notes-body" class="agent-md"></div>
+            </div>
+        </div>
+    </section>
+    </div>
 </div>
+
+<style>
+    .comms-panel { --comms-accent: #ec4899; }
+    .comms-help { margin-bottom: 0.9rem; }
+    .comms-help code { background: rgba(236, 72, 153, 0.12); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .comms-help a { color: var(--comms-accent); }
+
+    .comms-step {
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        background: rgba(15, 22, 38, 0.4);
+        border-radius: 12px;
+        padding: 0.95rem 1.1rem 1rem 1.1rem;
+        margin-top: 0.9rem;
+    }
+    .comms-step-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; }
+    .comms-step-head h3 { margin: 0; color: #fff; font-size: 1rem; }
+    .comms-step-num {
+        display: inline-grid; place-items: center;
+        width: 1.55rem; height: 1.55rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--comms-accent) 22%, rgba(20, 28, 46, 0.7));
+        border: 1px solid color-mix(in srgb, var(--comms-accent) 55%, transparent);
+        color: var(--comms-accent);
+        font-size: 0.78rem; font-weight: 700;
+    }
+    .comms-step .muted { color: var(--zava-muted, #97a3b6); font-size: 0.9rem; margin: 0.35rem 0 0.7rem 0; }
+
+    .comms-pick-row { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center; }
+    .comms-select {
+        flex: 1 1 320px;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.28);
+        color: #fff;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.7rem;
+        border-radius: 6px;
+        font-family: inherit;
+    }
+    .comms-select:focus { outline: none; border-color: var(--comms-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--comms-accent) 25%, transparent); }
+    .comms-select:disabled { opacity: 0.6; cursor: not-allowed; }
+    .comms-secondary {
+        background: transparent;
+        color: rgba(238, 242, 247, 0.86);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+    .comms-secondary:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+    .comms-claim-summary {
+        margin-top: 0.7rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+    .comms-claim-summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem 0.85rem;
+        font-size: 0.85rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    .comms-claim-summary-grid .span-2 { grid-column: span 2; }
+    @@media (max-width: 720px) {
+        .comms-claim-summary-grid { grid-template-columns: 1fr; }
+        .comms-claim-summary-grid .span-2 { grid-column: span 1; }
+    }
+    .comms-claim-summary-grid .k {
+        display: inline-block; min-width: 110px;
+        color: var(--zava-muted, #97a3b6); font-weight: 600;
+        text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.08em;
+        margin-right: 0.5rem;
+    }
+
+    #comms-process-btn {
+        background: var(--comms-accent);
+        color: #2a0418;
+        border: none;
+        border-radius: 8px;
+        padding: 0.55rem 1.1rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.35rem;
+    }
+    #comms-process-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .comms-status { margin-top: 0.6rem; font-size: 0.88rem; color: rgba(238, 242, 247, 0.88); }
+    .comms-status.error { color: #fca5a5; }
+    .comms-status .spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        animation: comms-spin 0.7s linear infinite;
+    }
+    @@keyframes comms-spin { to { transform: rotate(360deg); } }
+
+    .comms-summary-card {
+        margin-top: 0.6rem;
+        background: color-mix(in srgb, var(--comms-accent) 8%, rgba(15, 22, 38, 0.7));
+        border: 1px solid color-mix(in srgb, var(--comms-accent) 30%, transparent);
+        border-radius: 10px;
+        padding: 0.75rem 0.95rem;
+    }
+    .comms-summary-head { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.3rem; }
+    .comms-summary-label {
+        color: #fff; font-weight: 700; font-size: 0.92rem;
+    }
+    .comms-stage-pill {
+        margin-left: auto;
+        padding: 0.15rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+        background: color-mix(in srgb, var(--comms-accent) 18%, transparent);
+        color: #ffd6e9;
+        border: 1px solid color-mix(in srgb, var(--comms-accent) 45%, transparent);
+    }
+    .comms-summary-card p { margin: 0; color: rgba(238, 242, 247, 0.9); font-size: 0.9rem; line-height: 1.5; }
+    .comms-next-steps {
+        margin: 0.55rem 0 0 1.1rem;
+        padding: 0;
+        color: rgba(238, 242, 247, 0.85);
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+    .comms-next-steps li { margin-bottom: 0.2rem; }
+
+    .comms-flags {
+        margin-top: 0.8rem;
+        background: rgba(245, 158, 11, 0.08);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        border-radius: 10px;
+        padding: 0.7rem 0.9rem;
+    }
+    .comms-flags-head { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.35rem; }
+    .comms-flags-title { color: #fde68a; font-weight: 700; font-size: 0.9rem; }
+    .comms-flags-icon { font-size: 1rem; }
+    .comms-approval-pill {
+        margin-left: auto;
+        padding: 0.15rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .comms-approval-pill.required { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .comms-approval-pill.optional { background: rgba(34, 197, 94, 0.16); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .comms-flags ul { margin: 0.25rem 0 0.4rem 1.1rem; padding: 0; color: rgba(238, 242, 247, 0.9); font-size: 0.86rem; line-height: 1.5; }
+    .comms-flags ul li { margin-bottom: 0.2rem; }
+
+    .comms-channels {
+        margin-top: 0.85rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.7rem;
+    }
+    @@media (max-width: 820px) { .comms-channels { grid-template-columns: 1fr; } }
+    .comms-channel {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 10px;
+        padding: 0.7rem 0.85rem;
+    }
+    .comms-channel:first-child { grid-column: span 2; }
+    @@media (max-width: 820px) { .comms-channel:first-child { grid-column: span 1; } }
+    .comms-channel-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+    .comms-channel-title { color: #fff; font-weight: 700; font-size: 0.88rem; }
+    .comms-channel-icon { font-size: 1rem; }
+    .comms-email-subject {
+        font-size: 0.82rem;
+        color: rgba(238, 242, 247, 0.86);
+        margin-bottom: 0.4rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px dashed rgba(120, 150, 200, 0.2);
+    }
+    .comms-email-subject .k {
+        display: inline-block; min-width: 60px;
+        color: var(--zava-muted, #97a3b6); font-weight: 600;
+        text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.08em;
+        margin-right: 0.5rem;
+    }
+    .comms-portal-heading {
+        font-size: 0.85rem; font-weight: 700; color: #ffd6e9;
+        margin-bottom: 0.35rem;
+    }
+    .comms-channel-body {
+        background: rgba(8, 12, 22, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.16);
+        border-radius: 6px;
+        padding: 0.65rem 0.8rem;
+        color: rgba(238, 242, 247, 0.88);
+        font-size: 0.84rem;
+        line-height: 1.5;
+        margin: 0;
+    }
+    .comms-channel-body.comms-sms { font-size: 0.85rem; }
+
+    .comms-agent-notes {
+        margin-top: 0.85rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+    .comms-agent-notes-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
+    }
+    .comms-agent-notes pre {
+        color: rgba(238, 242, 247, 0.86);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+</style>
+
+<script>
+    (function () {
+        function init() {
+        const root = document.querySelector('.comms-panel');
+        if (!root || root.dataset.wired === '1') return;
+        root.dataset.wired = '1';
+
+        const $ = sel => root.querySelector(sel);
+        const selectEl = $('#comms-claim-select');
+        const refreshBtn = $('#comms-refresh-btn');
+        const summaryEl = $('#comms-claim-summary');
+        const processBtn = $('#comms-process-btn');
+        const processStatus = $('#comms-process-status');
+        const resultsEl = $('#comms-results');
+        const stagePill = $('#comms-stage-pill');
+        const summaryText = $('#comms-summary-text');
+        const nextStepsEl = $('#comms-next-steps');
+        const flagsEl = $('#comms-flags');
+        const flagsList = $('#comms-flags-list');
+        const approvalPill = $('#comms-approval-pill');
+        const approvalReason = $('#comms-approval-reason');
+        const emailSubject = $('#comms-email-subject');
+        const emailBody = $('#comms-email-body');
+        const smsBody = $('#comms-sms-body');
+        const portalHeading = $('#comms-portal-heading');
+        const portalBody = $('#comms-portal-body');
+        const agentNotesEl = $('#comms-agent-notes');
+        const agentNotesBody = $('#comms-agent-notes-body');
+
+        let claims = [];
+        let selectedClaim = null;
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        async function loadClaims() {
+            selectEl.disabled = true;
+            selectEl.innerHTML = '<option value="">Loading claims…</option>';
+            summaryEl.hidden = true;
+            processBtn.disabled = true;
+            resultsEl.hidden = true;
+            try {
+                const res = await fetch('/communications/claims');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                claims = await res.json();
+                if (!claims.length) {
+                    selectEl.innerHTML = '<option value="">No claims yet — run a Claims Intake sample first</option>';
+                    selectEl.disabled = true;
+                    return;
+                }
+                selectEl.innerHTML =
+                    '<option value="">— select a claim —</option>' +
+                    claims.map(c => `<option value="${escapeHtml(c.claimNumber)}">${escapeHtml(c.claimNumber)} · ${escapeHtml(c.customerName)} · ${escapeHtml(c.claimType)}</option>`).join('');
+                selectEl.disabled = false;
+            } catch (err) {
+                selectEl.innerHTML = `<option value="">Failed to load: ${escapeHtml(err.message)}</option>`;
+            }
+        }
+
+        async function selectClaim(claimNumber) {
+            resultsEl.hidden = true;
+            processStatus.hidden = true;
+            if (!claimNumber) {
+                selectedClaim = null;
+                summaryEl.hidden = true;
+                processBtn.disabled = true;
+                return;
+            }
+            try {
+                const res = await fetch(`/communications/claims/${encodeURIComponent(claimNumber)}`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                selectedClaim = await res.json();
+                $('#comms-cust-name').textContent = `${selectedClaim.customerName} · ${selectedClaim.customerEmail || ''}`.trim();
+                $('#comms-cust-policy').textContent = selectedClaim.policyNumber || '—';
+                $('#comms-cust-type').textContent = selectedClaim.claimType || '—';
+                $('#comms-cust-urgency').textContent = `${selectedClaim.urgency || '—'}${selectedClaim.urgencyReason ? ' — ' + selectedClaim.urgencyReason : ''}`;
+                $('#comms-cust-incident').textContent = `${selectedClaim.incidentDate || '—'} · ${selectedClaim.incidentLocation || '—'} · ${selectedClaim.incidentDescription || ''}`;
+                $('#comms-cust-pref').textContent = selectedClaim.preferredContact || '—';
+                summaryEl.hidden = false;
+                processBtn.disabled = false;
+            } catch (err) {
+                summaryEl.hidden = true;
+                processBtn.disabled = true;
+                processStatus.hidden = false;
+                processStatus.className = 'comms-status error';
+                processStatus.textContent = 'Failed to load claim: ' + err.message;
+            }
+        }
+
+        async function processClaim() {
+            if (!selectedClaim) return;
+            processBtn.disabled = true;
+            processStatus.hidden = false;
+            processStatus.className = 'comms-status';
+            processStatus.innerHTML = '<span class="spinner"></span>Cara is drafting customer updates…';
+            resultsEl.hidden = true;
+
+            try {
+                const res = await fetch('/communications/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claimNumber: selectedClaim.claimNumber })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                processStatus.textContent = data.agentConfigured
+                    ? 'Customer Communications Agent drafted the customer updates.'
+                    : 'Drafted (Foundry agent not configured — using deterministic demo drafts).';
+
+                stagePill.textContent = data.stage || 'Lodged';
+                summaryText.textContent = data.summary || '';
+                nextStepsEl.innerHTML = (data.nextSteps || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+
+                const flags = data.vulnerabilityFlags || [];
+                if (flags.length) {
+                    flagsEl.hidden = false;
+                    flagsList.innerHTML = flags.map(f => `<li>${escapeHtml(f)}</li>`).join('');
+                    approvalPill.textContent = data.humanApprovalRequired ? 'Human review required' : 'Spot-check only';
+                    approvalPill.className = 'comms-approval-pill ' + (data.humanApprovalRequired ? 'required' : 'optional');
+                    approvalReason.textContent = data.humanApprovalReason || '';
+                } else {
+                    flagsEl.hidden = true;
+                }
+
+                emailSubject.textContent = (data.email && data.email.subject) || '';
+                window.zcRenderMarkdown(emailBody, (data.email && data.email.body) || '');
+                window.zcRenderMarkdown(smsBody, data.sms || '');
+                portalHeading.textContent = (data.portal && data.portal.heading) || '';
+                window.zcRenderMarkdown(portalBody, (data.portal && data.portal.body) || '');
+
+                if (data.agentNotes) {
+                    agentNotesEl.hidden = false;
+                    window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
+                } else {
+                    agentNotesEl.hidden = true;
+                }
+
+                resultsEl.hidden = false;
+                resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (err) {
+                processStatus.className = 'comms-status error';
+                processStatus.textContent = 'Failed to draft: ' + err.message;
+            } finally {
+                processBtn.disabled = false;
+            }
+        }
+
+        selectEl.addEventListener('change', () => selectClaim(selectEl.value));
+        refreshBtn.addEventListener('click', loadClaims);
+        processBtn.addEventListener('click', processClaim);
+
+        loadClaims();
+        }
+
+        init();
+
+        if (!window.__commsDemoEnhancedHook) {
+            window.__commsDemoEnhancedHook = true;
+            const hook = () => init();
+            if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
+                Blazor.addEventListener('enhancedload', hook);
+            } else {
+                document.addEventListener('enhancedload', hook);
+            }
+        }
+    })();
+</script>

@@ -3,14 +3,31 @@ using Azure.AI.Projects;
 using Azure.AI.Projects.Agents;
 using Microsoft.Extensions.Logging;
 using OpenAI.Responses;
+using System.ClientModel.Primitives;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace ZavaClaims.Agents;
 
 public record SearchCitation(string Title, string Url);
 
 public record AgentResult(string Text, IReadOnlyList<SearchCitation> Citations);
+
+/// <summary>
+/// Detailed trace of a single <see cref="BaseAgent.RunAsync(string, string?)"/>
+/// invocation. Used by the "Engage Agent" sub-tab UI to show the operator
+/// the exact prompt that was sent, every output item the model produced
+/// (assistant messages, MCP tool-call approval requests, etc.) and the
+/// final extracted text and citations.
+/// </summary>
+public record AgentTraceResult(
+    string Input,
+    string Text,
+    IReadOnlyList<SearchCitation> Citations,
+    IReadOnlyList<JsonElement> OutputItems,
+    string? ResponseId,
+    long DurationMs);
 
 /// <summary>
 /// Tracks an MCP tool call that is awaiting human approval before it can run.
@@ -83,6 +100,19 @@ public abstract class BaseAgent
 
     public async Task<AgentResult> RunAsync(string message, string? conversationId = null)
     {
+        var trace = await RunWithTraceAsync(message, conversationId);
+        return new AgentResult(trace.Text, trace.Citations);
+    }
+
+    /// <summary>
+    /// Runs the agent and returns a detailed trace including the prompt, every
+    /// output item produced (message parts, MCP tool-call approvals, etc.) and
+    /// the final extracted text + citations. Powers the "Engage Agent" sub-tab
+    /// UI on each agent page so operators can see what the agent actually saw
+    /// and produced — analogous to the Foundry portal's response inspector.
+    /// </summary>
+    public async Task<AgentTraceResult> RunWithTraceAsync(string message, string? conversationId = null)
+    {
         var sw = Stopwatch.StartNew();
 
         CreateResponseOptions? nextOptions = new()
@@ -93,6 +123,7 @@ public abstract class BaseAgent
             nextOptions.AgentConversationId = conversationId;
 
         ResponseResult? result = null;
+        var allOutputItems = new List<ResponseItem>();
 
         while (nextOptions is not null)
         {
@@ -101,6 +132,7 @@ public abstract class BaseAgent
 
             foreach (var item in result!.OutputItems)
             {
+                allOutputItems.Add(item);
                 if (item is McpToolCallApprovalRequestItem mcpCall)
                 {
                     _logger.LogInformation("Auto-approving MCP tool call on {ServerLabel}", mcpCall.ServerLabel);
@@ -115,8 +147,15 @@ public abstract class BaseAgent
 
         var text = result?.GetOutputText() ?? string.Empty;
         var citations = ExtractCitations(result);
+        var rawItems = SerializeOutputItems(allOutputItems);
 
-        return new AgentResult(text, citations);
+        return new AgentTraceResult(
+            Input: message,
+            Text: text,
+            Citations: citations,
+            OutputItems: rawItems,
+            ResponseId: result?.Id,
+            DurationMs: sw.ElapsedMilliseconds);
     }
 
     public async IAsyncEnumerable<string> RunStreamingAsync(string message, [EnumeratorCancellation] CancellationToken cancellationToken = default, List<SearchCitation>? citationsOutput = null, string? conversationId = null)
@@ -268,5 +307,39 @@ public abstract class BaseAgent
         }
 
         return citations;
+    }
+
+    /// <summary>
+    /// Serializes each <see cref="ResponseItem"/> the agent produced into a
+    /// JSON element so it can be returned over HTTP and rendered in the
+    /// "Raw Output" sub-tab. Most OpenAI SDK types implement
+    /// <see cref="IJsonModel{T}"/>; for anything that does not we fall back
+    /// to a small projection of the type name and ToString().
+    /// </summary>
+    private static IReadOnlyList<JsonElement> SerializeOutputItems(IReadOnlyList<ResponseItem> items)
+    {
+        var list = new List<JsonElement>(items.Count);
+        foreach (var item in items)
+        {
+            JsonElement element;
+            try
+            {
+                var data = ModelReaderWriter.Write(item);
+                using var doc = JsonDocument.Parse(data.ToMemory());
+                element = doc.RootElement.Clone();
+            }
+            catch
+            {
+                var fallback = new
+                {
+                    type = item.GetType().Name,
+                    text = item.ToString()
+                };
+                using var doc = JsonDocument.Parse(JsonSerializer.SerializeToUtf8Bytes(fallback));
+                element = doc.RootElement.Clone();
+            }
+            list.Add(element);
+        }
+        return list;
     }
 }

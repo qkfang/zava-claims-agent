@@ -105,6 +105,8 @@ public static class IntakeApi
             logger.LogInformation("Intake process: sampleId={SampleId}", Sanitize(sample.Id));
 
             string? agentNotes = null;
+            string? agentInput = null;
+            object? agentRawOutput = null;
             if (agentFactory.IsConfigured)
             {
                 try
@@ -123,8 +125,17 @@ public static class IntakeApi
                         sample.FormDocumentText;
 
                     var agent = agentFactory.Create("intake");
-                    var result = await agent.RunAsync(combined);
+                    var result = await agent.RunWithTraceAsync(combined);
                     agentNotes = result.Text;
+                    agentInput = result.Input;
+                    agentRawOutput = new
+                    {
+                        text = result.Text,
+                        citations = result.Citations,
+                        outputItems = result.OutputItems,
+                        responseId = result.ResponseId,
+                        durationMs = result.DurationMs
+                    };
                 }
                 catch (Exception ex)
                 {
@@ -139,7 +150,9 @@ public static class IntakeApi
                 urgency = sample.ExpectedUrgency,
                 urgencyReason = sample.ExpectedUrgencyReason,
                 agentNotes,
-                agentConfigured = agentFactory.IsConfigured
+                agentConfigured = agentFactory.IsConfigured,
+                agentInput,
+                agentRawOutput
             });
         });
 

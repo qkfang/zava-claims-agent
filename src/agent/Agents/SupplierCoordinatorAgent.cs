@@ -12,7 +12,7 @@ public class SupplierCoordinatorAgent : ClaimsAgent
 {
     private const string AgentId = "supplier-coordination-agent";
 
-    private const string Instructions = """
+    public const string Instructions = """
         You are the Supplier Coordinator Agent in a digital claims office.
         You represent Sam, the Supplier Coordinator — organised, pragmatic,
         vendor-savvy and dependable.

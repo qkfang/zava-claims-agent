@@ -122,6 +122,9 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+// ── Markdown rendering endpoint (used by per-agent pages to format agent output) ──
+app.MapMarkdownEndpoints();
+
 // ── Floating-chatbot endpoint (ChatKit SSE protocol) ─────────────────────────
 app.MapPost("/chatkit", (HttpContext ctx, ChatKitStore store, ChatService chatService) =>
     ChatKitHandler.HandleAsync(ctx, store, chatService));
@@ -228,6 +231,13 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     var supplierStore = app.Services.GetRequiredService<IntakeClaimStore>();
     var supplierFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
     app.MapSupplierEndpoints(supplierStore, supplierFactory, supplierLogger);
+}
+
+// ── Agent metadata (powers the "Agent Prompt & Tools" sub-tab on every
+//    agent page; static + does not require Foundry to be configured). ──
+{
+    var metadataOptions = app.Services.GetRequiredService<ClaimsAgentOptions>();
+    app.MapAgentMetadataEndpoints(metadataOptions);
 }
 
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────

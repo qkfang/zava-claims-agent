@@ -11,7 +11,7 @@ public class LossAdjusterAgent : ClaimsAgent
 {
     private const string AgentId = "loss-adjuster-agent";
 
-    private const string Instructions = """
+    public const string Instructions = """
         You are the Loss Adjuster Agent in a digital claims office.
         You represent Lara, the Loss Adjuster — practical, investigative,
         professional and field-oriented.

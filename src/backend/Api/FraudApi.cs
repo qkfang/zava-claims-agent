@@ -68,14 +68,25 @@ public static class FraudApi
                 = AnalyseClaim(claim);
 
             string? agentNotes = null;
+            string? agentInput = null;
+            object? agentRawOutput = null;
             if (agentFactory.IsConfigured)
             {
                 try
                 {
                     var prompt = BuildAgentPrompt(claim);
                     var agent = agentFactory.Create("fraud");
-                    var result = await agent.RunAsync(prompt);
+                    var result = await agent.RunWithTraceAsync(prompt);
                     agentNotes = result.Text;
+                    agentInput = result.Input;
+                    agentRawOutput = new
+                    {
+                        text = result.Text,
+                        citations = result.Citations,
+                        outputItems = result.OutputItems,
+                        responseId = result.ResponseId,
+                        durationMs = result.DurationMs
+                    };
                 }
                 catch (Exception ex)
                 {
@@ -94,7 +105,9 @@ public static class FraudApi
                 actions,
                 approvalRequired,
                 agentNotes,
-                agentConfigured = agentFactory.IsConfigured
+                agentConfigured = agentFactory.IsConfigured,
+                agentInput,
+                agentRawOutput
             });
         });
     }

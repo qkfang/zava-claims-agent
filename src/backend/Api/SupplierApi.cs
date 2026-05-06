@@ -73,6 +73,8 @@ public static class SupplierApi
             var match = SupplierCatalog.Match(claim.ClaimType, claim.IncidentLocation, claim.ClaimNumber);
 
             string? agentNotes = null;
+            string? agentInput = null;
+            object? agentRawOutput = null;
             if (agentFactory.IsConfigured)
             {
                 try
@@ -102,8 +104,17 @@ public static class SupplierApi
                         "draft a short plain-English update for the customer.";
 
                     var agent = agentFactory.Create("supplier");
-                    var result = await agent.RunAsync(prompt);
+                    var result = await agent.RunWithTraceAsync(prompt);
                     agentNotes = result.Text;
+                    agentInput = result.Input;
+                    agentRawOutput = new
+                    {
+                        text = result.Text,
+                        citations = result.Citations,
+                        outputItems = result.OutputItems,
+                        responseId = result.ResponseId,
+                        durationMs = result.DurationMs
+                    };
                 }
                 catch (Exception ex)
                 {
@@ -144,7 +155,9 @@ public static class SupplierApi
                 humanApprovalRequired = match.HumanApprovalRequired,
                 humanApprovalReason = match.HumanApprovalReason,
                 agentNotes,
-                agentConfigured = agentFactory.IsConfigured
+                agentConfigured = agentFactory.IsConfigured,
+                agentInput,
+                agentRawOutput
             });
         });
     }

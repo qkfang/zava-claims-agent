@@ -73,6 +73,8 @@ public static class LossAdjusterApi
 
             string? agentNotes = null;
             string? agentError = null;
+            string? agentInput = null;
+            object? agentRawOutput = null;
             if (agentFactory.IsConfigured)
             {
                 try
@@ -103,8 +105,17 @@ public static class LossAdjusterApi
                         "and Human Approval Required).";
 
                     var agent = agentFactory.Create("loss-adjuster");
-                    var result = await agent.RunAsync(brief);
+                    var result = await agent.RunWithTraceAsync(brief);
                     agentNotes = result.Text;
+                    agentInput = result.Input;
+                    agentRawOutput = new
+                    {
+                        text = result.Text,
+                        citations = result.Citations,
+                        outputItems = result.OutputItems,
+                        responseId = result.ResponseId,
+                        durationMs = result.DurationMs
+                    };
                 }
                 catch (Exception ex)
                 {
@@ -120,7 +131,9 @@ public static class LossAdjusterApi
                 claimType = claim.ClaimType,
                 agentNotes,
                 agentError,
-                agentConfigured = agentFactory.IsConfigured
+                agentConfigured = agentFactory.IsConfigured,
+                agentInput,
+                agentRawOutput
             });
         });
     }
