@@ -14,10 +14,10 @@ param location string
 param tags object = {}
 
 @description('App Service Plan SKU name')
-param skuName string = 'P1v3'
+param skuName string = 'S1'
 
 @description('App Service Plan SKU tier')
-param skuTier string = 'PremiumV3'
+param skuTier string = 'Standard'
 
 @description('Application Insights connection string')
 param appInsightsConnectionString string

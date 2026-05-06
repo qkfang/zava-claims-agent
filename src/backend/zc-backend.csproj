@@ -10,6 +10,17 @@
     <NoWarn>$(NoWarn);OPENAI001;SCME0001</NoWarn>
   </PropertyGroup>
 
+  <!--
+    QuestPDF's native dependency (QuestPdfSkia) does not ship a win-arm64 build.
+    On Windows ARM64 dev machines, fall back to win-x64 so the x64 native binary
+    is restored and loaded under x64 emulation. Other platforms/architectures
+    are unaffected.
+  -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('Windows')) AND '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\agent\zc-agent.csproj" />
   </ItemGroup>
