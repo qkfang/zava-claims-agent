@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using ZavaClaims.Agents;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -50,7 +51,11 @@ public static class FraudApi
         });
 
         // Engage the Fraud Investigation Agent on the selected claim.
-        app.MapPost("/fraud/process", async (FraudProcessRequest request) =>
+        //
+        // Clients can request a live SSE stream of the agent reply by sending
+        // `Accept: text/event-stream`; otherwise the response is a single JSON
+        // envelope as before.
+        app.MapPost("/fraud/process", async (HttpContext httpContext, FraudProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.ClaimNumber))
                 return Results.BadRequest(new { error = "claimNumber is required" });
@@ -67,34 +72,9 @@ public static class FraudApi
             var (riskLevel, riskScore, riskSummary, indicators, inconsistencies, actions, approvalRequired)
                 = AnalyseClaim(claim);
 
-            string? agentNotes = null;
-            string? agentInput = null;
-            object? agentRawOutput = null;
-            if (agentFactory.IsConfigured)
-            {
-                try
-                {
-                    var prompt = BuildAgentPrompt(claim);
-                    var agent = agentFactory.Create("fraud");
-                    var result = await agent.RunWithTraceAsync(prompt);
-                    agentNotes = result.Text;
-                    agentInput = result.Input;
-                    agentRawOutput = new
-                    {
-                        text = result.Text,
-                        citations = result.Citations,
-                        outputItems = result.OutputItems,
-                        responseId = result.ResponseId,
-                        durationMs = result.DurationMs
-                    };
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Fraud Investigation Agent invocation failed; using deterministic demo analysis only");
-                }
-            }
+            var prompt = BuildAgentPrompt(claim);
 
-            return Results.Ok(new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
             {
                 claimNumber = claim.ClaimNumber,
                 riskLevel,
@@ -104,11 +84,44 @@ public static class FraudApi
                 inconsistencies,
                 actions,
                 approvalRequired,
-                agentNotes,
+                agentNotes = trace?.Text,
                 agentConfigured = agentFactory.IsConfigured,
-                agentInput,
-                agentRawOutput
-            });
+                agentError,
+                agentInput = trace?.Input,
+                agentRawOutput = trace is null ? null : new
+                {
+                    text = trace.Text,
+                    citations = trace.Citations,
+                    outputItems = trace.OutputItems,
+                    responseId = trace.ResponseId,
+                    durationMs = trace.DurationMs
+                }
+            };
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured ? agentFactory.Create("fraud") : null;
+                await AgentSseStreaming.StreamAsync(httpContext, streamingAgent, prompt, BuildEnvelope, logger, "Fraud Investigation Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? traceResult = null;
+            string? agentInvocationError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("fraud");
+                    traceResult = await agent.RunWithTraceAsync(prompt);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Fraud Investigation Agent invocation failed; using deterministic demo analysis only");
+                    agentInvocationError = ex.Message;
+                }
+            }
+
+            return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
         });
     }
 

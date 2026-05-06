@@ -463,13 +463,29 @@
             resultEl.hidden = true;
 
             try {
-                const res = await fetch('/assessment/process', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ claimNumber: currentClaim.claimNumber })
+                let lastVerdict = null;
+                const data = await window.zcAgentStream({
+                    url: '/assessment/process',
+                    body: { claimNumber: currentClaim.claimNumber },
+                    onDelta: (_chunk, fullText) => {
+                        // Show the agent's text live; markdown rendering is
+                        // applied once the run completes.
+                        resultEl.hidden = false;
+                        resultBody.classList.add('agent-md-streaming');
+                        resultBody.textContent = fullText;
+                        const verdict = classifyRecommendation(fullText);
+                        if (!lastVerdict || lastVerdict.cls !== verdict.cls) {
+                            lastVerdict = verdict;
+                            resultPill.textContent = verdict.label;
+                            resultPill.className = 'assessment-result-pill ' + verdict.cls;
+                        }
+                    },
+                    onError: (msg) => {
+                        processStatus.className = 'assessment-status error';
+                        processStatus.textContent = 'Agent error: ' + msg;
+                    }
                 });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                if (!data) throw new Error('No response from agent');
 
                 processStatus.textContent = data.agentConfigured
                     ? 'Claims Assessment Agent reviewed the case against the policy.'
@@ -478,6 +494,7 @@
                 const verdict = classifyRecommendation(data.agentNotes);
                 resultPill.textContent = verdict.label;
                 resultPill.className = 'assessment-result-pill ' + verdict.cls;
+                resultBody.classList.remove('agent-md-streaming');
                 window.zcRenderMarkdown(resultBody, data.agentNotes || '(no output)');
                 resultEl.hidden = false;
 

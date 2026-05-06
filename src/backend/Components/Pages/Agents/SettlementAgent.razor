@@ -590,13 +590,20 @@
             };
 
             try {
-                const res = await fetch('/settlement/process', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                const data = await window.zcAgentStream({
+                    url: '/settlement/process',
+                    body: payload,
+                    onDelta: (_chunk, fullText) => {
+                        agentNotesEl.hidden = false;
+                        agentNotesBody.classList.add('agent-md-streaming');
+                        agentNotesBody.textContent = fullText;
+                    },
+                    onError: (msg) => {
+                        processStatus.className = 'settlement-status error';
+                        processStatus.textContent = 'Agent error: ' + msg;
+                    }
                 });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                if (!data) throw new Error('No response from agent');
 
                 processStatus.textContent = data.agentConfigured
                     ? 'Settlement Agent processed the claim.'
@@ -623,6 +630,7 @@
 
                 if (data.agentNotes) {
                     agentNotesEl.hidden = false;
+                    agentNotesBody.classList.remove('agent-md-streaming');
                     window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
                 } else {
                     agentNotesEl.hidden = true;
