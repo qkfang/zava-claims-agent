@@ -189,6 +189,14 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     app.MapAssessmentEndpoints(assessmentStore, assessmentFactory, assessmentLogger);
 }
 
+// ── Settlement demo endpoints (Try It Out tab on /agents/settlement) ────────
+{
+    var settlementLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    var settlementStore = app.Services.GetRequiredService<IntakeClaimStore>();
+    var settlementFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
+    app.MapSettlementEndpoints(settlementStore, settlementFactory, settlementLogger);
+}
+
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
 if (noticeEnabled)
 {
