@@ -1,4 +1,5 @@
 using System.Globalization;
+using ZavaClaims.Agents;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -62,7 +63,11 @@ public static class SettlementApi
         // so the panel always has a displayable result, and when Foundry is
         // configured we also invoke the live SettlementAgent and surface
         // its narrative in `agentNotes`.
-        app.MapPost("/settlement/process", async (SettlementProcessRequest request) =>
+        //
+        // Clients can request a live SSE stream of the agent reply by sending
+        // `Accept: text/event-stream`; otherwise the response is a single JSON
+        // envelope as before.
+        app.MapPost("/settlement/process", async (HttpContext httpContext, SettlementProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.ClaimNumber))
                 return Results.BadRequest(new { error = "claimNumber is required" });
@@ -116,58 +121,29 @@ public static class SettlementApi
                 "this email and we will be in touch.\n\n" +
                 "Kind regards,\nSeth — Settlement Officer\nZava Insurance";
 
-            string? agentNotes = null;
-            string? agentInput = null;
-            object? agentRawOutput = null;
-            if (agentFactory.IsConfigured)
-            {
-                try
-                {
-                    var prompt =
-                        "CLAIM CASE\n" +
-                        "==========\n" +
-                        $"Claim number: {record.ClaimNumber}\n" +
-                        $"Customer: {record.CustomerName}\n" +
-                        $"Policy: {record.PolicyNumber}\n" +
-                        $"Claim type: {record.ClaimType}\n" +
-                        $"Incident date: {record.IncidentDate}\n" +
-                        $"Incident location: {record.IncidentLocation}\n" +
-                        $"Description: {record.IncidentDescription}\n" +
-                        $"Urgency: {record.Urgency} — {record.UrgencyReason}\n\n" +
-                        "SETTLEMENT INPUTS\n" +
-                        "=================\n" +
-                        $"Approved amount: {FormatMoney(approved)}\n" +
-                        $"Policy limit: {FormatMoney(policyLimit)}\n" +
-                        $"Excess / deductible: {FormatMoney(excess)}\n" +
-                        $"Depreciation: {FormatMoney(depreciation)}\n" +
-                        $"Prior payments: {FormatMoney(priorPayments)}\n\n" +
-                        "Please produce the standard settlement output (calculation, " +
-                        "options, payment approval request, settlement letter draft, " +
-                        "and human-approval decision).";
+            var prompt =
+                "CLAIM CASE\n" +
+                "==========\n" +
+                $"Claim number: {record.ClaimNumber}\n" +
+                $"Customer: {record.CustomerName}\n" +
+                $"Policy: {record.PolicyNumber}\n" +
+                $"Claim type: {record.ClaimType}\n" +
+                $"Incident date: {record.IncidentDate}\n" +
+                $"Incident location: {record.IncidentLocation}\n" +
+                $"Description: {record.IncidentDescription}\n" +
+                $"Urgency: {record.Urgency} — {record.UrgencyReason}\n\n" +
+                "SETTLEMENT INPUTS\n" +
+                "=================\n" +
+                $"Approved amount: {FormatMoney(approved)}\n" +
+                $"Policy limit: {FormatMoney(policyLimit)}\n" +
+                $"Excess / deductible: {FormatMoney(excess)}\n" +
+                $"Depreciation: {FormatMoney(depreciation)}\n" +
+                $"Prior payments: {FormatMoney(priorPayments)}\n\n" +
+                "Please produce the standard settlement output (calculation, " +
+                "options, payment approval request, settlement letter draft, " +
+                "and human-approval decision).";
 
-                    var agent = agentFactory.Create("settlement");
-                    var result = await agent.RunWithTraceAsync(prompt);
-                    agentNotes = result.Text;
-                    agentInput = result.Input;
-                    agentRawOutput = new
-                    {
-                        text = result.Text,
-                        citations = result.Citations,
-                        outputItems = result.OutputItems,
-                        responseId = result.ResponseId,
-                        durationMs = result.DurationMs
-                    };
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Settlement Agent invocation failed; falling back to deterministic demo calculation");
-                }
-            }
-
-            logger.LogInformation("Settlement process: claim={ClaimNumber} payable={Payable}",
-                Sanitize(record.ClaimNumber), payable);
-
-            return Results.Ok(new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
             {
                 claimNumber = record.ClaimNumber,
                 customerName = record.CustomerName,
@@ -187,11 +163,47 @@ public static class SettlementApi
                 humanApprovalRequired,
                 humanApprovalReason,
                 settlementLetter,
-                agentNotes,
+                agentNotes = trace?.Text,
                 agentConfigured = agentFactory.IsConfigured,
-                agentInput,
-                agentRawOutput
-            });
+                agentError,
+                agentInput = trace?.Input,
+                agentRawOutput = trace is null ? null : new
+                {
+                    text = trace.Text,
+                    citations = trace.Citations,
+                    outputItems = trace.OutputItems,
+                    responseId = trace.ResponseId,
+                    durationMs = trace.DurationMs
+                }
+            };
+
+            logger.LogInformation("Settlement process: claim={ClaimNumber} payable={Payable}",
+                Sanitize(record.ClaimNumber), payable);
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured ? agentFactory.Create("settlement") : null;
+                await AgentSseStreaming.StreamAsync(httpContext, streamingAgent, prompt, BuildEnvelope, logger, "Settlement Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? traceResult = null;
+            string? agentInvocationError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("settlement");
+                    traceResult = await agent.RunWithTraceAsync(prompt);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Settlement Agent invocation failed; falling back to deterministic demo calculation");
+                    agentInvocationError = ex.Message;
+                }
+            }
+
+            return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
         });
     }
 

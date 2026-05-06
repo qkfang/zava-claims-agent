@@ -114,6 +114,34 @@
     color: inherit;
 }
 
+/* Applied to .agent-md elements while a streaming agent reply is still in
+   flight (see wwwroot/js/agent-stream.js). The element's textContent is
+   updated chunk-by-chunk before being replaced with rendered markdown on
+   the terminal `done` event, so it needs to behave like a <pre> block in
+   the meantime. A subtle blinking caret hints that more text is incoming. */
+.agent-md.agent-md-streaming {
+    white-space: pre-wrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86rem;
+}
+.agent-md.agent-md-streaming::after {
+    /* Decorative blinking caret rendered without content text so screen
+       readers don't announce it; we just paint a thin rectangle next to
+       the trailing token. */
+    content: "";
+    display: inline-block;
+    width: 0.55em;
+    height: 1em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: rgba(110, 193, 255, 0.85);
+    animation: zc-stream-caret 1s steps(2, end) infinite;
+}
+@keyframes zc-stream-caret {
+    0%, 49%   { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+
 .back-link {
     display: inline-flex;
     align-items: center;

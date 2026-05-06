@@ -1,3 +1,4 @@
+using ZavaClaims.Agents;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -58,7 +59,11 @@ public static class SupplierApi
         // Mirrors /intake/process: a deterministic match is always returned
         // so the demo is reliable, and — when Foundry is configured — the
         // live agent's narrative is surfaced in `agentNotes`.
-        app.MapPost("/supplier/process", async (SupplierProcessRequest request) =>
+        //
+        // Clients can request a live SSE stream of the agent reply by sending
+        // `Accept: text/event-stream`; otherwise the response is a single JSON
+        // envelope as before.
+        app.MapPost("/supplier/process", async (HttpContext httpContext, SupplierProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.ClaimNumber))
                 return Results.BadRequest(new { error = "claimNumber is required" });
@@ -72,57 +77,31 @@ public static class SupplierApi
 
             var match = SupplierCatalog.Match(claim.ClaimType, claim.IncidentLocation, claim.ClaimNumber);
 
-            string? agentNotes = null;
-            string? agentInput = null;
-            object? agentRawOutput = null;
-            if (agentFactory.IsConfigured)
-            {
-                try
-                {
-                    var prompt =
-                        "APPROVED CLAIM — READY FOR SUPPLIER COORDINATION\n" +
-                        "================================================\n" +
-                        $"Claim number: {claim.ClaimNumber}\n" +
-                        $"Customer: {claim.CustomerName} ({claim.CustomerEmail}, {claim.CustomerPhone})\n" +
-                        $"Policy: {claim.PolicyNumber}\n" +
-                        $"Claim type: {claim.ClaimType}\n" +
-                        $"Incident date: {claim.IncidentDate}\n" +
-                        $"Incident location: {claim.IncidentLocation}\n" +
-                        $"Estimated loss: {claim.EstimatedLoss}\n" +
-                        $"Urgency: {claim.Urgency} — {claim.UrgencyReason}\n" +
-                        $"Preferred contact: {claim.PreferredContact}\n\n" +
-                        "Incident description:\n" +
-                        claim.IncidentDescription + "\n\n" +
-                        "AVAILABLE SUPPLIERS (from Zava's approved network)\n" +
-                        "==================================================\n" +
-                        match.CandidatesText + "\n\n" +
-                        "TASK\n" +
-                        "====\n" +
-                        "Match the claim to the most suitable supplier (repairer, " +
-                        "builder, assessor, hire car, or temporary accommodation), " +
-                        "propose appointment options, dispatch the work order, and " +
-                        "draft a short plain-English update for the customer.";
+            var prompt =
+                "APPROVED CLAIM — READY FOR SUPPLIER COORDINATION\n" +
+                "================================================\n" +
+                $"Claim number: {claim.ClaimNumber}\n" +
+                $"Customer: {claim.CustomerName} ({claim.CustomerEmail}, {claim.CustomerPhone})\n" +
+                $"Policy: {claim.PolicyNumber}\n" +
+                $"Claim type: {claim.ClaimType}\n" +
+                $"Incident date: {claim.IncidentDate}\n" +
+                $"Incident location: {claim.IncidentLocation}\n" +
+                $"Estimated loss: {claim.EstimatedLoss}\n" +
+                $"Urgency: {claim.Urgency} — {claim.UrgencyReason}\n" +
+                $"Preferred contact: {claim.PreferredContact}\n\n" +
+                "Incident description:\n" +
+                claim.IncidentDescription + "\n\n" +
+                "AVAILABLE SUPPLIERS (from Zava's approved network)\n" +
+                "==================================================\n" +
+                match.CandidatesText + "\n\n" +
+                "TASK\n" +
+                "====\n" +
+                "Match the claim to the most suitable supplier (repairer, " +
+                "builder, assessor, hire car, or temporary accommodation), " +
+                "propose appointment options, dispatch the work order, and " +
+                "draft a short plain-English update for the customer.";
 
-                    var agent = agentFactory.Create("supplier");
-                    var result = await agent.RunWithTraceAsync(prompt);
-                    agentNotes = result.Text;
-                    agentInput = result.Input;
-                    agentRawOutput = new
-                    {
-                        text = result.Text,
-                        citations = result.Citations,
-                        outputItems = result.OutputItems,
-                        responseId = result.ResponseId,
-                        durationMs = result.DurationMs
-                    };
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Supplier Coordinator Agent invocation failed; falling back to deterministic demo data");
-                }
-            }
-
-            return Results.Ok(new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
             {
                 claimNumber = claim.ClaimNumber,
                 supplierType = match.SupplierType,
@@ -154,11 +133,44 @@ public static class SupplierApi
                 customerUpdate = match.CustomerUpdate(claim.CustomerName),
                 humanApprovalRequired = match.HumanApprovalRequired,
                 humanApprovalReason = match.HumanApprovalReason,
-                agentNotes,
+                agentNotes = trace?.Text,
                 agentConfigured = agentFactory.IsConfigured,
-                agentInput,
-                agentRawOutput
-            });
+                agentError,
+                agentInput = trace?.Input,
+                agentRawOutput = trace is null ? null : new
+                {
+                    text = trace.Text,
+                    citations = trace.Citations,
+                    outputItems = trace.OutputItems,
+                    responseId = trace.ResponseId,
+                    durationMs = trace.DurationMs
+                }
+            };
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured ? agentFactory.Create("supplier") : null;
+                await AgentSseStreaming.StreamAsync(httpContext, streamingAgent, prompt, BuildEnvelope, logger, "Supplier Coordinator Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? traceResult = null;
+            string? agentInvocationError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("supplier");
+                    traceResult = await agent.RunWithTraceAsync(prompt);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Supplier Coordinator Agent invocation failed; falling back to deterministic demo data");
+                    agentInvocationError = ex.Message;
+                }
+            }
+
+            return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
         });
     }
 

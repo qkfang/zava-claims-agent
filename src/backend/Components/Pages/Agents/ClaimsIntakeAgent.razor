@@ -580,13 +580,22 @@
             receipt.hidden = true;
 
             try {
-                const res = await fetch('/intake/process', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sampleId: selectedSampleId })
+                const data = await window.zcAgentStream({
+                    url: '/intake/process',
+                    body: { sampleId: selectedSampleId },
+                    onDelta: (_chunk, fullText) => {
+                        // Render incoming agent text live as plain preformatted
+                        // text; markdown rendering is applied once the run is done.
+                        agentNotesEl.hidden = false;
+                        agentNotesBody.classList.add('agent-md-streaming');
+                        agentNotesBody.textContent = fullText;
+                    },
+                    onError: (msg) => {
+                        processStatus.className = 'intake-status error';
+                        processStatus.textContent = 'Agent error: ' + msg;
+                    }
                 });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                if (!data) throw new Error('No response from agent');
                 processed = data;
 
                 processStatus.textContent = data.agentConfigured
@@ -594,7 +603,10 @@
                     : 'Processed (Foundry agent not configured — using deterministic demo extraction).';
                 if (data.agentNotes) {
                     agentNotesEl.hidden = false;
+                    agentNotesBody.classList.remove('agent-md-streaming');
                     window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
+                } else {
+                    agentNotesEl.hidden = true;
                 }
 
                 const f = data.fields || {};

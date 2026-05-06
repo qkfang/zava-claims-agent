@@ -571,19 +571,27 @@
             approvalEl.hidden = true;
 
             try {
-                const res = await fetch('/supplier/process', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ claimNumber })
+                const data = await window.zcAgentStream({
+                    url: '/supplier/process',
+                    body: { claimNumber },
+                    onDelta: (_chunk, fullText) => {
+                        agentNotesEl.hidden = false;
+                        agentNotesBody.classList.add('agent-md-streaming');
+                        agentNotesBody.textContent = fullText;
+                    },
+                    onError: (msg) => {
+                        processStatus.className = 'supplier-status error';
+                        processStatus.textContent = 'Agent error: ' + msg;
+                    }
                 });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                if (!data) throw new Error('No response from agent');
 
                 processStatus.textContent = data.agentConfigured
                     ? 'Supplier Coordinator Agent matched a supplier and dispatched a work order.'
                     : 'Processed (Foundry agent not configured — using deterministic demo match).';
                 if (data.agentNotes) {
                     agentNotesEl.hidden = false;
+                    agentNotesBody.classList.remove('agent-md-streaming');
                     window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
                 }
 

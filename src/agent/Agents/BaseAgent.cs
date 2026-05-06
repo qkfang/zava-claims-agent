@@ -6,6 +6,7 @@ using OpenAI.Responses;
 using System.ClientModel.Primitives;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 
 namespace ZavaClaims.Agents;
@@ -13,6 +14,16 @@ namespace ZavaClaims.Agents;
 public record SearchCitation(string Title, string Url);
 
 public record AgentResult(string Text, IReadOnlyList<SearchCitation> Citations);
+
+/// <summary>
+/// Discriminated event yielded by <see cref="BaseAgent.RunStreamingTraceAsync"/>.
+/// Subclasses are <see cref="AgentStreamingDelta"/> (one or more incremental
+/// text chunks as the model produces them) and <see cref="AgentStreamingCompleted"/>
+/// (yielded exactly once at the end with the full <see cref="AgentTraceResult"/>).
+/// </summary>
+public abstract record AgentStreamingEvent;
+public sealed record AgentStreamingDelta(string Text) : AgentStreamingEvent;
+public sealed record AgentStreamingCompleted(AgentTraceResult Trace) : AgentStreamingEvent;
 
 /// <summary>
 /// Detailed trace of a single <see cref="BaseAgent.RunAsync(string, string?)"/>
@@ -156,6 +167,84 @@ public abstract class BaseAgent
             OutputItems: rawItems,
             ResponseId: result?.Id,
             DurationMs: sw.ElapsedMilliseconds);
+    }
+
+    /// <summary>
+    /// Streams the agent's response and also yields a final <see cref="AgentStreamingCompleted"/>
+    /// event carrying the full <see cref="AgentTraceResult"/> (text, citations, every
+    /// output item, response id, and duration). This is what the "Try It Out" tab on each
+    /// agent page uses so it can render text deltas live and then finalise the
+    /// agent-notes panel and Engage Agent sub-tabs once the run is complete.
+    /// </summary>
+    public async IAsyncEnumerable<AgentStreamingEvent> RunStreamingTraceAsync(
+        string message,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default,
+        string? conversationId = null)
+    {
+        var sw = Stopwatch.StartNew();
+
+        CreateResponseOptions nextOptions = new()
+        {
+            InputItems = { ResponseItem.CreateUserMessageItem(message) }
+        };
+        if (!string.IsNullOrEmpty(conversationId))
+            nextOptions.AgentConversationId = conversationId;
+
+        ResponseResult? completedResponse = null;
+        var allOutputItems = new List<ResponseItem>();
+        var textBuilder = new StringBuilder();
+
+        while (true)
+        {
+            var pendingApprovals = new List<string>();
+            completedResponse = null;
+
+            await foreach (var update in _responseClient
+                .CreateResponseStreamingAsync(nextOptions, cancellationToken)
+                .WithCancellation(cancellationToken))
+            {
+                if (update is StreamingResponseOutputTextDeltaUpdate delta)
+                {
+                    textBuilder.Append(delta.Delta);
+                    yield return new AgentStreamingDelta(delta.Delta);
+                }
+                else if (update is StreamingResponseOutputItemDoneUpdate itemDone)
+                {
+                    allOutputItems.Add(itemDone.Item);
+                    if (itemDone.Item is McpToolCallApprovalRequestItem mcpCall)
+                    {
+                        _logger.LogInformation("Auto-approving MCP tool call on {ServerLabel}", mcpCall.ServerLabel);
+                        pendingApprovals.Add(mcpCall.Id);
+                    }
+                }
+                else if (update is StreamingResponseCompletedUpdate done)
+                {
+                    completedResponse = done.Response;
+                }
+            }
+
+            if (pendingApprovals.Count == 0)
+                break;
+
+            nextOptions = new CreateResponseOptions { PreviousResponseId = completedResponse!.Id };
+            foreach (var id in pendingApprovals)
+                nextOptions.InputItems.Add(ResponseItem.CreateMcpApprovalResponseItem(id, approved: true));
+        }
+
+        sw.Stop();
+        _logger.LogInformation("Agent {AgentId} streaming completed in {Duration}ms", _agentId, sw.ElapsedMilliseconds);
+
+        var citations = ExtractCitations(completedResponse);
+        var rawItems = SerializeOutputItems(allOutputItems);
+        var trace = new AgentTraceResult(
+            Input: message,
+            Text: textBuilder.ToString(),
+            Citations: citations,
+            OutputItems: rawItems,
+            ResponseId: completedResponse?.Id,
+            DurationMs: sw.ElapsedMilliseconds);
+
+        yield return new AgentStreamingCompleted(trace);
     }
 
     public async IAsyncEnumerable<string> RunStreamingAsync(string message, [EnumeratorCancellation] CancellationToken cancellationToken = default, List<SearchCitation>? citationsOutput = null, string? conversationId = null)

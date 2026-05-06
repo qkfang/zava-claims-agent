@@ -1,3 +1,4 @@
+using ZavaClaims.Agents;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -59,7 +60,11 @@ public static class LossAdjusterApi
         // the email + form bundle the Claims Intake Agent receives) and
         // returns its damage-scope / cause-of-loss / inspection-brief
         // narrative as plain text.
-        app.MapPost("/loss-adjuster/process", async (LossAdjusterProcessRequest request) =>
+        //
+        // Clients can request a live SSE stream of the agent reply by sending
+        // `Accept: text/event-stream`; otherwise the response is a single JSON
+        // envelope as before.
+        app.MapPost("/loss-adjuster/process", async (HttpContext httpContext, LossAdjusterProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.ClaimNumber))
                 return Results.BadRequest(new { error = "claimNumber is required" });
@@ -71,83 +76,87 @@ public static class LossAdjusterApi
             logger.LogInformation("Loss Adjuster process: claimNumber={ClaimNumber}",
                 Sanitize(claim.ClaimNumber));
 
-            string? agentNotes = null;
-            string? agentError = null;
-            string? agentInput = null;
-            object? agentRawOutput = null;
-            if (agentFactory.IsConfigured)
-            {
-                try
-                {
-                    var brief =
-                        "CLAIM CASE FOR LOSS-ADJUSTER REVIEW\n" +
-                        "===================================\n" +
-                        $"Claim number    : {claim.ClaimNumber}\n" +
-                        $"Customer        : {claim.CustomerName}\n" +
-                        $"Customer email  : {claim.CustomerEmail}\n" +
-                        $"Customer phone  : {claim.CustomerPhone}\n" +
-                        $"Policy number   : {claim.PolicyNumber}\n" +
-                        $"Claim type      : {claim.ClaimType}\n" +
-                        $"Incident date   : {claim.IncidentDate}\n" +
-                        $"Incident location: {claim.IncidentLocation}\n" +
-                        $"Estimated loss  : {claim.EstimatedLoss}\n" +
-                        $"Urgency         : {claim.Urgency} ({claim.UrgencyReason})\n\n" +
-                        "INCIDENT DESCRIPTION\n" +
-                        "--------------------\n" +
-                        claim.IncidentDescription + "\n\n" +
-                        "AVAILABLE QUOTE DOCUMENTS (call analyzeQuote on each)\n" +
-                        "----------------------------------------------------\n" +
-                        "- /loss-adjuster/samples/quote-acme-restoration.json\n" +
-                        "- /loss-adjuster/samples/quote-bayside-build.json\n" +
-                        "- /loss-adjuster/samples/quote-sunrise-home.json\n\n" +
-                        "TASK\n" +
-                        "----\n" +
-                        "Investigate the damage / complex loss on this claim.\n" +
-                        "1. Call the analyzeQuote MCP tool for each quote URL above.\n" +
-                        "2. Call compareQuotes with the resulting JSON array to get a\n" +
-                        "   markdown comparison table, a Mermaid bar-chart diagram of\n" +
-                        "   totals, and flagged anomalies. Embed those verbatim in\n" +
-                        "   the 'Cost Reasonableness' section of your report.\n" +
-                        "3. Call generateClaimExcel with the claim summary, the quotes\n" +
-                        "   array, and your recommendations. Include the returned\n" +
-                        "   download URL as a markdown link in the 'Recommendation\n" +
-                        "   for Assessor' section.\n" +
-                        "4. Produce your structured Loss Adjuster Report (Damage\n" +
-                        "   Scope, Cause of Loss, Cost Reasonableness, Inspection\n" +
-                        "   Questions, Recommendation for Assessor, Human Approval\n" +
-                        "   Required).";
+            var brief =
+                "CLAIM CASE FOR LOSS-ADJUSTER REVIEW\n" +
+                "===================================\n" +
+                $"Claim number    : {claim.ClaimNumber}\n" +
+                $"Customer        : {claim.CustomerName}\n" +
+                $"Customer email  : {claim.CustomerEmail}\n" +
+                $"Customer phone  : {claim.CustomerPhone}\n" +
+                $"Policy number   : {claim.PolicyNumber}\n" +
+                $"Claim type      : {claim.ClaimType}\n" +
+                $"Incident date   : {claim.IncidentDate}\n" +
+                $"Incident location: {claim.IncidentLocation}\n" +
+                $"Estimated loss  : {claim.EstimatedLoss}\n" +
+                $"Urgency         : {claim.Urgency} ({claim.UrgencyReason})\n\n" +
+                "INCIDENT DESCRIPTION\n" +
+                "--------------------\n" +
+                claim.IncidentDescription + "\n\n" +
+                "AVAILABLE QUOTE DOCUMENTS (call analyzeQuote on each)\n" +
+                "----------------------------------------------------\n" +
+                "- /loss-adjuster/samples/quote-acme-restoration.json\n" +
+                "- /loss-adjuster/samples/quote-bayside-build.json\n" +
+                "- /loss-adjuster/samples/quote-sunrise-home.json\n\n" +
+                "TASK\n" +
+                "----\n" +
+                "Investigate the damage / complex loss on this claim.\n" +
+                "1. Call the analyzeQuote MCP tool for each quote URL above.\n" +
+                "2. Call compareQuotes with the resulting JSON array to get a\n" +
+                "   markdown comparison table, a Mermaid bar-chart diagram of\n" +
+                "   totals, and flagged anomalies. Embed those verbatim in\n" +
+                "   the 'Cost Reasonableness' section of your report.\n" +
+                "3. Call generateClaimExcel with the claim summary, the quotes\n" +
+                "   array, and your recommendations. Include the returned\n" +
+                "   download URL as a markdown link in the 'Recommendation\n" +
+                "   for Assessor' section.\n" +
+                "4. Produce your structured Loss Adjuster Report (Damage\n" +
+                "   Scope, Cause of Loss, Cost Reasonableness, Inspection\n" +
+                "   Questions, Recommendation for Assessor, Human Approval\n" +
+                "   Required).";
 
-                    var agent = agentFactory.Create("loss-adjuster");
-                    var result = await agent.RunWithTraceAsync(brief);
-                    agentNotes = result.Text;
-                    agentInput = result.Input;
-                    agentRawOutput = new
-                    {
-                        text = result.Text,
-                        citations = result.Citations,
-                        outputItems = result.OutputItems,
-                        responseId = result.ResponseId,
-                        durationMs = result.DurationMs
-                    };
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Loss Adjuster Agent invocation failed");
-                    agentError = ex.Message;
-                }
-            }
-
-            return Results.Ok(new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
             {
                 claimNumber = claim.ClaimNumber,
                 customerName = claim.CustomerName,
                 claimType = claim.ClaimType,
-                agentNotes,
+                agentNotes = trace?.Text,
                 agentError,
                 agentConfigured = agentFactory.IsConfigured,
-                agentInput,
-                agentRawOutput
-            });
+                agentInput = trace?.Input,
+                agentRawOutput = trace is null ? null : new
+                {
+                    text = trace.Text,
+                    citations = trace.Citations,
+                    outputItems = trace.OutputItems,
+                    responseId = trace.ResponseId,
+                    durationMs = trace.DurationMs
+                }
+            };
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured ? agentFactory.Create("loss-adjuster") : null;
+                await AgentSseStreaming.StreamAsync(httpContext, streamingAgent, brief, BuildEnvelope, logger, "Loss Adjuster Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? traceResult = null;
+            string? agentInvocationError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("loss-adjuster");
+                    traceResult = await agent.RunWithTraceAsync(brief);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Loss Adjuster Agent invocation failed");
+                    agentInvocationError = ex.Message;
+                }
+            }
+
+            return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
         });
     }
 
