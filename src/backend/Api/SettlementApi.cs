@@ -263,6 +263,8 @@ public static class SettlementApi
                 Sanitize(record.ClaimNumber), payable, Sanitize(apiApproval.ApprovalId));
 
             // Build the optional MCP extra-tools list for the SettlementAgent.
+            // When non-null this wires settlement_* tools onto the Foundry agent
+            // so it can drive payee/invoice/authority cross-checks itself.
             List<ResponseTool>? BuildExtraTools() => settlementMcpTool != null
                 ? new List<ResponseTool> { settlementMcpTool }
                 : null;
