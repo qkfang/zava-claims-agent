@@ -156,6 +156,48 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Full-page toggle — hides the left nav for a wider working area.
+   ───────────────────────────────────────────────────────────────────────────── */
+.full-page-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--zava-panel, rgba(20, 28, 46, 0.82));
+    border: 1px solid var(--zava-panel-border, rgba(120, 150, 200, 0.18));
+    color: var(--zava-accent, #ffb347);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    transition: background 0.15s ease, color 0.15s ease,
+        border-color 0.15s ease, transform 0.15s ease;
+}
+.full-page-toggle:hover {
+    color: #fff;
+    background: rgba(255, 179, 71, 0.18);
+    border-color: var(--zava-accent, #ffb347);
+    transform: translateY(-1px);
+}
+.full-page-toggle .icon-collapse { display: none; }
+body.left-nav-hidden .full-page-toggle .icon-expand { display: none; }
+body.left-nav-hidden .full-page-toggle .icon-collapse { display: inline-block; }
+body.left-nav-hidden .full-page-toggle {
+    color: #1c2230;
+    background: var(--zava-accent, #ffb347);
+    border-color: var(--zava-accent, #ffb347);
+}
+
+/* When full-page mode is active, hide the sidebar and let main fill the row. */
+body.left-nav-hidden .page > .sidebar { display: none; }
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Floating chatbot widget (Zava Claims Assistant) — themed to match src/ui
    ───────────────────────────────────────────────────────────────────────────── */

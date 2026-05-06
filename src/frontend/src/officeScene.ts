@@ -555,17 +555,15 @@ export function buildOffice(scene: Scene): OfficeLayout {
   // partition wall — keeps the diorama feeling spacious rather than
   // cramped now that we have a dedicated meeting-rooms section.
   const cubicles: CubicleSpec[] = [
-    // Front row (z = 0). Sign text is the key role only (no "Officer" /
-    // "Coordinator" / "Investigator" suffixes) so the label always fits
-    // on the desk sign and stays readable from the orbit camera.
-    { label: "intake",         accent: "#3a5fb0", cx: -21, cz: 0, sign: "INTAKE" },
-    { label: "supplier",       accent: "#2e8a6e", cx: -11, cz: 0, sign: "SUPPLIER" },
-    { label: "settlement",     accent: "#a06a4c", cx:  -1, cz: 0, sign: "SETTLEMENT" },
-    { label: "communications", accent: "#b56fbf", cx:   9, cz: 0, sign: "COMMS" },
+    // Front row (z = 0)
+    { label: "intake",         accent: "#3a5fb0", cx: -21, cz: 0, sign: "CLAIMS INTAKE OFFICER" },
+    { label: "supplier",       accent: "#2e8a6e", cx: -11, cz: 0, sign: "SUPPLIER COORDINATOR" },
+    { label: "settlement",     accent: "#a06a4c", cx:  -1, cz: 0, sign: "SETTLEMENT OFFICER" },
+    { label: "communications", accent: "#b56fbf", cx:   9, cz: 0, sign: "CUSTOMER COMMUNICATIONS" },
     // Back row (z = 10) — Team Leader gets the executive corner office
-    { label: "assessor",     accent: "#6ec1ff", cx: -11, cz: 10, sign: "ASSESSOR" },
+    { label: "assessor",     accent: "#6ec1ff", cx: -11, cz: 10, sign: "CLAIMS ASSESSOR" },
     { label: "lossAdjuster", accent: "#ffb347", cx:  -1, cz: 10, sign: "LOSS ADJUSTER" },
-    { label: "fraud",        accent: "#e8504c", cx:   9, cz: 10, sign: "FRAUD" },
+    { label: "fraud",        accent: "#e8504c", cx:   9, cz: 10, sign: "FRAUD INVESTIGATOR" },
   ];
   for (const c of cubicles) {
     buildDepartmentZone(scene, mat, c.label, c.cx, c.cz, c.sign, c.accent);
@@ -815,7 +813,7 @@ function buildCubicle(
     ctx.fillStyle = "#3a5fb0";
     ctx.fillRect(0, 0, 1280, 320);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 140px sans-serif";
+    ctx.font = "bold 160px sans-serif";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
     ctx.fillText(signText, 640, 170);
