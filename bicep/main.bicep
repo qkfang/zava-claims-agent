@@ -8,7 +8,8 @@ param location string = 'eastus2'
 param principals array = []
 
 var commonTags = {
-  SecurityControl: 'Ignore'
+  workload: 'zava-claims-agent'
+  demo: 'claims-office'
 }
 
 // Short, deterministic suffix for globally-unique resource names (storage, key vault).
@@ -23,7 +24,6 @@ var keyVaultName = 'kv-${baseName}'
 var appServicePlanName = 'asp-${baseName}'
 var frontendAppName = 'app-${baseName}-frontend'
 var backendAppName = 'app-${baseName}-backend'
-var docIntelligenceName = 'di-${baseName}'
 
 // ---------------------------------------------------------------------------
 // Monitoring (Log Analytics + Application Insights)
@@ -75,23 +75,6 @@ module foundry 'foundry.bicep' = {
 }
 
 // ---------------------------------------------------------------------------
-// Document Intelligence (Form Recognizer) account
-// ---------------------------------------------------------------------------
-module docIntelligence 'docintelligence.bicep' = {
-  name: 'docIntelligenceDeployment'
-  params: {
-    name: docIntelligenceName
-    location: location
-    tags: commonTags
-  }
-}
-
-resource docIntelligenceAccount 'Microsoft.CognitiveServices/accounts@2024-10-01' existing = {
-  name: docIntelligenceName
-  dependsOn: [docIntelligence]
-}
-
-// ---------------------------------------------------------------------------
 // App Service Plan (P1v3) shared by frontend and backend Web Apps
 // ---------------------------------------------------------------------------
 module appService 'appservice.bicep' = {
@@ -107,7 +90,6 @@ module appService 'appservice.bicep' = {
     projectEndpoint: foundry.outputs.projectEndpoint
     modelDeploymentName: foundry.outputs.deploymentName
     bingConnectionId: foundry.outputs.bingProjectConnectionId
-    docIntelligenceEndpoint: docIntelligence.outputs.endpoint
   }
 }
 
@@ -117,65 +99,8 @@ resource foundryAccount 'Microsoft.CognitiveServices/accounts@2025-10-01-preview
 }
 
 var cognitiveServicesOpenAIUserRoleId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
-var cognitiveServicesUserRoleId = 'a97b65f3-24c7-4388-baec-2e87135dc908'
 var azureAIUserRoleId = '53ca6127-db72-4b80-b1b0-d745d6d5456d'
 var azureAIDeveloperRoleId = '64702f94-c441-49e6-a78b-ef80e0188fee'
-
-// ---------------------------------------------------------------------------
-// Role assignments: Backend Web App managed identity → Foundry
-// ---------------------------------------------------------------------------
-resource backendOpenAIUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(foundryAccount.id, resourceId('Microsoft.Web/sites', backendAppName), cognitiveServicesOpenAIUserRoleId)
-  scope: foundryAccount
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesOpenAIUserRoleId)
-    principalId: appService.outputs.backendPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-resource backendAIUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(foundryAccount.id, resourceId('Microsoft.Web/sites', backendAppName), azureAIUserRoleId)
-  scope: foundryAccount
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', azureAIUserRoleId)
-    principalId: appService.outputs.backendPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-resource backendAIDeveloperRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(foundryAccount.id, resourceId('Microsoft.Web/sites', backendAppName), azureAIDeveloperRoleId)
-  scope: foundryAccount
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', azureAIDeveloperRoleId)
-    principalId: appService.outputs.backendPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-resource backendCogServicesUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(foundryAccount.id, resourceId('Microsoft.Web/sites', backendAppName), cognitiveServicesUserRoleId)
-  scope: foundryAccount
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesUserRoleId)
-    principalId: appService.outputs.backendPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Role assignment: Backend Web App managed identity → Document Intelligence
-// ---------------------------------------------------------------------------
-resource backendDocIntelligenceRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(docIntelligenceAccount.id, resourceId('Microsoft.Web/sites', backendAppName), cognitiveServicesUserRoleId)
-  scope: docIntelligenceAccount
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesUserRoleId)
-    principalId: appService.outputs.backendPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
 
 resource principalOpenAIUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principal in principals: {
   name: guid(foundryAccount.id, principal.id, cognitiveServicesOpenAIUserRoleId)
@@ -207,26 +132,6 @@ resource principalAIDeveloperRole 'Microsoft.Authorization/roleAssignments@2022-
   }
 }]
 
-resource principalCogServicesUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principal in principals: {
-  name: guid(foundryAccount.id, principal.id, cognitiveServicesUserRoleId)
-  scope: foundryAccount
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesUserRoleId)
-    principalId: principal.id
-    principalType: principal.principalType
-  }
-}]
-
-resource principalDocIntelligenceRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principal in principals: {
-  name: guid(docIntelligenceAccount.id, principal.id, cognitiveServicesUserRoleId)
-  scope: docIntelligenceAccount
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesUserRoleId)
-    principalId: principal.id
-    principalType: principal.principalType
-  }
-}]
-
 // ---------------------------------------------------------------------------
 // Outputs
 // ---------------------------------------------------------------------------
@@ -235,9 +140,6 @@ output foundryAccountEndpoint string = foundry.outputs.accountEndpoint
 output projectName string = foundry.outputs.projectName
 output projectEndpoint string = foundry.outputs.projectEndpoint
 output codexDeploymentName string = foundry.outputs.deploymentName
-
-output docIntelligenceAccountName string = docIntelligence.outputs.accountName
-output docIntelligenceEndpoint string = docIntelligence.outputs.endpoint
 
 output appServicePlanName string = appService.outputs.appServicePlanName
 output frontendAppName string = appService.outputs.frontendAppName

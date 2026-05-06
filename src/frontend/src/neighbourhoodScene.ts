@@ -15,6 +15,7 @@ import {
   buildFireTruckMeshes,
   buildVanMeshes,
   buildJeepMeshes,
+  buildTowTruckMeshes,
   makeBurstPipeIncident,
   makeCalmGlowIncident,
   makeLuggageIncident,
@@ -229,7 +230,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
    */
   const makeStaticVehicle = (
     name: string,
-    kind: "car" | "jeep" | "firetruck" | "van",
+    kind: "car" | "jeep" | "firetruck" | "van" | "towtruck",
     pos: Vector3,
     rotY: number,
     bodyHex: string,
@@ -245,6 +246,8 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       buildFireTruckMeshes(scene, node, bodyHex, topHex);
     } else if (kind === "van") {
       buildVanMeshes(scene, node, bodyHex, topHex);
+    } else if (kind === "towtruck") {
+      buildTowTruckMeshes(scene, node, bodyHex, topHex);
     } else {
       buildCarMeshes(scene, node, bodyHex, topHex);
     }
@@ -1709,10 +1712,18 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     // Hazard triangle (small red pyramid via rotated box)
     makeBox("nh_hazard", 0.4, 0.5, 0.05, new Vector3(zx + 1.4, 0.3, zz - 1.8), "#e84b3a");
 
-    // Tow truck approaching
-    makeBox("nh_tow_body", 3.0, 1.0, 1.4, new Vector3(zx + 8, 0.65, zz - 0.8), "#ffd166");
-    makeBox("nh_tow_cab", 1.4, 0.8, 1.3, new Vector3(zx + 7, 1.55, zz - 0.8), "#ffb347");
-    makeBox("nh_tow_hook", 1.4, 0.2, 0.2, new Vector3(zx + 9.6, 0.7, zz - 0.8), "#3a3a3a");
+    // Tow truck approaching from the east — modelled as a proper voxel
+    // flatbed tow truck (cab + tray + boom + hook) so it reads as a real
+    // vehicle instead of a plain yellow box. Cab faces west (-X) toward
+    // the collision, so we rotate by -π/2 from the local +Z forward.
+    makeStaticVehicle(
+      "nh_tow",
+      "towtruck",
+      new Vector3(zx + 8, 0, zz - 0.8),
+      -Math.PI / 2,
+      "#ffd166",
+      "#ffb347",
+    );
 
     // Driver standing nearby (Aisha)
     makePerson(zx + 1.2, zz + 1.2, "customerMotor", { x: -7, z: -4 });

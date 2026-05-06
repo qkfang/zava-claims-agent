@@ -35,7 +35,7 @@ param backendLinuxFxVersion string = 'DOTNETCORE|10.0'
 param frontendAppCommandLine string = 'pm2 serve /home/site/wwwroot --no-daemon --spa'
 
 @description('Startup command for the backend Web App (.NET self-contained app entry)')
-param backendAppCommandLine string = 'dotnet zc-backend.dll'
+param backendAppCommandLine string = 'dotnet backend.dll'
 
 @description('Azure AI Foundry project endpoint URL consumed by the backend ClaimsAgent factory')
 param projectEndpoint string
@@ -54,9 +54,6 @@ param searchIndexName string = 'claims_knowledge'
 
 @description('Foundry project Bing grounding connection ID')
 param bingConnectionId string
-
-@description('Azure AI Document Intelligence (Form Recognizer) endpoint URL consumed by the backend')
-param docIntelligenceEndpoint string = ''
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName
@@ -171,10 +168,6 @@ resource backendApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'AZURE_BING_CONNECTION_ID'
           value: bingConnectionId
-        }
-        {
-          name: 'AZURE_DOC_INTELLIGENCE_ENDPOINT'
-          value: docIntelligenceEndpoint
         }
       ])
     }

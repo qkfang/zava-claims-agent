@@ -476,7 +476,7 @@ public static class AgentCatalog
         Tools: new[] { "Claims dashboard", "Work queue manager", "Escalation router", "QA checker", "Approval workflow", "Reporting" },
         HumanApproval: "Required for high-value approvals, declines, complaints, policy exceptions, work reassignment rules, or regulatory risk.",
         Icon: "🧭",
-        Accent: "#0f172a",
+        Accent: "#14b8a6",
         Scenarios: new[]
         {
             new ScenarioDemo(

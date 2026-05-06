@@ -420,6 +420,175 @@ export function buildVanMeshes(
 }
 
 /**
+ * Build a chunky voxel flatbed tow truck: forward cab with windscreen,
+ * a long flat tow tray behind, vertical headboard with a small boom
+ * arm and dangling hook, amber roof light bar, and four wheels. Long
+ * axis runs along local +Z (cab forward at +Z, deck and hook trailing
+ * toward -Z), matching {@link buildCarMeshes} / {@link buildVanMeshes}.
+ */
+export function buildTowTruckMeshes(
+  scene: Scene,
+  parent: TransformNode,
+  bodyHex: string,
+  topHex: string,
+): void {
+  const bodyMat = new StandardMaterial(`${parent.name}_body_mat`, scene);
+  bodyMat.diffuseColor = Color3.FromHexString(bodyHex);
+  bodyMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const topMat = new StandardMaterial(`${parent.name}_top_mat`, scene);
+  topMat.diffuseColor = Color3.FromHexString(topHex);
+  topMat.specularColor = new Color3(0.05, 0.05, 0.05);
+  const winMat = new StandardMaterial(`${parent.name}_win_mat`, scene);
+  winMat.diffuseColor = Color3.FromHexString("#cfe7ff");
+  const darkMat = new StandardMaterial(`${parent.name}_dark_mat`, scene);
+  darkMat.diffuseColor = Color3.FromHexString("#1c2230");
+  const amberMat = new StandardMaterial(`${parent.name}_amber_mat`, scene);
+  amberMat.diffuseColor = Color3.FromHexString("#ffb347");
+  amberMat.emissiveColor = Color3.FromHexString("#7a4a00");
+
+  // Chassis rail running the full length under the cab and tow tray.
+  const chassis = MeshBuilder.CreateBox(
+    `${parent.name}_chassis`,
+    { width: 1.3, height: 0.4, depth: 4.0 },
+    scene,
+  );
+  chassis.parent = parent;
+  chassis.position = new Vector3(0, 0.5, -0.3);
+  chassis.material = bodyMat;
+
+  // Forward cab.
+  const cab = MeshBuilder.CreateBox(
+    `${parent.name}_cab`,
+    { width: 1.35, height: 1.0, depth: 1.2 },
+    scene,
+  );
+  cab.parent = parent;
+  cab.position = new Vector3(0, 1.2, 1.2);
+  cab.material = topMat;
+
+  // Cab windscreen.
+  const win = MeshBuilder.CreateBox(
+    `${parent.name}_win`,
+    { width: 1.37, height: 0.45, depth: 1.15 },
+    scene,
+  );
+  win.parent = parent;
+  win.position = new Vector3(0, 1.45, 1.25);
+  win.material = winMat;
+
+  // Amber light bar on the cab roof.
+  const light = MeshBuilder.CreateBox(
+    `${parent.name}_light`,
+    { width: 0.7, height: 0.18, depth: 0.4 },
+    scene,
+  );
+  light.parent = parent;
+  light.position = new Vector3(0, 1.8, 1.2);
+  light.material = amberMat;
+
+  // Flat tow tray behind the cab.
+  const deck = MeshBuilder.CreateBox(
+    `${parent.name}_deck`,
+    { width: 1.3, height: 0.18, depth: 2.4 },
+    scene,
+  );
+  deck.parent = parent;
+  deck.position = new Vector3(0, 0.85, -0.8);
+  deck.material = bodyMat;
+
+  // Low side rails along the tow tray.
+  for (const dx of [0.62, -0.62]) {
+    const rail = MeshBuilder.CreateBox(
+      `${parent.name}_rail_${dx}`,
+      { width: 0.08, height: 0.22, depth: 2.4 },
+      scene,
+    );
+    rail.parent = parent;
+    rail.position = new Vector3(dx, 1.05, -0.8);
+    rail.material = topMat;
+  }
+
+  // Headboard at the front of the tray (just behind the cab).
+  const head = MeshBuilder.CreateBox(
+    `${parent.name}_headboard`,
+    { width: 1.3, height: 0.6, depth: 0.18 },
+    scene,
+  );
+  head.parent = parent;
+  head.position = new Vector3(0, 1.25, 0.45);
+  head.material = topMat;
+
+  // Vertical boom post on top of the headboard.
+  const post = MeshBuilder.CreateBox(
+    `${parent.name}_post`,
+    { width: 0.2, height: 0.7, depth: 0.2 },
+    scene,
+  );
+  post.parent = parent;
+  post.position = new Vector3(0, 1.85, 0.45);
+  post.material = darkMat;
+
+  // Boom arm extending back from the post over the tray.
+  const boom = MeshBuilder.CreateBox(
+    `${parent.name}_boom`,
+    { width: 0.18, height: 0.18, depth: 1.6 },
+    scene,
+  );
+  boom.parent = parent;
+  boom.position = new Vector3(0, 2.1, -0.35);
+  boom.material = darkMat;
+
+  // Chain hanging off the rear end of the boom.
+  const chain = MeshBuilder.CreateBox(
+    `${parent.name}_chain`,
+    { width: 0.06, height: 0.55, depth: 0.06 },
+    scene,
+  );
+  chain.parent = parent;
+  chain.position = new Vector3(0, 1.78, -1.15);
+  chain.material = darkMat;
+
+  // Hook block at the bottom of the chain.
+  const hook = MeshBuilder.CreateBox(
+    `${parent.name}_hook`,
+    { width: 0.24, height: 0.22, depth: 0.24 },
+    scene,
+  );
+  hook.parent = parent;
+  hook.position = new Vector3(0, 1.45, -1.15);
+  hook.material = darkMat;
+
+  // Front grille / bumper.
+  const grille = MeshBuilder.CreateBox(
+    `${parent.name}_grille`,
+    { width: 1.32, height: 0.32, depth: 0.18 },
+    scene,
+  );
+  grille.parent = parent;
+  grille.position = new Vector3(0, 0.55, 1.85);
+  grille.material = darkMat;
+
+  // Four wheels.
+  const wheelMat = new StandardMaterial(`${parent.name}_wheel_mat`, scene);
+  wheelMat.diffuseColor = Color3.FromHexString("#1c2230");
+  for (const [dx, dz] of [
+    [0.6, 1.15],
+    [-0.6, 1.15],
+    [0.6, -1.45],
+    [-0.6, -1.45],
+  ] as Array<[number, number]>) {
+    const w = MeshBuilder.CreateBox(
+      `${parent.name}_wheel_${dx}_${dz}`,
+      { width: 0.25, height: 0.5, depth: 0.5 },
+      scene,
+    );
+    w.parent = parent;
+    w.position = new Vector3(dx, 0.25, dz);
+    w.material = wheelMat;
+  }
+}
+
+/**
  * Build a stubby voxel Mini Cooper-style hatchback: short, rounded
  * silhouette with a contrasting roof stripe. Long axis runs along
  * local +Z.
