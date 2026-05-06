@@ -42,9 +42,9 @@ builder.Services.AddHttpClient();
 // Always registered:
 //   - LossAdjusterMcpTools (analyzeQuote / compareQuotes / generateClaimExcel)
 //   - SupplierMcpTools (lookupSuppliers / generateQuoteRequestPdf)
-//   - SettlementMcpTools (settlement_* payment-flow tools: payee validation,
+//   - SettlementMcpTools (settlement_* payment-flow tools — payee validation,
 //     invoice match, authority check, calculation, Teams approval request,
-//     release)
+//     and gated release)
 // The notice intelligence flow conditionally adds AgentDiMcpTools below when
 // its Azure resources are configured.
 var mcpBuilder = builder.Services.AddMcpServer()
