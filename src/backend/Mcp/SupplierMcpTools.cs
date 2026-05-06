@@ -120,3 +120,4 @@ public class SupplierMcpTools
         return JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true });
     }
 }
+
