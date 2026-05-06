@@ -555,15 +555,18 @@ export function buildOffice(scene: Scene): OfficeLayout {
   // partition wall — keeps the diorama feeling spacious rather than
   // cramped now that we have a dedicated meeting-rooms section.
   const cubicles: CubicleSpec[] = [
+    // Sign text is the key role only (no "Officer" / "Coordinator" /
+    // "Investigator" suffixes) so the label stays large and legible on
+    // the desk sign even from the orbit camera.
     // Front row (z = 0)
-    { label: "intake",         accent: "#3a5fb0", cx: -21, cz: 0, sign: "CLAIMS INTAKE OFFICER" },
-    { label: "supplier",       accent: "#2e8a6e", cx: -11, cz: 0, sign: "SUPPLIER COORDINATOR" },
-    { label: "settlement",     accent: "#a06a4c", cx:  -1, cz: 0, sign: "SETTLEMENT OFFICER" },
-    { label: "communications", accent: "#b56fbf", cx:   9, cz: 0, sign: "CUSTOMER COMMUNICATIONS" },
+    { label: "intake",         accent: "#3a5fb0", cx: -21, cz: 0, sign: "INTAKE" },
+    { label: "supplier",       accent: "#2e8a6e", cx: -11, cz: 0, sign: "SUPPLIER" },
+    { label: "settlement",     accent: "#a06a4c", cx:  -1, cz: 0, sign: "SETTLEMENT" },
+    { label: "communications", accent: "#b56fbf", cx:   9, cz: 0, sign: "COMMS" },
     // Back row (z = 10) — Team Leader gets the executive corner office
-    { label: "assessor",     accent: "#6ec1ff", cx: -11, cz: 10, sign: "CLAIMS ASSESSOR" },
+    { label: "assessor",     accent: "#6ec1ff", cx: -11, cz: 10, sign: "ASSESSOR" },
     { label: "lossAdjuster", accent: "#ffb347", cx:  -1, cz: 10, sign: "LOSS ADJUSTER" },
-    { label: "fraud",        accent: "#e8504c", cx:   9, cz: 10, sign: "FRAUD INVESTIGATOR" },
+    { label: "fraud",        accent: "#e8504c", cx:   9, cz: 10, sign: "FRAUD" },
   ];
   for (const c of cubicles) {
     buildDepartmentZone(scene, mat, c.label, c.cx, c.cz, c.sign, c.accent);
@@ -800,7 +803,7 @@ function buildCubicle(
   // far easier to read from a distance.
   const sign = MeshBuilder.CreateBox(
     `cubSign_${label}`,
-    { width: 6.4, height: 1.6, depth: 0.08 },
+    { width: 7.2, height: 1.6, depth: 0.08 },
     scene,
   );
   // Tilt the sign's top backward so its front face aims up toward the
@@ -809,14 +812,24 @@ function buildCubicle(
   // to keep the bottom resting just above the partition lip.
   sign.rotation.x = Math.PI / 6; // 30 degrees
   sign.position = new Vector3(cx, 2.55, cz + 2.4);
-  drawSignTexture(scene, sign, 1280, 320, (ctx) => {
+  drawSignTexture(scene, sign, 1440, 320, (ctx) => {
     ctx.fillStyle = "#3a5fb0";
-    ctx.fillRect(0, 0, 1280, 320);
+    ctx.fillRect(0, 0, 1440, 320);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 160px sans-serif";
+    // Auto-fit text so labels of varying length (e.g. "FRAUD" vs
+    // "LOSS ADJUSTER") never clip on either side of the sign. Start at a
+    // comfortable size and shrink only if the measured text would breach
+    // the safe inner width.
+    const safeWidth = 1280; // leave 80px padding on each side of 1440
+    let fontPx = 150;
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    ctx.fillText(signText, 640, 170);
+    ctx.font = `bold ${fontPx}px sans-serif`;
+    while (ctx.measureText(signText).width > safeWidth && fontPx > 80) {
+      fontPx -= 6;
+      ctx.font = `bold ${fontPx}px sans-serif`;
+    }
+    ctx.fillText(signText, 720, 170);
   });
 
   // Slim accent strip directly under the sign so the larger sign visually
@@ -824,7 +837,7 @@ function buildCubicle(
   // sign and kept flat on the partition top.
   const signUnderline = MeshBuilder.CreateBox(
     `cubSignAccent_${label}`,
-    { width: 6.4, height: 0.08, depth: 0.1 },
+    { width: 7.2, height: 0.08, depth: 0.1 },
     scene,
   );
   signUnderline.position = new Vector3(cx, 1.88, cz + 2.55);
