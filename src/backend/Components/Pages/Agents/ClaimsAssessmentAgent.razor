@@ -168,12 +168,20 @@
 
             <div class="engage-tabs-scope" data-engage-role="claims-assessment">
                 <div class="engage-tabs" role="tablist">
-                    <button type="button" class="engage-tab-btn active" data-engage-tab="prompt">Agent Prompt &amp; Tools</button>
+                    <button type="button" class="engage-tab-btn active" data-engage-tab="narrative">Agent Narrative</button>
+                    <button type="button" class="engage-tab-btn" data-engage-tab="prompt">Agent Prompt &amp; Tools</button>
                     <button type="button" class="engage-tab-btn" data-engage-tab="input">Agent Input</button>
                     <button type="button" class="engage-tab-btn" data-engage-tab="output">Raw Output</button>
                 </div>
 
-                <div class="engage-tab-panel active" data-engage-tab="prompt">
+                <div class="engage-tab-panel active" data-engage-tab="narrative">
+                    <div class="engage-info-block">
+                        <h4>Agent narrative (streamed)</h4>
+                        <div class="agent-md engage-narrative-body"><div class="engage-empty">Engage the agent to see the streamed narrative.</div></div>
+                    </div>
+                </div>
+
+                <div class="engage-tab-panel" data-engage-tab="prompt">
                     <div class="engage-info-block">
                         <h4>Agent metadata</h4>
                         <div class="engage-info-meta engage-meta"></div>

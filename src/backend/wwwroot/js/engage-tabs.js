@@ -1,10 +1,12 @@
-// Drives the three-tab "Engage Agent" sub-panel that lives inside the
+// Drives the four-tab "Engage Agent" sub-panel that lives inside the
 // "Engage <Role> Agent" step on each agent page:
-//   1. Agent Prompt    — the system prompt + tools (loaded from
+//   1. Agent Narrative — the streamed agent text (starts blank,
+//                        fills live as the agent produces output)
+//   2. Agent Prompt    — the system prompt + tools (loaded from
 //                        /agents/{role}/metadata)
-//   2. Agent Input     — the exact prompt the agent received
+//   3. Agent Input     — the exact prompt the agent received
 //                        (populated after the user clicks Engage)
-//   3. Raw Output      — the full raw output (text, citations,
+//   4. Raw Output      — the full raw output (text, citations,
 //                        every output item the agent produced —
 //                        including any function/tool calls — as a
 //                        collapsible JSON tree)
@@ -215,6 +217,7 @@
         if (!scope) return;
         const inputEl = scope.querySelector('.engage-input-body');
         const outputEl = scope.querySelector('.engage-output-body');
+        const narrativeEl = scope.querySelector('.engage-narrative-body');
         if (inputEl) {
             const input = payload && payload.agentInput;
             inputEl.textContent = input
@@ -230,6 +233,28 @@
                 outputEl.innerHTML = '<div class="engage-empty">No raw agent output — Foundry agent was not invoked or returned no items.</div>';
             }
         }
+        if (narrativeEl) {
+            const notes = payload && payload.agentNotes;
+            narrativeEl.classList.remove('agent-md-streaming');
+            if (notes && typeof window.zcRenderMarkdown === 'function') {
+                window.zcRenderMarkdown(narrativeEl, notes);
+            } else if (notes) {
+                narrativeEl.textContent = notes;
+            } else if (!narrativeEl.textContent.trim()) {
+                narrativeEl.innerHTML = '<div class="engage-empty">No narrative produced by the agent.</div>';
+            }
+        }
+    };
+
+    // Streaming hook called by per-page demo scripts from their onDelta
+    // callback: mirrors the streamed agent text into the "Agent Narrative"
+    // tab so it accumulates live as the agent generates output.
+    window.engageTabsStreamNarrative = function (scope, fullText) {
+        if (!scope) return;
+        const narrativeEl = scope.querySelector('.engage-narrative-body');
+        if (!narrativeEl) return;
+        narrativeEl.classList.add('agent-md-streaming');
+        narrativeEl.textContent = fullText || '';
     };
 
     function init() {

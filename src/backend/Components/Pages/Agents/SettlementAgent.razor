@@ -241,12 +241,20 @@
 
             <div class="engage-tabs-scope" data-engage-role="settlement">
                 <div class="engage-tabs" role="tablist">
-                    <button type="button" class="engage-tab-btn active" data-engage-tab="prompt">Agent Prompt &amp; Tools</button>
+                    <button type="button" class="engage-tab-btn active" data-engage-tab="narrative">Agent Narrative</button>
+                    <button type="button" class="engage-tab-btn" data-engage-tab="prompt">Agent Prompt &amp; Tools</button>
                     <button type="button" class="engage-tab-btn" data-engage-tab="input">Agent Input</button>
                     <button type="button" class="engage-tab-btn" data-engage-tab="output">Raw Output</button>
                 </div>
 
-                <div class="engage-tab-panel active" data-engage-tab="prompt">
+                <div class="engage-tab-panel active" data-engage-tab="narrative">
+                    <div class="engage-info-block">
+                        <h4>Agent narrative (streamed)</h4>
+                        <div class="agent-md engage-narrative-body"><div class="engage-empty">Engage the agent to see the streamed narrative.</div></div>
+                    </div>
+                </div>
+
+                <div class="engage-tab-panel" data-engage-tab="prompt">
                     <div class="engage-info-block">
                         <h4>Agent metadata</h4>
                         <div class="engage-info-meta engage-meta"></div>
@@ -706,6 +714,7 @@
         const letterEl = $('#settlement-letter');
         const agentNotesEl = $('#settlement-agent-notes');
         const agentNotesBody = $('#settlement-agent-notes-body');
+        const engageScope = $('.engage-tabs-scope');
         const teamsCard = $('#settlement-teams-card');
         const teamsPill = $('#settlement-teams-pill');
         const teamsMsg = $('#settlement-teams-msg');
@@ -860,6 +869,9 @@
                         agentNotesEl.hidden = false;
                         agentNotesBody.classList.add('agent-md-streaming');
                         agentNotesBody.textContent = fullText;
+                        if (window.engageTabsStreamNarrative) {
+                            window.engageTabsStreamNarrative(engageScope, fullText);
+                        }
                     },
                     onError: (msg) => {
                         processStatus.className = 'settlement-status error';
@@ -906,8 +918,7 @@
 
                 // Surface input + raw output in the Engage Agent sub-tabs.
                 if (window.engageTabsRender) {
-                    const scope = document.querySelector('.settlement-panel .engage-tabs-scope');
-                    window.engageTabsRender(scope, data);
+                    window.engageTabsRender(engageScope, data);
                 }
 
                 // If the agent flagged human approval as required (e.g. the

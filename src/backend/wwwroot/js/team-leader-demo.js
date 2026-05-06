@@ -18,6 +18,7 @@
         const processStatus = $('#leader-process-status');
         const reportEl = $('#leader-report');
         const notesBody = $('#leader-notes-body');
+        const engageScope = $('.engage-tabs-scope');
 
         let selectedClaim = null;
 
@@ -111,6 +112,9 @@
                         reportEl.hidden = false;
                         notesBody.classList.add('agent-md-streaming');
                         notesBody.textContent = fullText;
+                        if (window.engageTabsStreamNarrative) {
+                            window.engageTabsStreamNarrative(engageScope, fullText);
+                        }
                     },
                     onError: (msg) => {
                         processStatus.className = 'leader-status error';
@@ -139,8 +143,7 @@
 
                 // Surface input + raw output in the Engage Agent sub-tabs.
                 if (window.engageTabsRender) {
-                    const scope = document.querySelector('.leader-panel .engage-tabs-scope');
-                    window.engageTabsRender(scope, data);
+                    window.engageTabsRender(engageScope, data);
                 }
             } catch (err) {
                 processStatus.className = 'leader-status error';

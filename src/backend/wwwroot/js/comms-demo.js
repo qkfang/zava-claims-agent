@@ -28,6 +28,7 @@
         const portalBody = $('#comms-portal-body');
         const agentNotesEl = $('#comms-agent-notes');
         const agentNotesBody = $('#comms-agent-notes-body');
+        const engageScope = $('.engage-tabs-scope');
 
         let claims = [];
         let selectedClaim = null;
@@ -106,6 +107,9 @@
                         agentNotesEl.hidden = false;
                         agentNotesBody.classList.add('agent-md-streaming');
                         agentNotesBody.textContent = fullText;
+                        if (window.engageTabsStreamNarrative) {
+                            window.engageTabsStreamNarrative(engageScope, fullText);
+                        }
                     },
                     onError: (msg) => {
                         processStatus.className = 'comms-status error';
@@ -152,8 +156,7 @@
 
                 // Surface input + raw output in the Engage Agent sub-tabs.
                 if (window.engageTabsRender) {
-                    const scope = document.querySelector('.comms-panel .engage-tabs-scope');
-                    window.engageTabsRender(scope, data);
+                    window.engageTabsRender(engageScope, data);
                 }
             } catch (err) {
                 processStatus.className = 'comms-status error';

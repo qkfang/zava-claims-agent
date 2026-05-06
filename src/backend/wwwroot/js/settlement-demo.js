@@ -27,6 +27,7 @@
         const letterEl = $('#settlement-letter');
         const agentNotesEl = $('#settlement-agent-notes');
         const agentNotesBody = $('#settlement-agent-notes-body');
+        const engageScope = $('.engage-tabs-scope');
 
         let claims = [];
         let selected = null;
@@ -152,6 +153,9 @@
                         agentNotesEl.hidden = false;
                         agentNotesBody.classList.add('agent-md-streaming');
                         agentNotesBody.textContent = fullText;
+                        if (window.engageTabsStreamNarrative) {
+                            window.engageTabsStreamNarrative(engageScope, fullText);
+                        }
                     },
                     onError: (msg) => {
                         processStatus.className = 'settlement-status error';
@@ -196,8 +200,7 @@
 
                 // Surface input + raw output in the Engage Agent sub-tabs.
                 if (window.engageTabsRender) {
-                    const scope = document.querySelector('.settlement-panel .engage-tabs-scope');
-                    window.engageTabsRender(scope, data);
+                    window.engageTabsRender(engageScope, data);
                 }
             } catch (err) {
                 processStatus.className = 'settlement-status error';

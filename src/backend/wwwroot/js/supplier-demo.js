@@ -17,6 +17,7 @@
         const processStatus = $('#supplier-process-status');
         const agentNotesEl = $('#supplier-agent-notes');
         const agentNotesBody = $('#supplier-agent-notes-body');
+        const engageScope = $('.engage-tabs-scope');
         const resultEl = $('#supplier-result');
         const dispatchEl = $('#supplier-dispatch');
         const apptsEl = $('#supplier-appts');
@@ -118,6 +119,9 @@
                         agentNotesEl.hidden = false;
                         agentNotesBody.classList.add('agent-md-streaming');
                         agentNotesBody.textContent = fullText;
+                        if (window.engageTabsStreamNarrative) {
+                            window.engageTabsStreamNarrative(engageScope, fullText);
+                        }
                     },
                     onError: (msg) => {
                         processStatus.className = 'supplier-status error';
@@ -184,8 +188,7 @@
 
                 // Surface input + raw output in the Engage Agent sub-tabs.
                 if (window.engageTabsRender) {
-                    const scope = root.querySelector('.engage-tabs-scope');
-                    window.engageTabsRender(scope, data);
+                    window.engageTabsRender(engageScope, data);
                 }
 
                 dispatchEl.scrollIntoView({ behavior: 'smooth', block: 'center' });

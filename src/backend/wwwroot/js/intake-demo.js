@@ -20,6 +20,7 @@
         const processStatus = $('#intake-process-status');
         const agentNotesEl = $('#intake-agent-notes');
         const agentNotesBody = $('#intake-agent-notes-body');
+        const engageScope = $('.engage-tabs-scope');
         const formWrap = $('#intake-form-wrap');
         const form = $('#intake-form');
         const urgencyEl = $('#intake-urgency');
@@ -112,6 +113,9 @@
                         agentNotesEl.hidden = false;
                         agentNotesBody.classList.add('agent-md-streaming');
                         agentNotesBody.textContent = fullText;
+                        if (window.engageTabsStreamNarrative) {
+                            window.engageTabsStreamNarrative(engageScope, fullText);
+                        }
                     },
                     onError: (msg) => {
                         processStatus.className = 'intake-status error';
@@ -153,8 +157,7 @@
 
                 // Surface input + raw output in the Engage Agent sub-tabs.
                 if (window.engageTabsRender) {
-                    const scope = document.querySelector('.intake-panel .engage-tabs-scope');
-                    window.engageTabsRender(scope, data);
+                    window.engageTabsRender(engageScope, data);
                 }
             } catch (err) {
                 processStatus.className = 'intake-status error';

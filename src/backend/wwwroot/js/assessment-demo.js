@@ -26,6 +26,7 @@
         const checklistPill = $('#assessment-checklist-pill');
         const decisionReason = $('#assessment-decision-reason');
         const decisionSettlement = $('#assessment-decision-settlement');
+        const engageScope = $('.engage-tabs-scope');
 
         let currentClaim = null;
 
@@ -229,6 +230,9 @@
                         resultEl.hidden = false;
                         resultBody.classList.add('agent-md-streaming');
                         resultBody.textContent = fullText;
+                        if (window.engageTabsStreamNarrative) {
+                            window.engageTabsStreamNarrative(engageScope, fullText);
+                        }
                         const verdict = classifyRecommendation(fullText);
                         if (!lastVerdict || lastVerdict.cls !== verdict.cls) {
                             lastVerdict = verdict;
@@ -256,8 +260,7 @@
 
                 // Surface input + raw output in the Engage Agent sub-tabs.
                 if (window.engageTabsRender) {
-                    const scope = document.querySelector('.assessment-panel .engage-tabs-scope');
-                    window.engageTabsRender(scope, data);
+                    window.engageTabsRender(engageScope, data);
                 }
             } catch (err) {
                 processStatus.className = 'assessment-status error';
