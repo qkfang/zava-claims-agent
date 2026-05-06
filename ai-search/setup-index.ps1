@@ -2,7 +2,7 @@
 # (Zava Insurance) and uploads the mock JSON documents from the sibling folders.
 # Adapted from https://github.com/qkfang/quant-agent/blob/main/ai-search/setup-index.ps1.
 
-$SearchServiceName = "srch-zc"            # Update to match the aiSearchName output from main.bicep
+$SearchServiceName = "srch-zc"            # Update to the full aiSearchName output from main.bicep, e.g. srch-zc-abc123 (the deployment appends a 6-char unique suffix)
 $ResourceGroupName = "rg-zava-claims"
 $IndexPrefix = "claims"
 $FoundryEndpoint = "https://aif-zc.cognitiveservices.azure.com"  # Update to match foundryAccountEndpoint output
