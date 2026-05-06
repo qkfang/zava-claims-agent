@@ -1,0 +1,13 @@
+{
+  "id": "kb-settlement-calc-motor",
+  "title": "Settlement calculation reference — motor partial loss vs. total loss",
+  "category": "Settlement Playbook",
+  "claimType": "motor",
+  "claimNumber": "",
+  "policyNumber": "",
+  "content": "For motor claims, the Zava Settlement Officer applies the following decision rule. Total-loss threshold: assess as a total loss when the assessor's repair quote exceeds 75% of the agreed value (or market value for market-value policies). Pre-accident value (PAV) for market-value policies is sourced from Glass's Guide using the trim, kilometres, and date-of-loss adjustment. For partial losses, deduct the policy excess (default $750 for comprehensive, $0 for not-at-fault windscreen claims), apply any betterment deduction (typically 0% for vehicles under 5 years, 10-15% for 5-10 years, 20% for older). Hire-car days are settled at the supplier's daily rate up to the policy sub-limit (typically 21 days). Always check for additional benefits the customer paid for: 'choice of repairer', 'new-for-old replacement' (vehicles under 3 years), 'no-claim-bonus protection'. Sample: CL-1002 Toyota RAV4 partial loss, repair $6,400, excess $750, settlement $5,650 + 10 days hire-car at $89/day = $890 = total $6,540 to repairer + $890 to hire-car supplier; customer pays excess to repairer.",
+  "severity": "medium",
+  "department": "Settlement",
+  "tags": ["settlement", "motor", "total-loss", "betterment", "playbook"],
+  "lastUpdated": "2026-01-15T10:30:00Z"
+}

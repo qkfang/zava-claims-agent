@@ -68,7 +68,7 @@ public class SupplierCoordinatorAgent : ClaimsAgent
         ILogger? logger = null)
         : base(aiProjectClient, AgentId, "Sam", "Supplier Coordinator", "Supplier Coordination", "\u001b[32m",
             deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId,
-            mcpServerUri, "supplier-mcp", logger)
+            logger, mcpServerUri, "supplier-mcp")
     {
     }
 }

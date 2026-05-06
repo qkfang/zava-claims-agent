@@ -17,6 +17,7 @@ var uniqueSuffix = substring(uniqueString(resourceGroup().id, baseName), 0, 6)
 
 // Standard Azure resource naming using the base abbreviation (e.g. "zc").
 var foundryName = 'aif-${baseName}'
+var aiSearchName = toLower('srch-${baseName}-${uniqueSuffix}')
 var logAnalyticsName = 'log-${baseName}'
 var appInsightsName = 'appi-${baseName}'
 var storageAccountName = toLower('st${baseName}')
@@ -63,6 +64,18 @@ module keyVault 'keyvault.bicep' = {
 }
 
 // ---------------------------------------------------------------------------
+// Azure AI Search (claims knowledge + policy requirement indexes)
+// ---------------------------------------------------------------------------
+module aiSearch 'aisearch.bicep' = {
+  name: 'aiSearchDeployment'
+  params: {
+    name: aiSearchName
+    location: location
+    tags: commonTags
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Azure AI Foundry (Cognitive Services account + project + Codex deployment)
 // ---------------------------------------------------------------------------
 module foundry 'foundry.bicep' = {
@@ -71,6 +84,8 @@ module foundry 'foundry.bicep' = {
     name: foundryName
     location: location
     tags: commonTags
+    aiSearchEndpoint: aiSearch.outputs.endpoint
+    aiSearchResourceId: aiSearch.outputs.id
   }
 }
 
@@ -90,6 +105,8 @@ module appService 'appservice.bicep' = {
     projectEndpoint: foundry.outputs.projectEndpoint
     modelDeploymentName: foundry.outputs.deploymentName
     bingConnectionId: foundry.outputs.bingProjectConnectionId
+    searchConnectionId: foundry.outputs.aiSearchProjectConnectionId
+    searchIndexName: 'claims_knowledge'
   }
 }
 
@@ -133,6 +150,97 @@ resource principalAIDeveloperRole 'Microsoft.Authorization/roleAssignments@2022-
 }]
 
 // ---------------------------------------------------------------------------
+// Role assignments for Azure AI Search access
+//
+// Web App (frontend + backend) → Search Index Data Contributor (so the apps
+//   can read/write documents directly when needed)
+// Foundry account & project managed identities → Search Index Data Reader +
+//   Search Service Contributor (so the AzureAISearchTool wired into each
+//   ClaimsAgent can issue queries against the claims_knowledge index using
+//   the Foundry-side managed identity)
+// User principals → Search Index Data Contributor (operators running the
+//   ai-search/setup-index.ps1 / ingest-documents.ps1 helper scripts)
+// ---------------------------------------------------------------------------
+var searchIndexDataReaderRoleId = '1407120a-92aa-4202-b7e9-c0e197c71c8f'
+var searchIndexDataContributorRoleId = '8ebe5a00-799e-43f5-93ac-243d3dce84a7'
+var searchServiceContributorRoleId = '7ca78c08-252a-4471-8644-bb5ff32d4ba0'
+
+resource searchResource 'Microsoft.Search/searchServices@2024-06-01-preview' existing = {
+  name: aiSearchName
+  dependsOn: [aiSearch]
+}
+
+resource foundrySearchIndexDataReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(searchResource.id, foundryName, searchIndexDataReaderRoleId)
+  scope: searchResource
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', searchIndexDataReaderRoleId)
+    principalId: foundry.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource foundrySearchServiceContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(searchResource.id, foundryName, searchServiceContributorRoleId)
+  scope: searchResource
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', searchServiceContributorRoleId)
+    principalId: foundry.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource foundryProjectSearchIndexDataReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(searchResource.id, '${foundryName}-project', searchIndexDataReaderRoleId)
+  scope: searchResource
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', searchIndexDataReaderRoleId)
+    principalId: foundry.outputs.projectPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource foundryProjectSearchServiceContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(searchResource.id, '${foundryName}-project', searchServiceContributorRoleId)
+  scope: searchResource
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', searchServiceContributorRoleId)
+    principalId: foundry.outputs.projectPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource backendSearchIndexDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(searchResource.id, backendAppName, searchIndexDataContributorRoleId)
+  scope: searchResource
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', searchIndexDataContributorRoleId)
+    principalId: appService.outputs.backendPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource frontendSearchIndexDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(searchResource.id, frontendAppName, searchIndexDataContributorRoleId)
+  scope: searchResource
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', searchIndexDataContributorRoleId)
+    principalId: appService.outputs.frontendPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource principalSearchIndexDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principal in principals: {
+  name: guid(searchResource.id, principal.id, searchIndexDataContributorRoleId)
+  scope: searchResource
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', searchIndexDataContributorRoleId)
+    principalId: principal.id
+    principalType: principal.principalType
+  }
+}]
+
+// ---------------------------------------------------------------------------
 // Outputs
 // ---------------------------------------------------------------------------
 output foundryAccountName string = foundry.outputs.accountName
@@ -155,3 +263,8 @@ output keyVaultUri string = keyVault.outputs.keyVaultUri
 output appInsightsName string = monitoring.outputs.appInsightsName
 output appInsightsConnectionString string = monitoring.outputs.appInsightsConnectionString
 output logAnalyticsName string = monitoring.outputs.logAnalyticsName
+
+output aiSearchName string = aiSearch.outputs.name
+output aiSearchEndpoint string = aiSearch.outputs.endpoint
+output aiSearchIndexName string = 'claims_knowledge'
+output aiSearchProjectConnectionId string = foundry.outputs.aiSearchProjectConnectionId

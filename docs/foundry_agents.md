@@ -234,6 +234,21 @@ Always required before:
 - Customer interview request
 - Claim decline based on fraud concerns
 
+### Document authenticity (Try-It-Out demo)
+
+The Fraud Investigation Agent's Try-It-Out tab also runs a per-document
+authenticity pass over the scan documents and IDs attached to each
+claim. Each document is processed through Azure Content Understanding
+using a shared authenticity field schema (document type, issuer, holder
+name, document number, issue / expiry dates, totals, tamper indicators,
+security features, and a consistency summary). A small deterministic
+checks layer turns the extracted fields into a verdict —
+*legit / suspicious / fake* — and surfaces the list of checks performed,
+the reasons any failed, and feeds the findings into Felix's risk
+narrative so document red flags are cited by document number. See
+[`src/backend/README.md`](../src/backend/README.md#fraud-investigation--document-authenticity)
+for the full flow and endpoint list.
+
 ---
 
 ## 5. Supplier Coordinator Agent

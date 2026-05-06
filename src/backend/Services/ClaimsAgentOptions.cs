@@ -16,9 +16,12 @@ public class ClaimsAgentOptions
     public string? BingConnectionId { get; set; }
 
     /// <summary>
-    /// Public URL Foundry should use to reach this app's MCP endpoint
-    /// (<c>/mcp</c>). When set, agents that opt-in (e.g. the Supplier
-    /// Coordinator) will be wired with an MCP tool against this URL.
+    /// Base URL of the in-process MCP server exposed by this app
+    /// (e.g. <c>http://localhost:5000</c>). When set, agents that opt-in
+    /// register an MCP tool pointing at <c>{AppMcpUrl}/mcp</c> — the
+    /// Supplier Coordinator uses <c>lookupSuppliers</c> /
+    /// <c>generateQuoteRequestPdf</c>, and the Loss Adjuster uses
+    /// <c>analyzeQuote</c> / <c>compareQuotes</c> / <c>generateClaimExcel</c>.
     /// </summary>
     public string? AppMcpUrl { get; set; }
 

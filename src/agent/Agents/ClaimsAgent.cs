@@ -47,27 +47,9 @@ public class ClaimsAgent : BaseAgent
         string? searchConnectionId = null,
         string? searchIndexName = null,
         string? bingConnectionId = null,
-        ILogger? logger = null)
-        : this(aiProjectClient, agentId, name, role, department, consoleColor, deploymentName, instructions,
-            searchConnectionId, searchIndexName, bingConnectionId, mcpServerUri: null, mcpServerLabel: null, logger)
-    {
-    }
-
-    public ClaimsAgent(
-        AIProjectClient aiProjectClient,
-        string agentId,
-        string name,
-        string role,
-        string department,
-        string consoleColor,
-        string deploymentName,
-        string instructions,
-        string? searchConnectionId,
-        string? searchIndexName,
-        string? bingConnectionId,
-        string? mcpServerUri,
-        string? mcpServerLabel,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        string? mcpServerUri = null,
+        string? mcpServerLabel = null)
         : base(aiProjectClient, agentId, deploymentName, instructions, null,
             agentDef =>
             {
@@ -83,10 +65,11 @@ public class ClaimsAgent : BaseAgent
 
                 if (!string.IsNullOrWhiteSpace(mcpServerUri))
                 {
-                    agentDef.Tools.Add(ResponseTool.CreateMcpTool(
-                        serverLabel: string.IsNullOrWhiteSpace(mcpServerLabel) ? "claims-mcp" : mcpServerLabel,
+                    var mcpTool = ResponseTool.CreateMcpTool(
+                        serverLabel: mcpServerLabel ?? "zava-claims-mcp",
                         serverUri: new Uri(mcpServerUri),
-                        toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.NeverRequireApproval)));
+                        toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.NeverRequireApproval));
+                    agentDef.Tools.Add(mcpTool);
                 }
             },
             logger)
@@ -102,7 +85,7 @@ public class ClaimsAgent : BaseAgent
         if (!string.IsNullOrWhiteSpace(bingConnectionId))
             tools.Add("Bing Grounding (web)");
         if (!string.IsNullOrWhiteSpace(mcpServerUri))
-            tools.Add($"MCP — {mcpServerLabel ?? "claims-mcp"} ({mcpServerUri})");
+            tools.Add($"MCP server '{mcpServerLabel ?? "zava-claims-mcp"}' at {mcpServerUri}");
         ConfiguredTools = tools;
     }
 }

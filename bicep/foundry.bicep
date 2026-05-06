@@ -7,6 +7,12 @@ param location string
 @description('Resource tags')
 param tags object = {}
 
+@description('Azure AI Search endpoint to connect to the Foundry project (optional)')
+param aiSearchEndpoint string = ''
+
+@description('Azure AI Search resource ID to connect to the Foundry project (optional)')
+param aiSearchResourceId string = ''
+
 resource foundry 'Microsoft.CognitiveServices/accounts@2025-10-01-preview' = {
   name: name
   location: location
@@ -67,6 +73,39 @@ resource bingAccount 'Microsoft.Bing/accounts@2020-06-10' = {
   }
 }
 
+// Azure AI Search connections — exposed to the Foundry account and to the
+// project so the AzureAISearchTool wired up on each ClaimsAgent can resolve
+// the connection by id. Mirrors the quant-agent foundry.bicep.
+resource aiSearchConnection 'Microsoft.CognitiveServices/accounts/connections@2025-10-01-preview' = if (aiSearchEndpoint != '') {
+  parent: foundry
+  name: 'ai-search-connection'
+  properties: {
+    authType: 'AAD'
+    category: 'CognitiveSearch'
+    target: aiSearchEndpoint
+    metadata: {
+      type: 'azure_ai_search'
+      ResourceId: aiSearchResourceId
+      useWorkspaceManagedIdentity: 'false'
+    }
+  }
+}
+
+resource aiSearchProjectConnection 'Microsoft.CognitiveServices/accounts/projects/connections@2025-10-01-preview' = if (aiSearchEndpoint != '') {
+  parent: project
+  name: 'ai-search-connection-project'
+  properties: {
+    authType: 'AAD'
+    category: 'CognitiveSearch'
+    target: aiSearchEndpoint
+    metadata: {
+      type: 'azure_ai_search'
+      ResourceId: aiSearchResourceId
+      useWorkspaceManagedIdentity: 'false'
+    }
+  }
+}
+
 #disable-next-line BCP081
 resource bingSearchConnection 'Microsoft.CognitiveServices/accounts/connections@2025-10-01-preview' = {
   parent: foundry
@@ -115,3 +154,6 @@ output deploymentName string = modelDeployment.name
 output principalId string = foundry.identity.principalId
 output bingAccountName string = bingAccount.name
 output bingProjectConnectionId string = bingSearchProjectConnection.id
+output projectPrincipalId string = project.identity.principalId
+output aiSearchConnectionId string = aiSearchEndpoint != '' ? aiSearchConnection.id : ''
+output aiSearchProjectConnectionId string = aiSearchEndpoint != '' ? aiSearchProjectConnection.id : ''

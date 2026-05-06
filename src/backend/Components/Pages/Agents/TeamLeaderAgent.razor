@@ -15,7 +15,14 @@
     </div>
 </div>
 
-<div class="agent-tab-panel standalone">
+<div class="agent-tab-scope" style="--accent: #14b8a6">
+    <nav class="agent-tabs" role="tablist" aria-label="Team Leader agent details">
+        <button type="button" class="agent-tab active" data-tab="overview" role="tab" aria-selected="true" tabindex="0">Overview</button>
+        <button type="button" class="agent-tab" data-tab="try" role="tab" aria-selected="false" tabindex="-1">Try it out</button>
+        <button type="button" class="agent-tab" data-tab="groupchat" role="tab" aria-selected="false" tabindex="-1">Group Chat</button>
+    </nav>
+
+    <div class="agent-tab-panel active" data-panel="overview" role="tabpanel">
     <section class="panel" style="--accent: #14b8a6">
         <h2>What this agent does</h2>
         <p>
@@ -70,4 +77,766 @@
             </p>
         </div>
     </section>
+
+    </div>
+
+    <div class="agent-tab-panel" data-panel="try" role="tabpanel">
+    <section class="panel leader-panel" style="--accent: #14b8a6">
+        <h2>Try It Out — Team Leader Demo</h2>
+        <p class="muted leader-help">
+            Walk through how Theo's team-leader agent picks up a claim that
+            Claims Intake has just lodged, reviews the case from a leader's
+            perspective, and produces a structured workload / escalation /
+            approval briefing. All steps run live against the
+            <code>/team-leader/*</code> endpoints in this app.
+        </p>
+
+        <!-- Step 1 — pick a Claim ID -->
+        <div class="leader-step" data-step="1">
+            <div class="leader-step-head">
+                <span class="leader-step-num">1</span>
+                <h3>Pick a Claim ID</h3>
+            </div>
+            <p class="muted">
+                Theo works from the queue of claims already lodged by Iris's
+                Claims Intake Agent. Pick one of the claim cases held in memory
+                for this demo.
+            </p>
+            <div class="leader-claim-row">
+                <select id="leader-claim-select" aria-label="Claim ID">
+                    <option value="">— Select a claim —</option>
+                </select>
+                <button type="button" id="leader-refresh-btn" class="leader-secondary"
+                        title="Reload the list of claims">↻ Refresh</button>
+            </div>
+            <p class="muted leader-empty" id="leader-empty" hidden>
+                No claims yet. Run the
+                <a href="/agents/claims-intake">Claims Intake Try It Out</a>
+                tab first to lodge a claim, then come back here.
+            </p>
+            <div class="leader-claim-card" id="leader-claim-card" hidden>
+                <div class="leader-claim-num" id="leader-claim-num"></div>
+                <div class="leader-claim-grid">
+                    <div><span class="k">Customer</span><span id="leader-claim-customer"></span></div>
+                    <div><span class="k">Policy</span><span id="leader-claim-policy"></span></div>
+                    <div><span class="k">Claim type</span><span id="leader-claim-type"></span></div>
+                    <div><span class="k">Incident date</span><span id="leader-claim-date"></span></div>
+                    <div class="span-2"><span class="k">Incident location</span><span id="leader-claim-location"></span></div>
+                    <div class="span-2"><span class="k">Description</span><span id="leader-claim-desc"></span></div>
+                    <div><span class="k">Estimated loss</span><span id="leader-claim-loss"></span></div>
+                    <div><span class="k">Urgency</span><span id="leader-claim-urgency"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 — engage the agent -->
+        <div class="leader-step" data-step="2">
+            <div class="leader-step-head">
+                <span class="leader-step-num">2</span>
+                <h3>Engage Team Leader Agent</h3>
+            </div>
+            <p class="muted">
+                The agent loads the selected claim's details and produces a
+                structured Team Leader briefing — workload summary, escalations,
+                approval queue, coaching insights, and recommended priorities.
+            </p>
+            <button id="leader-process-btn" type="button" disabled>Process with Team Leader Agent</button>
+            <div id="leader-process-status" class="leader-status" hidden></div>
+
+            <div class="engage-tabs-scope" data-engage-role="team-leader">
+                <div class="engage-tabs" role="tablist">
+                    <button type="button" class="engage-tab-btn active" data-engage-tab="prompt">Agent Prompt &amp; Tools</button>
+                    <button type="button" class="engage-tab-btn" data-engage-tab="input">Agent Input</button>
+                    <button type="button" class="engage-tab-btn" data-engage-tab="output">Raw Output</button>
+                </div>
+
+                <div class="engage-tab-panel active" data-engage-tab="prompt">
+                    <div class="engage-info-block">
+                        <h4>Agent metadata</h4>
+                        <div class="engage-info-meta engage-meta"></div>
+                    </div>
+                    <div class="engage-info-block">
+                        <h4>System prompt</h4>
+                        <pre class="engage-pre engage-prompt-body">Loading…</pre>
+                    </div>
+                    <div class="engage-info-block">
+                        <h4>Tools available</h4>
+                        <ul class="engage-tools-list"><li class="engage-empty">Loading…</li></ul>
+                    </div>
+                </div>
+
+                <div class="engage-tab-panel" data-engage-tab="input">
+                    <div class="engage-info-block">
+                        <h4>Prompt sent to the agent</h4>
+                        <pre class="engage-pre engage-input-body engage-empty">Engage the agent to capture the input that was sent.</pre>
+                    </div>
+                </div>
+
+                <div class="engage-tab-panel" data-engage-tab="output">
+                    <div class="engage-info-block">
+                        <h4>Raw agent output (text, citations, every output item including tool / function calls)</h4>
+                        <div class="json-viewer engage-output-body"><div class="engage-empty">Engage the agent to see the full raw response.</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 — team leader briefing -->
+        <div class="leader-step leader-report" data-step="3" id="leader-report" hidden>
+            <div class="leader-step-head">
+                <span class="leader-step-num">3</span>
+                <h3>Team Leader Briefing</h3>
+            </div>
+            <div class="leader-notes-label">Agent narrative</div>
+            <div id="leader-notes-body" class="agent-md"></div>
+            <p class="muted leader-handoff">
+                Held in memory for the rest of the demo. The team leader can
+                approve high-value items, reassign overloaded queues, or
+                escalate vulnerable-customer cases, with the agent's working
+                attached for the audit trail.
+            </p>
+        </div>
+    </section>
+    </div>
+
+    <div class="agent-tab-panel" data-panel="groupchat" role="tabpanel">
+    <section class="panel groupchat-panel" style="--accent: #14b8a6">
+        <h2>Group Chat — Team Leader and the whole claims team</h2>
+        <p class="muted groupchat-help">
+            Theo (Team Leader) opens a group chat about a single claim and runs a
+            short discussion with the seven other claims-office agents. Theo
+            chairs the meeting: at each turn Theo decides which specialist
+            should speak next, and stops the discussion when the team has
+            reached a conclusion. Modelled on the
+            <code>GroupChatManager</code> pattern in Microsoft Agent Framework
+            (<code>Microsoft.Agents.AI.Workflows</code>).
+        </p>
+
+        <!-- Step 1 — pick a Claim ID for the group chat -->
+        <div class="leader-step" data-step="1">
+            <div class="leader-step-head">
+                <span class="leader-step-num">1</span>
+                <h3>Pick a Claim ID</h3>
+            </div>
+            <p class="muted">
+                Choose one of the claims held in memory for this demo. The
+                whole team will discuss it together.
+            </p>
+            <div class="leader-claim-row">
+                <select id="gc-claim-select" aria-label="Claim ID">
+                    <option value="">— Select a claim —</option>
+                </select>
+                <button type="button" id="gc-refresh-btn" class="leader-secondary"
+                        title="Reload the list of claims">↻ Refresh</button>
+            </div>
+            <p class="muted leader-empty" id="gc-empty" hidden>
+                No claims yet. Run the
+                <a href="/agents/claims-intake">Claims Intake Try It Out</a>
+                tab first to lodge a claim, then come back here.
+            </p>
+            <div class="leader-claim-card" id="gc-claim-card" hidden>
+                <div class="leader-claim-num" id="gc-claim-num"></div>
+                <div class="leader-claim-grid">
+                    <div><span class="k">Customer</span><span id="gc-claim-customer"></span></div>
+                    <div><span class="k">Policy</span><span id="gc-claim-policy"></span></div>
+                    <div><span class="k">Claim type</span><span id="gc-claim-type"></span></div>
+                    <div><span class="k">Incident date</span><span id="gc-claim-date"></span></div>
+                    <div class="span-2"><span class="k">Description</span><span id="gc-claim-desc"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 — start the group chat -->
+        <div class="leader-step" data-step="2">
+            <div class="leader-step-head">
+                <span class="leader-step-num">2</span>
+                <h3>Start the group chat</h3>
+            </div>
+            <p class="muted">
+                Theo opens the room with the seven specialist agents. He asks one
+                question at a time and decides when the team has reached a
+                conclusion (or after eight turns, whichever comes first).
+            </p>
+
+            <div class="gc-roster" id="gc-roster" aria-label="Participants"></div>
+
+            <button id="gc-start-btn" type="button" disabled>Start group chat</button>
+            <div id="gc-status" class="leader-status" hidden></div>
+        </div>
+
+        <!-- Step 3 — live transcript -->
+        <div class="leader-step gc-transcript-step" data-step="3" id="gc-transcript-step" hidden>
+            <div class="leader-step-head">
+                <span class="leader-step-num">3</span>
+                <h3>Live transcript</h3>
+            </div>
+            <div id="gc-transcript" class="gc-transcript" aria-live="polite"></div>
+        </div>
+    </section>
+    </div>
 </div>
+
+<style>
+    .leader-panel { --leader-accent: #14b8a6; }
+    .leader-help { margin-bottom: 0.9rem; }
+    .leader-help code { background: rgba(245, 158, 11, 0.12); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
+
+    .leader-step {
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        background: rgba(15, 22, 38, 0.4);
+        border-radius: 12px;
+        padding: 0.95rem 1.1rem 1rem 1.1rem;
+        margin-top: 0.9rem;
+    }
+    .leader-step-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; }
+    .leader-step-head h3 { margin: 0; color: #fff; font-size: 1rem; }
+    .leader-step-num {
+        display: inline-grid; place-items: center;
+        width: 1.55rem; height: 1.55rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--leader-accent) 22%, rgba(20, 28, 46, 0.7));
+        border: 1px solid color-mix(in srgb, var(--leader-accent) 55%, transparent);
+        color: var(--leader-accent);
+        font-size: 0.78rem; font-weight: 700;
+    }
+    .leader-step .muted { color: var(--zava-muted, #97a3b6); font-size: 0.9rem; margin: 0.35rem 0 0.7rem 0; }
+
+    .leader-claim-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .leader-claim-row select {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        color: #fff;
+        padding: 0.5rem 0.7rem;
+        font-size: 0.9rem;
+        min-width: 280px;
+    }
+    .leader-claim-row select:focus {
+        outline: none;
+        border-color: var(--leader-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--leader-accent) 25%, transparent);
+    }
+    .leader-secondary {
+        background: transparent;
+        color: rgba(238, 242, 247, 0.86);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+    .leader-secondary:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+    .leader-empty { margin-top: 0.6rem; }
+    .leader-empty a { color: var(--leader-accent); }
+
+    .leader-claim-card {
+        margin-top: 0.8rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.8rem 0.95rem;
+    }
+    .leader-claim-num {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: var(--leader-accent);
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 0.45rem;
+    }
+    .leader-claim-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem 0.85rem;
+        font-size: 0.85rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    @@media (max-width: 820px) { .leader-claim-grid { grid-template-columns: 1fr; } }
+    .leader-claim-grid .span-2 { grid-column: span 2; }
+    @@media (max-width: 820px) { .leader-claim-grid .span-2 { grid-column: span 1; } }
+    .leader-claim-grid .k {
+        display: inline-block;
+        min-width: 110px;
+        color: var(--zava-muted, #97a3b6);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.66rem;
+        letter-spacing: 0.08em;
+        margin-right: 0.5rem;
+    }
+
+    #leader-process-btn {
+        background: var(--leader-accent);
+        color: #1a1100;
+        border: none;
+        border-radius: 8px;
+        padding: 0.55rem 1.1rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.35rem;
+    }
+    #leader-process-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+    #leader-process-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .leader-status {
+        margin-top: 0.6rem; font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    .leader-status.error { color: #fca5a5; }
+    .leader-status .spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        animation: leader-spin 0.7s linear infinite;
+    }
+    @@keyframes leader-spin { to { transform: rotate(360deg); } }
+
+    .leader-report {
+        background: color-mix(in srgb, var(--leader-accent) 8%, rgba(15, 22, 38, 0.4));
+        border-color: color-mix(in srgb, var(--leader-accent) 35%, transparent);
+    }
+    .leader-notes-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
+    }
+    .leader-report pre {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.8rem 0.95rem;
+        color: rgba(238, 242, 247, 0.92);
+        font-size: 0.85rem;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        max-height: 480px;
+        overflow: auto;
+    }
+    .leader-handoff { margin-top: 0.7rem; }
+    .leader-handoff a { color: var(--leader-accent); }
+
+    /* ── Group Chat panel ─────────────────────────────────────────────── */
+    .groupchat-panel { --leader-accent: #14b8a6; }
+    .groupchat-help { margin-bottom: 0.9rem; }
+    .groupchat-help code { background: rgba(20, 184, 166, 0.15); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
+
+    .gc-roster {
+        display: flex; flex-wrap: wrap; gap: 0.4rem;
+        margin: 0.6rem 0 0.8rem 0;
+    }
+    .gc-roster .gc-chip {
+        font-size: 0.78rem;
+        background: rgba(20, 184, 166, 0.10);
+        border: 1px solid rgba(20, 184, 166, 0.35);
+        color: rgba(238, 242, 247, 0.92);
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+    }
+    .gc-roster .gc-chip.leader {
+        background: rgba(20, 184, 166, 0.25);
+        border-color: rgba(20, 184, 166, 0.6);
+        font-weight: 700;
+    }
+
+    #gc-start-btn {
+        background: var(--leader-accent);
+        color: #07221f;
+        border: none;
+        border-radius: 8px;
+        padding: 0.55rem 1.1rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.35rem;
+    }
+    #gc-start-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+    #gc-start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .gc-transcript {
+        margin-top: 0.35rem;
+        max-height: 560px;
+        overflow: auto;
+        padding-right: 0.3rem;
+        display: flex; flex-direction: column; gap: 0.55rem;
+    }
+    .gc-msg {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-left: 3px solid rgba(120, 150, 200, 0.45);
+        border-radius: 8px;
+        padding: 0.55rem 0.75rem;
+    }
+    .gc-msg .gc-meta {
+        display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap;
+        font-size: 0.72rem;
+        color: var(--zava-muted, #97a3b6);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.3rem;
+    }
+    .gc-msg .gc-who { color: #fff; font-weight: 700; letter-spacing: 0.02em; text-transform: none; font-size: 0.85rem; }
+    .gc-msg .gc-role { color: rgba(238, 242, 247, 0.62); }
+    .gc-msg .gc-kind { color: var(--leader-accent); font-weight: 700; }
+    .gc-msg .gc-body {
+        font-size: 0.88rem;
+        line-height: 1.5;
+        color: rgba(238, 242, 247, 0.92);
+        white-space: pre-wrap;
+    }
+    .gc-msg.gc-leader { border-left-color: var(--leader-accent); background: color-mix(in srgb, var(--leader-accent) 10%, rgba(10, 16, 28, 0.7)); }
+    .gc-msg.gc-info { border-left-color: rgba(148, 163, 184, 0.6); font-style: italic; }
+    .gc-msg.gc-error { border-left-color: #f87171; background: rgba(127, 29, 29, 0.25); }
+    .gc-msg.gc-conclude { border-left-color: #34d399; background: color-mix(in srgb, #34d399 10%, rgba(10, 16, 28, 0.7)); }
+</style>
+
+<script>
+    (function () {
+        function init() {
+        const root = document.querySelector('.leader-panel');
+        if (!root || root.dataset.wired === '1') return;
+        root.dataset.wired = '1';
+
+        const $ = sel => root.querySelector(sel);
+        const selectEl = $('#leader-claim-select');
+        const refreshBtn = $('#leader-refresh-btn');
+        const emptyEl = $('#leader-empty');
+        const cardEl = $('#leader-claim-card');
+        const processBtn = $('#leader-process-btn');
+        const processStatus = $('#leader-process-status');
+        const reportEl = $('#leader-report');
+        const notesBody = $('#leader-notes-body');
+
+        let selectedClaim = null;
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        function setSelectedClaim(claim) {
+            selectedClaim = claim;
+            if (!claim) {
+                cardEl.hidden = true;
+                processBtn.disabled = true;
+                return;
+            }
+            $('#leader-claim-num').textContent = claim.claimNumber;
+            $('#leader-claim-customer').textContent = claim.customerName || '—';
+            $('#leader-claim-policy').textContent   = claim.policyNumber || '—';
+            $('#leader-claim-type').textContent     = claim.claimType || '—';
+            $('#leader-claim-date').textContent     = claim.incidentDate || '—';
+            $('#leader-claim-location').textContent = claim.incidentLocation || '—';
+            $('#leader-claim-desc').textContent     = claim.incidentDescription || '—';
+            $('#leader-claim-loss').textContent     = claim.estimatedLoss || '—';
+            $('#leader-claim-urgency').textContent  = claim.urgency || '—';
+            cardEl.hidden = false;
+            processBtn.disabled = false;
+        }
+
+        async function loadClaims() {
+            selectEl.innerHTML = '<option value="">— Loading… —</option>';
+            emptyEl.hidden = true;
+            cardEl.hidden = true;
+            processBtn.disabled = true;
+            reportEl.hidden = true;
+            processStatus.hidden = true;
+
+            try {
+                const res = await fetch('/team-leader/claims');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const claims = await res.json();
+                if (!claims.length) {
+                    selectEl.innerHTML = '<option value="">— No claims available —</option>';
+                    emptyEl.hidden = false;
+                    return;
+                }
+                selectEl.innerHTML = '<option value="">— Select a claim —</option>' +
+                    claims.map(c =>
+                        `<option value="${escapeHtml(c.claimNumber)}">` +
+                        `${escapeHtml(c.claimNumber)} — ${escapeHtml(c.customerName)} (${escapeHtml(c.claimType)})` +
+                        `</option>`).join('');
+            } catch (err) {
+                selectEl.innerHTML = '<option value="">— Failed to load —</option>';
+                processStatus.hidden = false;
+                processStatus.className = 'leader-status error';
+                processStatus.textContent = 'Failed to load claims: ' + err.message;
+            }
+        }
+
+        async function selectClaim(claimNumber) {
+            reportEl.hidden = true;
+            processStatus.hidden = true;
+            if (!claimNumber) {
+                setSelectedClaim(null);
+                return;
+            }
+            try {
+                const res = await fetch(`/team-leader/claims/${encodeURIComponent(claimNumber)}`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const claim = await res.json();
+                setSelectedClaim(claim);
+            } catch (err) {
+                setSelectedClaim(null);
+                processStatus.hidden = false;
+                processStatus.className = 'leader-status error';
+                processStatus.textContent = 'Failed to load claim: ' + err.message;
+            }
+        }
+
+        async function processClaim() {
+            if (!selectedClaim) return;
+            processBtn.disabled = true;
+            processStatus.hidden = false;
+            processStatus.className = 'leader-status';
+            processStatus.innerHTML = '<span class="spinner"></span>Engaging Team Leader Agent…';
+            reportEl.hidden = true;
+
+            try {
+                const res = await fetch('/team-leader/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claimNumber: selectedClaim.claimNumber })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                if (data.agentNotes) {
+                    window.zcRenderMarkdown(notesBody, data.agentNotes);
+                    reportEl.hidden = false;
+                    processStatus.textContent = 'Team Leader Agent produced a report.';
+                    reportEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (!data.agentConfigured) {
+                    processStatus.className = 'leader-status error';
+                    processStatus.textContent =
+                        'Team Leader Foundry agent is not configured. ' +
+                        'Set AZURE_AI_PROJECT_ENDPOINT and AZURE_AI_MODEL_DEPLOYMENT_NAME to enable it.';
+                } else {
+                    processStatus.className = 'leader-status error';
+                    processStatus.textContent = data.agentError
+                        ? 'Team Leader Agent failed: ' + data.agentError
+                        : 'Team Leader Agent returned no narrative.';
+                }
+
+                // Surface input + raw output in the Engage Agent sub-tabs.
+                if (window.engageTabsRender) {
+                    const scope = document.querySelector('.leader-panel .engage-tabs-scope');
+                    window.engageTabsRender(scope, data);
+                }
+            } catch (err) {
+                processStatus.className = 'leader-status error';
+                processStatus.textContent = 'Failed to process: ' + err.message;
+            } finally {
+                processBtn.disabled = !selectedClaim;
+            }
+        }
+
+        selectEl.addEventListener('change', () => selectClaim(selectEl.value));
+        refreshBtn.addEventListener('click', loadClaims);
+        processBtn.addEventListener('click', processClaim);
+
+        loadClaims();
+        }
+
+        // ── Group Chat panel wiring ────────────────────────────────────
+        function initGroupChat() {
+            const root = document.querySelector('.groupchat-panel');
+            if (!root || root.dataset.wired === '1') return;
+            root.dataset.wired = '1';
+
+            const $ = sel => root.querySelector(sel);
+            const selectEl   = $('#gc-claim-select');
+            const refreshBtn = $('#gc-refresh-btn');
+            const emptyEl    = $('#gc-empty');
+            const cardEl     = $('#gc-claim-card');
+            const startBtn   = $('#gc-start-btn');
+            const statusEl   = $('#gc-status');
+            const rosterEl   = $('#gc-roster');
+            const transcript = $('#gc-transcript');
+            const transcriptStep = $('#gc-transcript-step');
+
+            let selectedClaim = null;
+            let activeStream = null;
+
+            function escapeHtml(s) {
+                return String(s ?? '').replace(/[&<>"']/g, c =>
+                    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+            }
+
+            function setSelectedClaim(claim) {
+                selectedClaim = claim;
+                if (!claim) {
+                    cardEl.hidden = true;
+                    startBtn.disabled = true;
+                    return;
+                }
+                $('#gc-claim-num').textContent = claim.claimNumber;
+                $('#gc-claim-customer').textContent = claim.customerName || '—';
+                $('#gc-claim-policy').textContent   = claim.policyNumber || '—';
+                $('#gc-claim-type').textContent     = claim.claimType || '—';
+                $('#gc-claim-date').textContent     = claim.incidentDate || '—';
+                $('#gc-claim-desc').textContent     = claim.incidentDescription || '—';
+                cardEl.hidden = false;
+                startBtn.disabled = false;
+            }
+
+            async function loadClaims() {
+                selectEl.innerHTML = '<option value="">— Loading… —</option>';
+                emptyEl.hidden = true;
+                cardEl.hidden = true;
+                startBtn.disabled = true;
+                statusEl.hidden = true;
+                try {
+                    const res = await fetch('/team-leader/claims');
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const claims = await res.json();
+                    if (!claims.length) {
+                        selectEl.innerHTML = '<option value="">— No claims available —</option>';
+                        emptyEl.hidden = false;
+                        return;
+                    }
+                    selectEl.innerHTML = '<option value="">— Select a claim —</option>' +
+                        claims.map(c =>
+                            `<option value="${escapeHtml(c.claimNumber)}">` +
+                            `${escapeHtml(c.claimNumber)} — ${escapeHtml(c.customerName)} (${escapeHtml(c.claimType)})` +
+                            `</option>`).join('');
+                } catch (err) {
+                    selectEl.innerHTML = '<option value="">— Failed to load —</option>';
+                    statusEl.hidden = false;
+                    statusEl.className = 'leader-status error';
+                    statusEl.textContent = 'Failed to load claims: ' + err.message;
+                }
+            }
+
+            async function selectClaim(claimNumber) {
+                if (!claimNumber) { setSelectedClaim(null); return; }
+                try {
+                    const res = await fetch(`/team-leader/claims/${encodeURIComponent(claimNumber)}`);
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    setSelectedClaim(await res.json());
+                } catch (err) {
+                    setSelectedClaim(null);
+                    statusEl.hidden = false;
+                    statusEl.className = 'leader-status error';
+                    statusEl.textContent = 'Failed to load claim: ' + err.message;
+                }
+            }
+
+            async function loadRoster() {
+                try {
+                    const res = await fetch('/team-leader/groupchat/participants');
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const parts = await res.json();
+                    rosterEl.innerHTML =
+                        `<span class="gc-chip leader">Theo — Claims Team Leader (chair)</span>` +
+                        parts.map(p =>
+                            `<span class="gc-chip">${escapeHtml(p.persona)} — ${escapeHtml(p.role)}</span>`
+                        ).join('');
+                } catch (err) {
+                    rosterEl.innerHTML =
+                        `<span class="gc-chip">Failed to load roster: ${escapeHtml(err.message)}</span>`;
+                }
+            }
+
+            function appendTurn(turn) {
+                const isLeader = turn.speakerId === 'team-leader';
+                const cls = ['gc-msg'];
+                if (isLeader) cls.push('gc-leader');
+                if (turn.kind === 'info') cls.push('gc-info');
+                if (turn.kind === 'error') cls.push('gc-error');
+                if (turn.kind === 'conclude') cls.push('gc-conclude');
+
+                const kindLabel = ({
+                    info: 'orchestration', ask: 'asks', reply: 'replies',
+                    conclude: 'concludes', error: 'error'
+                })[turn.kind] || turn.kind;
+
+                const div = document.createElement('div');
+                div.className = cls.join(' ');
+                div.innerHTML =
+                    `<div class="gc-meta">` +
+                        `<span class="gc-who">${escapeHtml(turn.persona)}</span>` +
+                        `<span class="gc-role">${escapeHtml(turn.role)}</span>` +
+                        `<span class="gc-kind">${escapeHtml(kindLabel)}</span>` +
+                    `</div>` +
+                    `<div class="gc-body"></div>`;
+                div.querySelector('.gc-body').textContent = turn.text;
+                transcript.appendChild(div);
+                transcript.scrollTop = transcript.scrollHeight;
+            }
+
+            async function startGroupChat() {
+                if (!selectedClaim) return;
+                if (activeStream) { try { activeStream.close(); } catch { /* ignore — closing an already-closed stream */ } activeStream = null; }
+
+                startBtn.disabled = true;
+                statusEl.hidden = false;
+                statusEl.className = 'leader-status';
+                statusEl.innerHTML = '<span class="spinner"></span>Opening group chat…';
+                transcript.innerHTML = '';
+                transcriptStep.hidden = false;
+
+                try {
+                    const res = await fetch('/team-leader/groupchat/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ claimNumber: selectedClaim.claimNumber })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                    statusEl.innerHTML = '<span class="spinner"></span>Theo is chairing the discussion…';
+                    transcriptStep.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    const sse = new EventSource(`/team-leader/groupchat/stream/${encodeURIComponent(data.sessionId)}`);
+                    activeStream = sse;
+                    sse.onmessage = ev => {
+                        let turn;
+                        try { turn = JSON.parse(ev.data); } catch { return; }
+                        if (turn.kind === 'done') {
+                            sse.close();
+                            activeStream = null;
+                            statusEl.className = 'leader-status';
+                            statusEl.textContent = 'Group chat complete.';
+                            startBtn.disabled = !selectedClaim;
+                            return;
+                        }
+                        appendTurn(turn);
+                    };
+                    sse.onerror = () => {
+                        sse.close();
+                        activeStream = null;
+                        if (!startBtn.disabled) return;
+                        statusEl.className = 'leader-status error';
+                        statusEl.textContent = 'Stream interrupted.';
+                        startBtn.disabled = !selectedClaim;
+                    };
+                } catch (err) {
+                    statusEl.className = 'leader-status error';
+                    statusEl.textContent = 'Failed to start group chat: ' + err.message;
+                    startBtn.disabled = !selectedClaim;
+                }
+            }
+
+            selectEl.addEventListener('change', () => selectClaim(selectEl.value));
+            refreshBtn.addEventListener('click', loadClaims);
+            startBtn.addEventListener('click', startGroupChat);
+
+            loadClaims();
+            loadRoster();
+        }
+
+        init();
+        initGroupChat();
+
+        if (!window.__teamLeaderDemoEnhancedHook) {
+            window.__teamLeaderDemoEnhancedHook = true;
+            const hook = () => { init(); initGroupChat(); };
+            if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
+                Blazor.addEventListener('enhancedload', hook);
+            } else {
+                document.addEventListener('enhancedload', hook);
+            }
+        }
+    })();
+</script>

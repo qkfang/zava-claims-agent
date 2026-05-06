@@ -75,6 +75,30 @@
     font-weight: 600;
 }
 
+/* Collapsible groups in the side nav. The "AI Agents" and "Scenarios" sections
+   auto-expand and collapse based on the current route — see NavMenu.razor. */
+.nav-section .nav-section-body {
+    display: none;
+}
+
+.nav-section.open .nav-section-body {
+    display: block;
+}
+
+.nav-section .nav-section-label::after {
+    content: "▾";
+    float: right;
+    margin-right: 0.25rem;
+    color: rgba(255, 255, 255, 0.35);
+    transform: rotate(-90deg);
+    transition: transform 0.15s ease;
+}
+
+.nav-section.open .nav-section-label::after {
+    transform: rotate(0deg);
+    color: rgba(255, 255, 255, 0.55);
+}
+
 .nav-icon {
     display: inline-block;
     width: 1.4rem;
