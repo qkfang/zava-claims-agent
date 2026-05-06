@@ -30,6 +30,7 @@ var agentOptions = new ClaimsAgentOptions
     SearchConnectionId = builder.Configuration["AZURE_AI_SEARCH_CONNECTION_ID"],
     SearchIndexName = builder.Configuration["AZURE_AI_SEARCH_INDEX_NAME"],
     BingConnectionId = builder.Configuration["AZURE_BING_CONNECTION_ID"],
+    AppMcpUrl = builder.Configuration["APP_MCP_URL"],
 };
 builder.Services.AddSingleton(agentOptions);
 builder.Services.AddSingleton<ClaimsAgentFactory>();
@@ -38,6 +39,20 @@ builder.Services.AddSingleton<ClaimsAgentFactory>();
 // "Try It Out" tab. Lets later agents in the demo flow look the case up
 // by claim number.
 builder.Services.AddSingleton<IntakeClaimStore>();
+
+// Quote-request PDF generator used by both the deterministic
+// /supplier/process flow and the SupplierMcpTools MCP tool surface so the
+// Supplier Coordinator agent can produce a downloadable PDF for the demo.
+builder.Services.AddSingleton<QuoteRequestPdfService>();
+
+// Register the MCP server unconditionally so the SupplierMcpTools
+// (lookupSuppliers + generateQuoteRequestPdf) are always exposed at /mcp.
+// AgentDi tools are added only when the Azure services they require are
+// configured.
+var mcpBuilder = builder.Services.AddMcpServer()
+    .WithHttpTransport(options => { options.Stateless = true; })
+    .WithTools<ZavaClaims.App.Mcp.SupplierMcpTools>();
+builder.Services.AddCors();
 
 // ── Notice intelligence integration (ported from demo-foundry-document-intelligence/agentdi)
 // Only enabled when the required Azure resources are configured. When enabled,
@@ -79,11 +94,7 @@ if (noticeEnabled)
     builder.Services.AddSingleton<NotificationService>();
     builder.Services.AddSingleton<PendingApprovalStore>();
 
-    builder.Services.AddMcpServer()
-        .WithHttpTransport(options => { options.Stateless = true; })
-        .WithTools<AgentDiMcpTools>();
-
-    builder.Services.AddCors();
+    mcpBuilder.WithTools<AgentDiMcpTools>();
 }
 
 var app = builder.Build();
@@ -96,27 +107,30 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseAntiforgery();
 
-if (noticeEnabled)
-{
-    app.UseCors(policy => policy
-        .AllowAnyOrigin()
-        .AllowAnyMethod()
-        .AllowAnyHeader());
+app.UseCors(policy => policy
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
 
-    // Normalize Accept header for MCP requests from Foundry agent server
-    app.Use(async (context, next) =>
+// Normalize Accept header for MCP requests so Foundry agent / browser
+// clients negotiate against the streaming + JSON content type the
+// ModelContextProtocol server expects.
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/mcp"))
     {
-        if (context.Request.Path.StartsWithSegments("/mcp"))
+        var accept = context.Request.Headers.Accept.ToString();
+        if (string.IsNullOrEmpty(accept) || !accept.Contains("text/event-stream"))
         {
-            var accept = context.Request.Headers.Accept.ToString();
-            if (string.IsNullOrEmpty(accept) || !accept.Contains("text/event-stream"))
-            {
-                context.Request.Headers.Accept = "application/json, text/event-stream";
-            }
+            context.Request.Headers.Accept = "application/json, text/event-stream";
         }
-        await next();
-    });
-}
+    }
+    await next();
+});
+
+// MCP server is registered unconditionally so SupplierMcpTools is always
+// available; AgentDi tools join the same /mcp endpoint when noticeEnabled.
+app.MapMcp("/mcp");
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
@@ -242,8 +256,6 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
 if (noticeEnabled)
 {
-    app.MapMcp("/mcp");
-
     var noticeLogger = app.Services.GetRequiredService<ILogger<Program>>();
     var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 

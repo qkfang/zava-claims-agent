@@ -16,6 +16,13 @@ public class ClaimsAgentOptions
     public string? BingConnectionId { get; set; }
 
     /// <summary>
+    /// Public URL Foundry should use to reach this app's MCP endpoint
+    /// (<c>/mcp</c>). When set, agents that opt-in (e.g. the Supplier
+    /// Coordinator) will be wired with an MCP tool against this URL.
+    /// </summary>
+    public string? AppMcpUrl { get; set; }
+
+    /// <summary>
     /// Returns true when the minimum configuration required to instantiate a
     /// Foundry agent is present (project endpoint + model deployment name).
     /// </summary>

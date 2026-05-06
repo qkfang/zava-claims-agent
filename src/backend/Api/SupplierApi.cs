@@ -15,6 +15,7 @@ record SupplierProcessRequest(string ClaimNumber);
 ///    appointment slots, and drafting a customer update — and surface its
 ///    narrative back to the page alongside a deterministic supplier match
 ///    so the demo also works without a Foundry connection configured.
+/// 3. Download the generated quote-request PDF.
 /// </summary>
 public static class SupplierApi
 {
@@ -24,6 +25,7 @@ public static class SupplierApi
         ClaimsAgentFactory agentFactory,
         ILogger logger)
     {
+        var pdfService = app.Services.GetRequiredService<QuoteRequestPdfService>();
         // List the claims currently held in memory by the intake demo, so
         // the Supplier Coordination "Try It Out" page can populate its
         // claim-ID dropdown. Returns just the lightweight summary needed
@@ -72,6 +74,37 @@ public static class SupplierApi
 
             var match = SupplierCatalog.Match(claim.ClaimType, claim.IncidentLocation, claim.ClaimNumber);
 
+            // Look up the directory entries for the claim type so we can
+            // surface indicative pricing and a "best price" pick alongside
+            // the deterministic match. Mirrors what the Foundry agent will
+            // see via the lookupSuppliers MCP tool.
+            var directory = SupplierDirectory.Lookup(claim.ClaimType, claim.IncidentLocation);
+            var bestPrice = directory.FirstOrDefault();
+
+            // Deterministically generate the quote-request PDF so the
+            // download link in the UI always works, even when Foundry is
+            // not configured. When it is configured the agent can also
+            // generate a (separate) PDF via the generateQuoteRequestPdf
+            // MCP tool and include its URL in the narrative.
+            var pdfRecord = pdfService.Generate(new QuoteRequestPdfInput(
+                ClaimNumber: claim.ClaimNumber,
+                CustomerName: claim.CustomerName,
+                PolicyNumber: claim.PolicyNumber,
+                ClaimType: claim.ClaimType,
+                IncidentDate: claim.IncidentDate,
+                IncidentLocation: claim.IncidentLocation,
+                IncidentDescription: claim.IncidentDescription,
+                EstimatedLoss: claim.EstimatedLoss,
+                Urgency: claim.Urgency,
+                SupplierName: bestPrice?.Name ?? match.Recommended.Name,
+                SupplierSpecialty: bestPrice?.Specialty ?? match.Recommended.Specialty,
+                SupplierLocation: bestPrice?.Location ?? match.Recommended.Location,
+                QuoteAmount: bestPrice?.QuoteAmount ?? 0m,
+                QuoteCurrency: bestPrice?.QuoteCurrency ?? "AUD",
+                Scope: match.Scope,
+                AppointmentOptions: match.AppointmentOptions));
+            var quoteRequestPdfUrl = $"/supplier/quote-request/{pdfRecord.Id}.pdf";
+
             string? agentNotes = null;
             string? agentInput = null;
             object? agentRawOutput = null;
@@ -98,10 +131,16 @@ public static class SupplierApi
                         match.CandidatesText + "\n\n" +
                         "TASK\n" +
                         "====\n" +
-                        "Match the claim to the most suitable supplier (repairer, " +
-                        "builder, assessor, hire car, or temporary accommodation), " +
-                        "propose appointment options, dispatch the work order, and " +
-                        "draft a short plain-English update for the customer.";
+                        "1. Call the lookupSuppliers MCP tool with this claim's " +
+                        "type and location to retrieve indicative quotes for the " +
+                        "approved supplier network and identify the best-priced " +
+                        "supplier for the scope.\n" +
+                        "2. Call the generateQuoteRequestPdf MCP tool with the " +
+                        "claim and selected supplier details to produce a Zava " +
+                        "quote-request PDF. Surface the resulting downloadUrl in " +
+                        "your response so it can be downloaded.\n" +
+                        "3. Propose appointment options, dispatch the work order, " +
+                        "and draft a short plain-English update for the customer.";
 
                     var agent = agentFactory.Create("supplier");
                     var result = await agent.RunWithTraceAsync(prompt);
@@ -154,11 +193,41 @@ public static class SupplierApi
                 customerUpdate = match.CustomerUpdate(claim.CustomerName),
                 humanApprovalRequired = match.HumanApprovalRequired,
                 humanApprovalReason = match.HumanApprovalReason,
+                quoteRequestPdfUrl,
+                quoteRequestPdfFileName = pdfRecord.FileName,
+                supplierDirectory = directory.Select(s => new
+                {
+                    name = s.Name,
+                    specialty = s.Specialty,
+                    location = s.Location,
+                    rating = s.Rating,
+                    slaDays = s.SlaDays,
+                    quoteAmount = s.QuoteAmount,
+                    quoteCurrency = s.QuoteCurrency,
+                    notes = s.Notes
+                }),
+                bestPriceSupplier = bestPrice is null ? null : new
+                {
+                    name = bestPrice.Name,
+                    quoteAmount = bestPrice.QuoteAmount,
+                    quoteCurrency = bestPrice.QuoteCurrency
+                },
                 agentNotes,
                 agentConfigured = agentFactory.IsConfigured,
                 agentInput,
                 agentRawOutput
             });
+        });
+
+        // Download endpoint for the PDF generated by either /supplier/process
+        // or the generateQuoteRequestPdf MCP tool. Streams the PDF bytes back
+        // as an attachment so the browser triggers a download.
+        app.MapGet("/supplier/quote-request/{id}.pdf", (string id) =>
+        {
+            var record = pdfService.Get(id);
+            if (record is null)
+                return Results.NotFound(new { error = $"quote request '{id}' not found" });
+            return Results.File(record.Content, "application/pdf", record.FileName);
         });
     }
 

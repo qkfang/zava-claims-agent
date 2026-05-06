@@ -1,6 +1,7 @@
 using Azure.AI.Projects;
 using Azure.AI.Projects.Agents;
 using Microsoft.Extensions.Logging;
+using OpenAI.Responses;
 
 namespace ZavaClaims.Agents;
 
@@ -47,6 +48,26 @@ public class ClaimsAgent : BaseAgent
         string? searchIndexName = null,
         string? bingConnectionId = null,
         ILogger? logger = null)
+        : this(aiProjectClient, agentId, name, role, department, consoleColor, deploymentName, instructions,
+            searchConnectionId, searchIndexName, bingConnectionId, mcpServerUri: null, mcpServerLabel: null, logger)
+    {
+    }
+
+    public ClaimsAgent(
+        AIProjectClient aiProjectClient,
+        string agentId,
+        string name,
+        string role,
+        string department,
+        string consoleColor,
+        string deploymentName,
+        string instructions,
+        string? searchConnectionId,
+        string? searchIndexName,
+        string? bingConnectionId,
+        string? mcpServerUri,
+        string? mcpServerLabel,
+        ILogger? logger = null)
         : base(aiProjectClient, agentId, deploymentName, instructions, null,
             agentDef =>
             {
@@ -59,6 +80,14 @@ public class ClaimsAgent : BaseAgent
                     agentDef.Tools.Add(new BingGroundingTool(new BingGroundingSearchToolOptions([
                         new BingGroundingSearchConfiguration(bingConnectionId)
                     ])));
+
+                if (!string.IsNullOrWhiteSpace(mcpServerUri))
+                {
+                    agentDef.Tools.Add(ResponseTool.CreateMcpTool(
+                        serverLabel: string.IsNullOrWhiteSpace(mcpServerLabel) ? "claims-mcp" : mcpServerLabel,
+                        serverUri: new Uri(mcpServerUri),
+                        toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.NeverRequireApproval)));
+                }
             },
             logger)
     {
@@ -72,6 +101,8 @@ public class ClaimsAgent : BaseAgent
             tools.Add($"Azure AI Search — index '{searchIndexName}'");
         if (!string.IsNullOrWhiteSpace(bingConnectionId))
             tools.Add("Bing Grounding (web)");
+        if (!string.IsNullOrWhiteSpace(mcpServerUri))
+            tools.Add($"MCP — {mcpServerLabel ?? "claims-mcp"} ({mcpServerUri})");
         ConfiguredTools = tools;
     }
 }
