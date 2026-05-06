@@ -188,8 +188,10 @@ function moveToward(
 /*      cubicles) and/or the central aisle (z ≈ 5, between front- and */
 /*      back-row cubicles).                                            */
 /*   3. Cross between rows only via the gaps between front-row         */
-/*      cubicles (front-row backs at z=2.6 are 6m wide and centred on  */
-/*      cx ∈ {-21,-11,-1,9}, so the safe x-gaps are -16, -6, 4, ±end). */
+/*      cubicles. Front-row backs at z=2.6 are 6m wide and centred on  */
+/*      cx ∈ {-21,-11,-1,9}, leaving safe x-gaps centred at            */
+/*      ROW_GAP_X = {-16, -6, 4} (between cubicles) and {-26, 14}     */
+/*      (around the leftmost / rightmost cubicle ends).                */
 /*   4. Enter the target cubicle through its south opening.            */
 /* ------------------------------------------------------------------ */
 
@@ -288,7 +290,12 @@ function planOfficePath(
   };
 
   // Same cubicle (or both in the open) — go direct.
-  if (srcCub && tgtCub && srcCub === tgtCub) {
+  if (
+    srcCub &&
+    tgtCub &&
+    srcCub.cx === tgtCub.cx &&
+    srcCub.cz === tgtCub.cz
+  ) {
     push(to.x, to.z);
     return wps;
   }
