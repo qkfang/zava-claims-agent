@@ -1,0 +1,103 @@
+@page "/agents/claims-intake"
+
+<PageTitle>Claims Intake Agent — Claims Team in a Day</PageTitle>
+
+<div class="agent-header" style="--accent: #0ea5e9">
+    <a class="back-link" href="/"><span aria-hidden="true">←</span> Back to claims office</a>
+    <div class="agent-header-row">
+        <div class="agent-header-icon">📥</div>
+        <div>
+            <div class="agent-header-dept">Claims Intake</div>
+            <h1>Claims Intake Agent</h1>
+            <div class="agent-header-persona">Iris — Claims Intake Officer</div>
+            <p class="tagline">First notice of loss, captured calmly and completely.</p>
+        </div>
+    </div>
+</div>
+
+<div class="agent-tabs" role="tablist" aria-label="Claims Intake views">
+    <button type="button" class="agent-tab active" role="tab"
+            aria-selected="true" data-tab="overview">Overview</button>
+    <button type="button" class="agent-tab" role="tab"
+            aria-selected="false" data-tab="tryit">Try It Out</button>
+</div>
+
+<div class="agent-tab-panel tab-panel-overview active" data-panel="overview">
+    <section class="panel" style="--accent: #0ea5e9">
+        <h2>What this agent does</h2>
+        <p>
+            Watches the customer's email inbox and online claim form, receives the first notice
+            of loss, and creates a structured Claim Case so the rest of the office can pick it up.
+        </p>
+        <div class="two-col">
+            <div>
+                <h3>Responsibilities</h3>
+                <ul>
+                    <li>Monitor the claims inbox and online form for new customer reports.</li>
+                    <li>Extract incident details, policy number, contact, and uploaded evidence.</li>
+                    <li>Classify the claim type (home, motor, travel, business, life).</li>
+                    <li>Confirm the policy is active and the customer is covered to lodge.</li>
+                    <li>Generate a missing-information checklist and acknowledge the customer.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Tools available</h3>
+                <ul>
+                    <li>Email &amp; web-form watcher</li>
+                    <li>Policy lookup</li>
+                    <li>Customer profile lookup</li>
+                    <li>Claim creation API</li>
+                    <li>Duplicate-claim search</li>
+                    <li>Email/SMS confirmation</li>
+                </ul>
+                <h3>Human approval</h3>
+                <p class="approval">
+                    Not normally required. Escalates if the customer is vulnerable, the policy
+                    cannot be found, details are inconsistent, or emergency accommodation is needed.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel" style="--accent: #0ea5e9">
+        <h2>Demo: how this agent helps with the claim</h2>
+        <div class="demo">
+            <p>
+                When a customer first reports a loss — by email or through the online claim form —
+                Iris's intake agent picks up the message, identifies the customer and policy, and
+                opens a structured Claim Case in seconds. It pulls out the incident details, attaches
+                the evidence the customer has provided, classifies the claim type, and generates a
+                checklist of anything still missing.
+            </p>
+            <p>
+                The agent then sends a plain-English acknowledgement to the customer with their new
+                claim number, what to expect next, and what to send in. Urgency or vulnerability flags
+                are surfaced to a human before the case is handed off to Claims Assessment, so nothing
+                that needs an empathetic call from a real person ever slips through.
+            </p>
+        </div>
+    </section>
+
+    <OtherAgentsBar CurrentId="claims-intake" />
+</div>
+
+<div class="agent-tab-panel tab-panel-tryit" data-panel="tryit">
+    <ClaimsIntakeDemo />
+</div>
+
+<script>
+    (function () {
+        const tabs = document.querySelectorAll('.agent-tabs .agent-tab');
+        if (!tabs.length) return;
+        const panels = document.querySelectorAll('.agent-tab-panel');
+        tabs.forEach(t => t.addEventListener('click', () => {
+            const target = t.dataset.tab;
+            tabs.forEach(x => {
+                const on = x === t;
+                x.classList.toggle('active', on);
+                x.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            panels.forEach(p => p.classList.toggle('active', p.dataset.panel === target));
+        }));
+    })();
+</script>

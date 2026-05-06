@@ -1,0 +1,213 @@
+/* Shared styles for the per-agent pages under /agents/{id}.
+   Each agent page is a hand-written static .razor file that uses these classes. */
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.85rem;
+    color: var(--zava-muted, #97a3b6);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 0.2px;
+}
+.back-link:hover {
+    color: var(--zava-text-strong, #fff);
+    text-decoration: none;
+}
+
+.agent-header {
+    position: relative;
+    background: rgba(20, 28, 46, 0.82);
+    border: 1px solid rgba(120, 150, 200, 0.22);
+    border-radius: 16px;
+    padding: 1.4rem 1.6rem 1.5rem 1.6rem;
+    margin-bottom: 1.25rem;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+.agent-header::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 30%, transparent));
+}
+.agent-header::after {
+    content: "";
+    position: absolute;
+    right: -80px; top: -80px;
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 65%);
+    pointer-events: none;
+}
+.agent-header-row {
+    display: flex;
+    gap: 1.1rem;
+    align-items: flex-start;
+    position: relative;
+    z-index: 1;
+}
+.agent-header-icon {
+    font-size: 1.9rem;
+    line-height: 1;
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--accent) 20%, rgba(20, 28, 46, 0.6));
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+.agent-header h1 {
+    margin: 0.1rem 0 0.2rem 0;
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.2px;
+}
+.agent-header-dept {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+.agent-header-persona {
+    color: rgba(214, 228, 245, 0.78);
+    font-size: 0.95rem;
+}
+.agent-header .tagline {
+    margin: 0.45rem 0 0 0;
+    color: rgba(238, 242, 247, 0.85);
+    font-style: italic;
+    font-size: 0.95rem;
+}
+
+.panel {
+    background: rgba(20, 28, 46, 0.78);
+    border: 1px solid rgba(120, 150, 200, 0.18);
+    border-radius: 14px;
+    padding: 1.3rem 1.5rem;
+    margin-bottom: 1.25rem;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+}
+.panel h2 {
+    margin-top: 0;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--zava-muted, #97a3b6);
+    font-weight: 700;
+    margin-bottom: 0.85rem;
+}
+.panel h3 {
+    font-size: 0.95rem;
+    margin: 0 0 0.4rem 0;
+    color: #fff;
+    font-weight: 600;
+}
+.panel > p { color: rgba(238, 242, 247, 0.86); line-height: 1.55; }
+.panel .muted { color: var(--zava-muted, #97a3b6); font-size: 0.92rem; }
+.panel ul { margin: 0; padding-left: 1.1rem; color: rgba(238, 242, 247, 0.86); }
+.panel ul li { margin-bottom: 0.3rem; line-height: 1.5; }
+.panel ul li::marker { color: var(--accent, #ffb347); }
+.approval {
+    color: rgba(238, 242, 247, 0.86);
+    background: rgba(110, 193, 255, 0.08);
+    border: 1px solid rgba(110, 193, 255, 0.22);
+    border-radius: 8px;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.92rem;
+}
+
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.4rem;
+    margin-top: 0.5rem;
+}
+@media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+
+/* "Demo" — a single general description, no scenarios. */
+.demo {
+    position: relative;
+    border: 1px solid rgba(120, 150, 200, 0.2);
+    border-radius: 12px;
+    padding: 1rem 1.15rem 1.1rem 1.15rem;
+    background: rgba(15, 22, 38, 0.55);
+    overflow: hidden;
+}
+.demo::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+}
+.demo p {
+    margin: 0 0 0.65rem 0;
+    color: rgba(238, 242, 247, 0.88);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+.demo p:last-child { margin-bottom: 0; }
+
+.other-agents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.other-agent {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(120, 150, 200, 0.22);
+    text-decoration: none;
+    color: rgba(238, 242, 247, 0.85);
+    font-size: 0.85rem;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.other-agent:hover {
+    background: rgba(255, 179, 71, 0.1);
+    border-color: rgba(255, 179, 71, 0.4);
+    color: #fff;
+    text-decoration: none;
+}
+.other-agent-icon { font-size: 1rem; }
+
+/* Tabs (used on the Claims Intake agent page only). */
+.agent-tabs {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid rgba(120, 150, 200, 0.22);
+    margin-bottom: 1.1rem;
+}
+.agent-tab {
+    background: transparent;
+    border: none;
+    color: rgba(214, 228, 245, 0.7);
+    padding: 0.65rem 1.1rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.agent-tab:hover { color: #fff; }
+.agent-tab.active {
+    color: #fff;
+    border-bottom-color: var(--accent, #ffb347);
+}
+.agent-tab-panel { display: none; }
+.agent-tab-panel.active { display: block; }
+.agent-tab-panel.standalone { display: block; }

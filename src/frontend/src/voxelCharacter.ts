@@ -58,6 +58,7 @@ export class VoxelCharacter {
   private spotlightPhase = 0;
   private walking = false;
   private walkPhase = 0;
+  private running = false;
 
   /** Thought-bulb meshes shown above the head when the staff is delegating to AI agents. */
   private thoughtBulbs: Mesh[] = [];
@@ -646,8 +647,18 @@ export class VoxelCharacter {
   setWalking(walking: boolean): void {
     this.walking = walking;
     if (!walking) {
+      this.running = false;
       this.resetLimbs();
     }
+  }
+
+  /**
+   * Toggle a faster "running" gait — speeds up the limb-swing
+   * animation. Callers are still responsible for moving the character
+   * faster through world space (this only affects the animation rate).
+   */
+  setRunning(running: boolean): void {
+    this.running = running;
   }
 
   /** Anchor where a held item should be parented. */
@@ -790,8 +801,8 @@ export class VoxelCharacter {
       }
     }
     if (!this.walking) return;
-    this.walkPhase += dtSec * 9;
-    const swing = Math.sin(this.walkPhase) * 0.7;
+    this.walkPhase += dtSec * (this.running ? 18 : 9);
+    const swing = Math.sin(this.walkPhase) * (this.running ? 1.0 : 0.7);
 
     const lArmPivot = (this.leftArm as Mesh & { pivotNode: TransformNode })
       .pivotNode;

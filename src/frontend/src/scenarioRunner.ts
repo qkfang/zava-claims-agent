@@ -237,6 +237,7 @@ export class ScenarioRunner {
         this.nhRoute = this.buildNhRoute();
         this.nhWalkRefocusTimer = 0;
         this.nhCustomer?.setWalking(true);
+        this.nhCustomer?.setRunning(true);
         if (this.currentPersona) {
           this.hooks.updateBannerNarration(
             `${this.currentPersona.name} heads to the Zava Insurance Claims Office.`,
@@ -269,6 +270,13 @@ export class ScenarioRunner {
    * z≈±3.4 and x≈±3.4) so the character walks around houses, the
    * roundabout island, and other scenery rather than clipping through
    * them in a straight line.
+   *
+   * The Zava Insurance Claims Office is anchored at world (-10, 0, 8)
+   * with its south-facing entrance at z≈4, so every route ends by
+   * approaching x=-10 along the north-side sidewalk and walking north
+   * up the office front walkway. The final `door` waypoint (pushed at
+   * the end) sits just inside the doorway, so the customer is seen
+   * walking INTO the Zava Claims building before the scene transitions.
    */
   private buildNhRoute(): Vector3[] {
     const door = this.zones.officeDoor.clone();
@@ -279,33 +287,38 @@ export class ScenarioRunner {
     const N = 3.4; // north sidewalk z
     const S = -3.4; // south sidewalk z
     const W = -3.4; // west sidewalk x
-    const E = 3.4; // east sidewalk x
+    // Approach point at the foot of the office front walkway — sits on
+    // the north sidewalk directly south of the Zava Claims entrance.
+    const OX = -10; // office walkway x
     let waypoints: Array<[number, number]> = [];
     switch (id) {
       case "home":
-        // Spawn (~14, 10) → south to north sidewalk → west around the
-        // roundabout via the NW corner → south down west sidewalk → door.
-        waypoints = [[14, N], [W, N], [W, -4]];
+        // Spawn (~14, 10) NE of centre — step south onto the north
+        // sidewalk, walk west along it to the foot of the office
+        // walkway, then continue north into the Zava Claims doorway.
+        waypoints = [[14, N], [OX, N]];
         break;
       case "motor":
-        // Spawn (~23.5, -2) is on the road south of centre — step onto
-        // the south sidewalk then walk west to the door.
-        waypoints = [[14, S], [W, S]];
+        // Spawn (~23.5, -2) is on the road south of centre — cross to
+        // the north sidewalk, then walk west to the office walkway.
+        waypoints = [[23.5, N], [OX, N]];
         break;
       case "business":
-        // Spawn (~-17, -12) south-west — walk north to south sidewalk
-        // then east to the door.
-        waypoints = [[-17, S], [W, S]];
+        // Spawn (~-17, -12) south-west — walk north to the south
+        // sidewalk, east to the SW corner of the roundabout, north
+        // across to the north sidewalk, then west to the office.
+        waypoints = [[-17, S], [W, S], [W, N], [OX, N]];
         break;
       case "travel":
-        // Spawn (~-15, 14) north-west — south to north sidewalk, east
-        // to NW corner, then south to the door.
-        waypoints = [[-15, N], [W, N], [W, -4]];
+        // Spawn (~-24, 14) north-west — south to the north sidewalk,
+        // then east along it to the office walkway.
+        waypoints = [[-24, N], [OX, N]];
         break;
       case "life":
-        // Spawn (~15, -14) south-east — north to south sidewalk then
-        // west to the door.
-        waypoints = [[15, S], [W, S]];
+        // Spawn (~15, -14) south-east — north to the south sidewalk,
+        // west to the SW corner of the roundabout, north across to the
+        // north sidewalk, then west to the office walkway.
+        waypoints = [[15, S], [W, S], [W, N], [OX, N]];
         break;
       default:
         waypoints = [];
@@ -317,7 +330,9 @@ export class ScenarioRunner {
 
   private advanceNhWalk(dtSec: number): void {
     if (!this.nhCustomer || this.nhRoute.length === 0) return;
-    const speed = 3.2;
+    // Customer runs to the claims office at double walking speed so the
+    // scripted journey doesn't dawdle through the neighbourhood.
+    const speed = 6.4;
     this.nhCustomer.update(dtSec);
     const root = this.nhCustomer.root;
     const target = this.nhRoute[0];

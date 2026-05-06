@@ -1569,6 +1569,398 @@ export class NeighbourhoodAmbient {
     });
   }
 
+  /**
+   * Spawn a "busted pipeline" roadworks scene with a continuously
+   * looping animation. Adds a small excavated dirt patch, a pair of
+   * broken pipe stubs, four orange traffic cones around the perimeter,
+   * a dark wet ground patch, a vertical water jet that pulses in
+   * height, and a fan of recycling droplets that arc out and fall back
+   * to the source.
+   *
+   * Unlike the per-scenario incident animations, this is ambient —
+   * it never stops and never needs to be triggered by the scenario
+   * runner. It is purely scene dressing to make the neighbourhood
+   * feel alive.
+   *
+   * @param id     Unique id used as a suffix for mesh names.
+   * @param center Ground-level XZ position for the centre of the burst.
+   * @param opts   Optional rotation (radians, around Y) so the scene
+   *               can be aligned to a kerb or road direction.
+   */
+  addBustedPipeline(
+    id: string,
+    center: [number, number],
+    opts: { rotationY?: number } = {},
+  ): void {
+    const scene = this.scene;
+    const node = new TransformNode(`nh_pipeline_${id}`, scene);
+    node.parent = this.root;
+    node.position = new Vector3(center[0], 0, center[1]);
+    node.rotation.y = opts.rotationY ?? 0;
+
+    // Materials
+    const dirtMat = new StandardMaterial(`nh_pipeline_${id}_dirt`, scene);
+    dirtMat.diffuseColor = Color3.FromHexString("#5a4332");
+    dirtMat.specularColor = new Color3(0.04, 0.04, 0.04);
+
+    const moundMat = new StandardMaterial(`nh_pipeline_${id}_mound`, scene);
+    moundMat.diffuseColor = Color3.FromHexString("#6e5440");
+    moundMat.specularColor = new Color3(0.04, 0.04, 0.04);
+
+    const pipeMat = new StandardMaterial(`nh_pipeline_${id}_pipe`, scene);
+    pipeMat.diffuseColor = Color3.FromHexString("#8a8a8a");
+    pipeMat.specularColor = new Color3(0.1, 0.1, 0.1);
+
+    const pipeRimMat = new StandardMaterial(`nh_pipeline_${id}_pipe_rim`, scene);
+    pipeRimMat.diffuseColor = Color3.FromHexString("#3a3a3a");
+    pipeRimMat.specularColor = new Color3(0.05, 0.05, 0.05);
+
+    const coneMat = new StandardMaterial(`nh_pipeline_${id}_cone`, scene);
+    coneMat.diffuseColor = Color3.FromHexString("#ee6a2a");
+    coneMat.emissiveColor = Color3.FromHexString("#ee6a2a").scale(0.15);
+    coneMat.specularColor = new Color3(0.05, 0.05, 0.05);
+
+    const coneStripeMat = new StandardMaterial(
+      `nh_pipeline_${id}_cone_stripe`,
+      scene,
+    );
+    coneStripeMat.diffuseColor = Color3.FromHexString("#f4f4f4");
+    coneStripeMat.specularColor = new Color3(0.05, 0.05, 0.05);
+
+    const waterMat = new StandardMaterial(`nh_pipeline_${id}_water`, scene);
+    waterMat.diffuseColor = Color3.FromHexString("#6cb8e8");
+    waterMat.emissiveColor = Color3.FromHexString("#3aa0d8").scale(0.4);
+    waterMat.specularColor = new Color3(0.2, 0.2, 0.2);
+    waterMat.alpha = 0.85;
+
+    const wetMat = new StandardMaterial(`nh_pipeline_${id}_wet`, scene);
+    wetMat.diffuseColor = Color3.FromHexString("#3a6f8a");
+    wetMat.emissiveColor = Color3.FromHexString("#2a5a78").scale(0.25);
+    wetMat.specularColor = new Color3(0.3, 0.3, 0.3);
+    wetMat.alpha = 0.75;
+
+    // Excavated dirt patch (slightly recessed) — sits on top of the
+    // ground so it shows whether placed on grass or asphalt.
+    const dirt = MeshBuilder.CreateBox(
+      `nh_pipeline_${id}_dirt`,
+      { width: 2.2, height: 0.12, depth: 2.2 },
+      scene,
+    );
+    dirt.parent = node;
+    dirt.position = new Vector3(0, 0.06, 0);
+    dirt.material = dirtMat;
+
+    // Two small dirt mounds along the edge of the trench.
+    const moundA = MeshBuilder.CreateBox(
+      `nh_pipeline_${id}_mound_a`,
+      { width: 1.6, height: 0.35, depth: 0.4 },
+      scene,
+    );
+    moundA.parent = node;
+    moundA.position = new Vector3(0, 0.2, 1.2);
+    moundA.material = moundMat;
+
+    const moundB = MeshBuilder.CreateBox(
+      `nh_pipeline_${id}_mound_b`,
+      { width: 0.4, height: 0.3, depth: 1.4 },
+      scene,
+    );
+    moundB.parent = node;
+    moundB.position = new Vector3(-1.2, 0.18, 0);
+    moundB.material = moundMat;
+
+    // Wet ground patch around the burst (gently pulses).
+    const wet = MeshBuilder.CreateCylinder(
+      `nh_pipeline_${id}_wet`,
+      { diameter: 3.6, height: 0.04 },
+      scene,
+    );
+    wet.parent = node;
+    wet.position = new Vector3(0, 0.13, 0);
+    wet.material = wetMat;
+
+    // Two broken pipe stubs sticking up out of the trench. The first is
+    // upright; the second is tilted as if snapped.
+    const pipeA = MeshBuilder.CreateCylinder(
+      `nh_pipeline_${id}_pipe_a`,
+      { diameter: 0.45, height: 0.7 },
+      scene,
+    );
+    pipeA.parent = node;
+    pipeA.position = new Vector3(-0.45, 0.45, -0.1);
+    pipeA.material = pipeMat;
+
+    const pipeARim = MeshBuilder.CreateCylinder(
+      `nh_pipeline_${id}_pipe_a_rim`,
+      { diameter: 0.5, height: 0.08 },
+      scene,
+    );
+    pipeARim.parent = node;
+    pipeARim.position = new Vector3(-0.45, 0.78, -0.1);
+    pipeARim.material = pipeRimMat;
+
+    const pipeB = MeshBuilder.CreateCylinder(
+      `nh_pipeline_${id}_pipe_b`,
+      { diameter: 0.4, height: 0.55 },
+      scene,
+    );
+    pipeB.parent = node;
+    pipeB.position = new Vector3(0.4, 0.32, 0.15);
+    pipeB.rotation.z = -0.5;
+    pipeB.material = pipeMat;
+
+    // Four traffic cones around the perimeter (orange with white stripe).
+    const conePositions: Array<[number, number]> = [
+      [1.2, 1.2],
+      [-1.2, 1.2],
+      [1.2, -1.2],
+      [-1.2, -1.2],
+    ];
+    conePositions.forEach((p, i) => {
+      const base = MeshBuilder.CreateBox(
+        `nh_pipeline_${id}_cone_base_${i}`,
+        { width: 0.55, height: 0.06, depth: 0.55 },
+        scene,
+      );
+      base.parent = node;
+      base.position = new Vector3(p[0], 0.15, p[1]);
+      base.material = coneMat;
+
+      const cone = MeshBuilder.CreateCylinder(
+        `nh_pipeline_${id}_cone_${i}`,
+        { diameterTop: 0.05, diameterBottom: 0.45, height: 0.7 },
+        scene,
+      );
+      cone.parent = node;
+      cone.position = new Vector3(p[0], 0.5, p[1]);
+      cone.material = coneMat;
+
+      const stripe = MeshBuilder.CreateCylinder(
+        `nh_pipeline_${id}_cone_stripe_${i}`,
+        { diameterTop: 0.22, diameterBottom: 0.28, height: 0.1 },
+        scene,
+      );
+      stripe.parent = node;
+      stripe.position = new Vector3(p[0], 0.62, p[1]);
+      stripe.material = coneStripeMat;
+    });
+
+    // Water jet — a thick high-pressure column. The jet is built as
+    // four nested layers (outer mist → outer column → mid column →
+    // bright inner core) so the fountain reads as a chunky voxel
+    // gusher rather than a single flat box.
+    const jetSourceY = 0.78;
+    const jetCenter = new Vector3(-0.45, 0, -0.1);
+
+    // Outer translucent mist column — softens the silhouette and adds
+    // volume around the main spray.
+    const mistMat = new StandardMaterial(`nh_pipeline_${id}_mist_mat`, scene);
+    mistMat.diffuseColor = Color3.FromHexString("#bfe2f4");
+    mistMat.emissiveColor = Color3.FromHexString("#a8d4ec").scale(0.3);
+    mistMat.specularColor = new Color3(0.1, 0.1, 0.1);
+    mistMat.alpha = 0.45;
+
+    const jetMist = MeshBuilder.CreateBox(
+      `nh_pipeline_${id}_jet_mist`,
+      { width: 0.85, height: 1.0, depth: 0.85 },
+      scene,
+    );
+    jetMist.parent = node;
+    jetMist.position = new Vector3(jetCenter.x, jetSourceY + 0.5, jetCenter.z);
+    jetMist.material = mistMat;
+
+    const jetOuter = MeshBuilder.CreateBox(
+      `nh_pipeline_${id}_jet_outer`,
+      { width: 0.55, height: 1.0, depth: 0.55 },
+      scene,
+    );
+    jetOuter.parent = node;
+    jetOuter.position = jetMist.position.clone();
+    jetOuter.material = waterMat;
+
+    const jetMid = MeshBuilder.CreateBox(
+      `nh_pipeline_${id}_jet_mid`,
+      { width: 0.35, height: 1.0, depth: 0.35 },
+      scene,
+    );
+    jetMid.parent = node;
+    jetMid.position = jetMist.position.clone();
+    const midMat = new StandardMaterial(`nh_pipeline_${id}_mid_mat`, scene);
+    midMat.diffuseColor = Color3.FromHexString("#9dd5f0");
+    midMat.emissiveColor = Color3.FromHexString("#7ec5e8").scale(0.45);
+    midMat.alpha = 0.9;
+    jetMid.material = midMat;
+
+    // Inner brighter core for a layered fountain look.
+    const jetCore = MeshBuilder.CreateBox(
+      `nh_pipeline_${id}_jet_core`,
+      { width: 0.2, height: 1.0, depth: 0.2 },
+      scene,
+    );
+    jetCore.parent = node;
+    jetCore.position = jetMist.position.clone();
+    const coreMat = new StandardMaterial(`nh_pipeline_${id}_core_mat`, scene);
+    coreMat.diffuseColor = Color3.FromHexString("#f0faff");
+    coreMat.emissiveColor = Color3.FromHexString("#dceffa").scale(0.6);
+    coreMat.alpha = 0.95;
+    jetCore.material = coreMat;
+
+    // Spray "crown" sitting at the top of the column — a wider, lower
+    // box that flares out above the jet so the fountain reads as
+    // breaking apart at the top instead of a clean stick.
+    const crown = MeshBuilder.CreateBox(
+      `nh_pipeline_${id}_crown`,
+      { width: 1.4, height: 0.5, depth: 1.4 },
+      scene,
+    );
+    crown.parent = node;
+    crown.material = mistMat;
+    crown.position = new Vector3(jetCenter.x, jetSourceY + 1.6, jetCenter.z);
+
+    // Side gush from the tilted broken pipe (pipeB) — a shorter,
+    // angled spray so the second pipe also reads as actively leaking.
+    const sideGush = MeshBuilder.CreateBox(
+      `nh_pipeline_${id}_side_gush`,
+      { width: 0.28, height: 1.0, depth: 0.28 },
+      scene,
+    );
+    sideGush.parent = node;
+    sideGush.material = waterMat;
+    // Anchor at the broken end of pipeB and angle it outward.
+    const sideGushAnchor = new Vector3(0.55, 0.55, 0.2);
+    sideGush.position = sideGushAnchor.clone();
+    sideGush.rotation.z = -0.7;
+    sideGush.rotation.y = 0.3;
+
+    // Recycling droplets that arc out from the jet source and fall.
+    interface Drop {
+      mesh: Mesh;
+      vx: number;
+      vy: number;
+      vz: number;
+      life: number;
+      big: boolean;
+    }
+    const drops: Drop[] = [];
+    const dropCount = 32;
+    for (let i = 0; i < dropCount; i++) {
+      const big = i < 10; // first ten are chunky gobs
+      const size = big ? 0.22 : 0.13;
+      const d = MeshBuilder.CreateBox(
+        `nh_pipeline_${id}_drop_${i}`,
+        { width: size, height: size, depth: size },
+        scene,
+      );
+      d.parent = node;
+      d.material = big ? midMat : waterMat;
+      d.isVisible = false;
+      drops.push({ mesh: d, vx: 0, vy: 0, vz: 0, life: 0, big });
+    }
+
+    const dropSource = new Vector3(jetCenter.x, jetSourceY + 0.2, jetCenter.z);
+
+    const launchDrop = (d: Drop): void => {
+      const angle = Math.random() * Math.PI * 2;
+      // Big gobs spray faster and outward; fine droplets spread wider.
+      const speed = d.big
+        ? 2.6 + Math.random() * 1.8
+        : 2.0 + Math.random() * 2.0;
+      d.vx = Math.cos(angle) * speed;
+      d.vz = Math.sin(angle) * speed;
+      d.vy = d.big ? 4.8 + Math.random() * 1.8 : 3.6 + Math.random() * 2.2;
+      d.mesh.position = dropSource.clone();
+      d.mesh.isVisible = true;
+      d.life = 2.0 + Math.random() * 0.8;
+    };
+
+    // Stagger initial launches so droplets don't all fire at once.
+    let spawnTimer = 0;
+    const spawnInterval = 0.045; // much higher droplet rate
+    let phase = 0;
+
+    this.movers.push({
+      update: (dt) => {
+        phase += dt;
+
+        // Pulsing main jet — taller and more violent than before.
+        const baseH = 3.0;
+        const swell = Math.sin(phase * 1.3) * 0.6;
+        const wobble = Math.sin(phase * 13) * 0.3;
+        const h = Math.max(1.6, baseH + swell + wobble);
+        const setJetLayer = (m: Mesh, scaleY: number): void => {
+          m.scaling.y = scaleY;
+          m.position.y = jetSourceY + scaleY * 0.5;
+        };
+        setJetLayer(jetMist, h * 0.95);
+        setJetLayer(jetOuter, h);
+        setJetLayer(jetMid, h * 1.02);
+        setJetLayer(jetCore, h * 1.05);
+
+        // Mist column shimmies side to side a touch for life.
+        const sway = Math.sin(phase * 2.4) * 0.06;
+        jetMist.rotation.z = sway;
+        jetOuter.rotation.z = sway * 0.5;
+
+        // Crown sits at the top of the column and flares as pressure
+        // surges, then settles. Flickers in alpha for spray feel.
+        const crownPulse = 1 + Math.sin(phase * 6) * 0.18 + swell * 0.3;
+        crown.scaling.x = crownPulse;
+        crown.scaling.z = crownPulse;
+        crown.scaling.y = 0.6 + Math.sin(phase * 9) * 0.18;
+        crown.position.y = jetSourceY + h + 0.1;
+        mistMat.alpha = 0.4 + Math.sin(phase * 5) * 0.1;
+
+        // Side gush flickers in length to mimic intermittent pressure.
+        const sideH = 0.7 + Math.sin(phase * 7) * 0.25;
+        sideGush.scaling.y = sideH;
+
+        // Wet patch pulses more visibly with the burst.
+        const wetPulse = 1 + Math.sin(phase * 1.8) * 0.08 + swell * 0.1;
+        wet.scaling.x = wetPulse;
+        wet.scaling.z = wetPulse;
+
+        // Spawn lots of droplets per frame for a heavy spray.
+        spawnTimer += dt;
+        while (spawnTimer >= spawnInterval) {
+          spawnTimer -= spawnInterval;
+          // Launch up to 3 idle drops per tick for a thick burst.
+          let launched = 0;
+          for (const d of drops) {
+            if (!d.mesh.isVisible) {
+              launchDrop(d);
+              launched++;
+              if (launched >= 3) break;
+            }
+          }
+        }
+
+        // Ballistic droplet update with floor clamp + recycle.
+        for (const d of drops) {
+          if (!d.mesh.isVisible) continue;
+          d.vy -= 9.8 * dt;
+          d.mesh.position.x += d.vx * dt;
+          d.mesh.position.y += d.vy * dt;
+          d.mesh.position.z += d.vz * dt;
+          d.life -= dt;
+          if (d.mesh.position.y <= 0.18 || d.life <= 0) {
+            d.mesh.isVisible = false;
+          }
+        }
+      },
+    });
+  }
+
+  /**
+   * Register a free-running ambient animation that ticks every frame.
+   * Useful for permanent props that should always be alive (e.g. the
+   * café rooftop fire flicker and rising smoke wisps), as opposed to
+   * the scripted, scenario-bound incidents handled by {@link
+   * registerIncident}.
+   */
+  addAnimation(update: (dtSec: number) => void): void {
+    this.movers.push({ update });
+  }
+
   /** Register an incident animation for a given scenario. */
   registerIncident(id: ScenarioId, anim: IncidentAnimation): void {
     this.incidents.set(id, anim);

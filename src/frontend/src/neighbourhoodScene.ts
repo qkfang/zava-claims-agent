@@ -903,30 +903,54 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     text: string,
     color = "#1c2230",
   ): void => {
+    // Measure text first so the sign and texture are sized to fit the
+    // label exactly — no fixed-width signs that look stretched on short
+    // labels or clipped on long ones.
+    const fontSize = 60;
+    const padLeft = 44;
+    const padRight = 28;
+    const texHeight = 168;
+    const measureCanvas = document.createElement("canvas");
+    const measureCtx = measureCanvas.getContext("2d");
+    let textWidth = 400;
+    if (measureCtx) {
+      measureCtx.font = `bold ${fontSize}px sans-serif`;
+      textWidth = Math.ceil(measureCtx.measureText(text).width);
+    }
+    const texWidth = padLeft + textWidth + padRight;
+    // World units per texture pixel — keeps every sign at the same
+    // physical text height, just with variable width.
+    const unitsPerPixel = 1.5 / texHeight;
+    const signWidth = texWidth * unitsPerPixel;
+    const signHeight = 1.5;
+
     const sign = MeshBuilder.CreateBox(
       `nh_label_${x}_${z}`,
-      { width: 4.4, height: 0.9, depth: 0.12 },
+      { width: signWidth, height: signHeight, depth: 0.18 },
       scene,
     );
-    sign.position = new Vector3(x, 4.4, z);
+    sign.position = new Vector3(x, 5.6, z);
+    // Rotate around Y so the sign faces the camera, then tilt the top
+    // forward a little so the face angles up toward the bird's-eye view.
     sign.rotation.y = -Math.PI / 6;
+    sign.rotation.x = Math.PI / 9;
     attach(sign);
 
     const tex = new DynamicTexture(
       `nh_label_tex_${x}_${z}`,
-      { width: 512, height: 128 },
+      { width: texWidth, height: texHeight },
       scene,
       false,
     );
     const ctx = tex.getContext() as CanvasRenderingContext2D;
     ctx.fillStyle = "#fff8e6";
-    ctx.fillRect(0, 0, 512, 128);
+    ctx.fillRect(0, 0, texWidth, texHeight);
     ctx.fillStyle = color;
-    ctx.fillRect(0, 0, 12, 128);
+    ctx.fillRect(0, 0, 18, texHeight);
     ctx.fillStyle = "#1c2230";
-    ctx.font = "bold 44px sans-serif";
+    ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.textBaseline = "middle";
-    ctx.fillText(text, 32, 64);
+    ctx.fillText(text, padLeft, texHeight / 2);
     tex.update();
 
     const m = new StandardMaterial(`nh_label_mat_${x}_${z}`, scene);
@@ -938,10 +962,10 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     // Tiny pole under the sign
     const pole = MeshBuilder.CreateBox(
       `nh_label_pole_${x}_${z}`,
-      { width: 0.15, height: 4.0, depth: 0.15 },
+      { width: 0.18, height: 5.0, depth: 0.18 },
       scene,
     );
-    pole.position = new Vector3(x, 2.0, z);
+    pole.position = new Vector3(x, 2.5, z);
     pole.material = mat("labelPole", "#7a7a7a");
     attach(pole);
   };
@@ -1567,6 +1591,8 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   let motorRearCar: TransformNode[] = [];
   let motorContact: Vector3 | null = null;
   let cafeSmokeMeshes: Mesh[] = [];
+  let cafeFlameMeshes: Mesh[] = [];
+  let cafeFlameMats: StandardMaterial[] = [];
   let cafeFlickerAt: Vector3 | null = null;
   let travelSuitcase: Mesh | null = null;
   let travelTrolleyTop: Vector3 | null = null;
@@ -1643,7 +1669,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeTree(zx + 11, zz - 2);
 
     // Customer (Michael)
-    makePerson(zx - 1, zz - 5, "customerHome", { x: -7, z: -4 });
+    makePerson(zx - 1, zz - 5, "customerHome", { x: -10, z: 4 });
 
     // Water-extraction & drying gear staged out front — supports the
     // emergency make-safe story (scenario 3, supplier coordination step).
@@ -1671,10 +1697,10 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makePathLine(
       "nh_path_home",
       { x: zx - 2, z: zz - 4 },
-      { x: -7, z: -4 },
+      { x: -10, z: 4 },
     );
 
-    makeLabel(zx + 4, zz + 4, "Residential — Home Claims (Michael)", "#3a8fd6");
+    makeLabel(zx + 4, zz + 4, "Home Claims (Michael)", "#3a8fd6");
   }
 
   // ----- Zone 2: Main Road / Intersection — Motor Insurance -----
@@ -1726,7 +1752,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     );
 
     // Driver standing nearby (Aisha)
-    makePerson(zx + 1.2, zz + 1.2, "customerMotor", { x: -7, z: -4 });
+    makePerson(zx + 1.2, zz + 1.2, "customerMotor", { x: -10, z: 4 });
 
     // Northside Smash Repairs garage — supports the supplier coordination
     // step in scenario 1 (motor collision).
@@ -1786,7 +1812,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       { x: -6, z: -2 },
     );
 
-    makeLabel(zx + 3, zz + 4, "Main Road — Motor Claims (Aisha)", "#c44a3a");
+    makeLabel(zx + 3, zz + 4, "Motor Claims (Aisha)", "#c44a3a");
   }
 
   // ----- Zone 3: High Street — Small Business Insurance (café fire) -----
@@ -1860,6 +1886,41 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     cafeSmokeMeshes = smokeMeshes;
     cafeFlickerAt = new Vector3(cafeX, 1.0, zz - 1.79);
 
+    // Voxel rooftop fire — three stacked emissive blocks (red base,
+    // orange middle, yellow tip) sitting on the café roof under the
+    // smoke column. Animated continuously by the ambient controller so
+    // the café always reads as "actively on fire" while the scene is
+    // rendered. The Mesh + Material refs are captured so the flicker
+    // loop below can drive scale.y / emissive intensity.
+    const cafeRoofTop = 2.6; // top of nh_shop_base box (centre 1.3 + half 1.3)
+    const flameDefs: Array<[number, number, number, number, string, string]> = [
+      // [width, height, depth, dy(centre offset above roof), diffuseHex, emissiveHex]
+      [0.9, 0.5, 0.9, 0.25, "#c63a1a", "#e84b1a"], // red base
+      [0.65, 0.6, 0.65, 0.78, "#e07a2c", "#ff8a30"], // orange middle
+      [0.4, 0.55, 0.4, 1.32, "#ffd166", "#ffe080"], // yellow tip
+    ];
+    const flameMeshes: Mesh[] = [];
+    const flameMats: StandardMaterial[] = [];
+    for (let fi = 0; fi < flameDefs.length; fi++) {
+      const [fw, fh, fd, fdy, hex, emHex] = flameDefs[fi];
+      const flame = MeshBuilder.CreateBox(
+        `nh_cafe_flame_${fi}`,
+        { width: fw, height: fh, depth: fd },
+        scene,
+      );
+      flame.position = new Vector3(cafeX, cafeRoofTop + fdy, zz);
+      const fm = new StandardMaterial(`nh_cafe_flame_mat_${fi}`, scene);
+      fm.diffuseColor = Color3.FromHexString(hex);
+      fm.emissiveColor = Color3.FromHexString(emHex);
+      fm.specularColor = new Color3(0, 0, 0);
+      flame.material = fm;
+      attach(flame);
+      flameMeshes.push(flame);
+      flameMats.push(fm);
+    }
+    cafeFlameMeshes = flameMeshes;
+    cafeFlameMats = flameMats;
+
     // "Closed" sign
     makeBox("nh_closed_sign", 0.9, 0.4, 0.06, new Vector3(cafeX, 1.4, zz - 1.95), "#c44a3a");
 
@@ -1877,7 +1938,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     );
 
     // Customer (Tom)
-    makePerson(cafeX - 1.5, zz - 4.5, "customerBusiness", { x: -7, z: -4 });
+    makePerson(cafeX - 1.5, zz - 4.5, "customerBusiness", { x: -10, z: 4 });
 
     // Cordon cones around the cafe entrance — fire scene under investigation
     makeCone(cafeX - 2.4, zz - 3.4);
@@ -1912,10 +1973,10 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makePathLine(
       "nh_path_business",
       { x: cafeX, z: zz - 4 },
-      { x: -7, z: -4 },
+      { x: -10, z: 4 },
     );
 
-    makeLabel(zx + 4, zz - 5.5, "High Street — Business Claims (Tom)", "#e07a2c");
+    makeLabel(zx + 4, zz - 5.5, "Business Claims (Tom)", "#e07a2c");
   }
 
   // ----- Zone 4: Travel Hub — Travel Insurance (lost luggage) -----
@@ -1987,7 +2048,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     travelLostRest = new Vector3(zx - 5, 0.3, zz - 2);
 
     // Worried traveller (Grace) on phone
-    makePerson(zx + 1, zz - 0.5, "customerTravel", { x: -7, z: -4 });
+    makePerson(zx + 1, zz - 0.5, "customerTravel", { x: -10, z: 4 });
 
     makeIncidentMarker(zx + 2, 2.4, zz - 1.5, "luggage");
 
@@ -2001,7 +2062,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     // Pushed south-east of the relocated travel terminal so the label
     // sits on open grass between the hub and the main road, instead of
     // running off the western edge of the map.
-    makeLabel(zx + 2, zz - 12, "Travel Hub — Travel Claims (Grace)", "#3a5fb0");
+    makeLabel(zx + 2, zz - 12, "Travel Claims (Grace)", "#3a5fb0");
   }
 
   // ----- Zone 5: Quiet Suburb Home — Life Insurance -----
@@ -2065,7 +2126,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeBox("nh_life_wreath_ribbon", 0.18, 0.55, 0.06, new Vector3(zx, 1.25, zz - 2.08), "#c2566f");
 
     // Beneficiary (Robert) walking calmly down the path
-    makePerson(zx - 2.5, zz - 4, "customerLife", { x: -7, z: -4 });
+    makePerson(zx - 2.5, zz - 4, "customerLife", { x: -10, z: 4 });
 
     // Soft heart marker (gentle)
     makeIncidentMarker(zx, 4.6, zz, "heart");
@@ -2078,7 +2139,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       "#e8d6cf",
     );
 
-    makeLabel(zx, zz + 5, "Family Home — Life Claims (Robert)", "#c2566f");
+    makeLabel(zx, zz + 5, "Life Claims (Robert)", "#c2566f");
   }
 
   // ----- Zone 6: Apartment Block — Contents / Suspected Theft -----
@@ -2147,7 +2208,7 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
 
     // Claimant (Jordan) standing on the path with arms out — body language
     // is left to the viewer's imagination; he's just a small voxel figure.
-    makePerson(zx - 1.5, zz - 4, "customerContents", { x: -7, z: -4 });
+    makePerson(zx - 1.5, zz - 4, "customerContents", { x: -10, z: 4 });
 
     // Trees / planter beside the building
     makeTree(zx - 5, zz - 1, 0.9);
@@ -2163,8 +2224,6 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       { x: zx + 2, z: zz - 3 },
       { x: -6, z: -4 },
     );
-
-    makeLabel(zx, zz - 6, "Apartment Block — Contents Claim (under review)", "#5c4a8a");
   }
 
   // ----- Voxel-city downtown strip -----
@@ -2291,8 +2350,6 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     // Cones at the gate
     makeCone(yx - 6, yz + 4);
     makeCone(yx - 5, yz + 4);
-    // Yard label
-    makeLabel(yx, yz - 5.5, "Builder's Yard", "#e07a2c");
   }
 
   // ----- Greenspaces: parks, playground, and a small river -----
@@ -2361,7 +2418,6 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeTree(px + 4.5, pz + 3, 0.85);
     makeTree(px - 4, pz - 3, 0.9);
     makeBench(px + 1.5, pz - 3.6);
-    makeLabel(px, pz + 6, "Lakeside Park", "#3a8fd6");
   }
 
   // South-central playground — between Pine Court and Elm Court on Willow Ave
@@ -2375,7 +2431,6 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeBench(px - 1, pz + 2.6);
     makeTree(px - 5.5, pz + 2.5, 0.8);
     makeTree(px + 5.5, pz - 2.5, 0.8);
-    makeLabel(px, pz - 4.5, "Willow Playground", "#5a8a4a");
   }
 
   // North-back river — winding strip along the back of the map between the
@@ -2414,7 +2469,6 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeBox("nh_bridge_deck", 1.6, 0.15, 3.0, new Vector3(8, 0.25, 33), "#a07a4a");
     makeBox("nh_bridge_railL", 1.6, 0.4, 0.1, new Vector3(8, 0.55, 31.6), "#7a4f2a");
     makeBox("nh_bridge_railR", 1.6, 0.4, 0.1, new Vector3(8, 0.55, 34.4), "#7a4f2a");
-    makeLabel(0, 31, "Zava Riverwalk", "#3a5fb0");
   }
 
   // Small western pocket park — fills empty grass between the relocated
@@ -2427,7 +2481,6 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     makeTree(px + 2, pz + 2, 0.9);
     makeTree(px + 2.5, pz - 2.5, 0.85);
     makeBench(px, pz);
-    makeLabel(px, pz + 5, "Cedar Pocket Park", "#5a8a4a");
   }
 
   // ----- Roadworks -----
@@ -2532,7 +2585,10 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   }
 
   // Decorative customer trail: a few people on streets heading to office -----
-  const office = { x: -7, z: -4 };
+  // The Zava Insurance Claims Office building sits at world (-10, 0, 8) with
+  // its south-facing entrance at z≈4. Trail figures face that doorway so the
+  // visual reads as "everyone heading into the Zava Claims building".
+  const office = { x: -10, z: 4 };
   makePerson(0, -10, "intakeOfficer", office);
   makePerson(8, -2, "supplierCoord", office);
   makePerson(-3, 6, "claimsAssessor", office);
@@ -2544,8 +2600,12 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
   makePerson(30, 6, "teamLeader", office);
 
   const zones: IncidentZones = {
-    // Office front door is the end of the path that leaves the office.
-    officeDoor: new Vector3(office.x, 0, office.z),
+    // Office front door — the Zava Insurance Claims Office building sits at
+    // world (-10, 0, 8) with its south-facing entrance at z≈4. Routing the
+    // customer to (-10, 0, 5) puts them at the doorway threshold, so the
+    // last walk segment visibly carries them up the office walkway and INTO
+    // the Zava Claims building before the scene fades to the office.
+    officeDoor: new Vector3(-10, 0, 5),
     // Each zone anchor is the spot where the customer voxel character
     // begins their walk toward the office. These match the (zx, zz) used
     // when placing the incident scenery (offset slightly so the spawn
@@ -2744,6 +2804,12 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
     { bodyColor: "#f4d36a", wingColor: "#b89a3a", altitude: 10, speed: 7.0 },
   );
 
+  // Ambient roadworks: a busted water main on the grass verge between
+  // Cedar Way and the central north-south road, just north of Birch
+  // Lane. Continuously animated (water jet, droplets, pulsing wet
+  // patch) — purely scene dressing, not tied to any scenario.
+  ambient.addBustedPipeline("birch_main", [-12, -6]);
+
   // Register per-scenario incident animations.
   if (homePuddle && homeKitchenSource) {
     ambient.registerIncident(
@@ -2762,6 +2828,81 @@ export function buildNeighbourhood(scene: Scene): NeighbourhoodResult {
       "business",
       makeSmokeIncident(scene, root, cafeSmokeMeshes, cafeFlickerAt),
     );
+  }
+  // Continuous café rooftop fire: flame voxels flicker, smoke wisps
+  // rise and recycle on a loop, regardless of scenario state. The
+  // scripted "business" incident still pulses the door glow and
+  // additionally swells the smoke during the scenario beat (its update
+  // runs after movers, so it cleanly overrides for those 4.5 s).
+  if (cafeFlameMeshes.length && cafeSmokeMeshes.length) {
+    const flameBaseScales = cafeFlameMeshes.map((m) => m.scaling.clone());
+    const flameBaseY = cafeFlameMeshes.map((m) => m.position.y);
+    const flameEmBase = cafeFlameMats.map((m) => m.emissiveColor.clone());
+    const smokeBaseScales = cafeSmokeMeshes.map((m) => m.scaling.clone());
+    const smokeBaseX = cafeSmokeMeshes.map((m) => m.position.x);
+    const smokeBaseY = cafeSmokeMeshes.map((m) => m.position.y);
+    const smokeRoofY = 4.3; // just above the flame tip (which reaches ~y=4.2)
+    // Stagger the wisps so they don't all rise in sync.
+    const smokePhases = cafeSmokeMeshes.map((_, i) => i / cafeSmokeMeshes.length);
+    let fireT = 0;
+    ambient.addAnimation((dt) => {
+      fireT += dt;
+      // Flame flicker: each block jitters at its own frequency so the
+      // tip dances faster than the base. Scale the height and pulse
+      // the emissive intensity for a live "ember" glow.
+      for (let i = 0; i < cafeFlameMeshes.length; i++) {
+        const m = cafeFlameMeshes[i];
+        const fmat = cafeFlameMats[i];
+        const f = 6 + i * 2.5;
+        const j1 = Math.sin(fireT * f + i * 1.7);
+        const j2 = Math.sin(fireT * (f * 0.5) + i * 0.9);
+        const yScale = Math.max(0.55, 1 + j1 * 0.18 + j2 * 0.08);
+        const xzScale = 1 + j2 * 0.06 - j1 * 0.04;
+        m.scaling.x = flameBaseScales[i].x * xzScale;
+        m.scaling.z = flameBaseScales[i].z * xzScale;
+        m.scaling.y = flameBaseScales[i].y * yScale;
+        // Lift slightly as the flame stretches so the base stays on the roof.
+        m.position.y =
+          flameBaseY[i] + flameBaseScales[i].y * (yScale - 1) * 0.5;
+        // Slight sway around vertical axis.
+        m.rotation.y = Math.sin(fireT * (f * 0.4) + i) * 0.12;
+        // Emissive flash — keeps the rooftop glowing warm.
+        const glow =
+          0.85 + 0.25 * Math.sin(fireT * 14 + i * 1.3) + 0.1 * j2;
+        fmat.emissiveColor = flameEmBase[i].scale(Math.max(0.6, glow));
+      }
+      // Smoke wisps: each wisp rides its own 0..1 phase, rising from
+      // just above the rooftop, expanding outward, and fading. When
+      // its phase wraps it respawns at the base — giving a continuous
+      // smoke column instead of three frozen blobs.
+      for (let i = 0; i < cafeSmokeMeshes.length; i++) {
+        smokePhases[i] += dt * 0.18;
+        if (smokePhases[i] >= 1) smokePhases[i] -= 1;
+        const p = smokePhases[i];
+        const m = cafeSmokeMeshes[i];
+        const topY = smokeBaseY[i] + 0.8;
+        m.position.y = smokeRoofY + (topY - smokeRoofY) * p;
+        // Sideways drift for organic feel.
+        const drift = Math.sin(fireT * 1.2 + i * 1.3) * 0.25;
+        m.position.x = smokeBaseX[i] + drift;
+        // Expand as it rises, with a small pulse from the fire below.
+        const grow = 0.5 + p * 1.0 + Math.sin(fireT * 4 + i) * 0.06;
+        m.scaling.x = smokeBaseScales[i].x * grow;
+        m.scaling.y = smokeBaseScales[i].y * grow;
+        m.scaling.z = smokeBaseScales[i].z * grow;
+        // Fade in at the bottom, ride at full alpha, fade out near top.
+        const mat = m.material as StandardMaterial | null;
+        if (mat) {
+          const fade =
+            p < 0.15
+              ? p / 0.15
+              : p > 0.7
+                ? Math.max(0, 1 - (p - 0.7) / 0.3)
+                : 1;
+          mat.alpha = fade;
+        }
+      }
+    });
   }
   if (travelSuitcase && travelTrolleyTop && travelLostRest) {
     ambient.registerIncident(

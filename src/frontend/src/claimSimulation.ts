@@ -366,6 +366,12 @@ export class ClaimSimulation {
       moveTarget: this.layout.entrancePoint.clone(),
     };
     ch.setWalking(true);
+    // Scripted customers continue the same urgent run they used to cross
+    // the neighbourhood — they sprint through the door and across the
+    // lobby to reception, then drop back to a normal walk on the way out.
+    if (script) {
+      ch.setRunning(true);
+    }
     this.customers.push(customer);
     this.customersByCharId.set(ch.id, customer);
 
@@ -417,14 +423,19 @@ export class ClaimSimulation {
   }
 
   private updateCustomers(dtSec: number): void {
-    const customerSpeed = 2.2;
+    const customerWalkSpeed = 2.2;
+    const customerRunSpeed = 4.4;
     for (const c of this.customers) {
       if (c.state === "done") continue;
       c.character.update(dtSec);
+      // Scripted customers (claim.script) sprint into the building and
+      // across the lobby; ambient customers stroll at normal pace.
+      const running = !!c.claim.script && (c.state === "entering" || c.state === "to-reception");
+      const speed = running ? customerRunSpeed : customerWalkSpeed;
       const arrived = moveToward(
         c.character.root,
         c.moveTarget,
-        customerSpeed,
+        speed,
         dtSec,
       );
       if (!arrived) continue;
@@ -458,6 +469,7 @@ export class ClaimSimulation {
           }
           c.state = "leaving";
           c.moveTarget = this.layout.exitPoint.clone();
+          c.character.setRunning(false);
           c.character.setWalking(true);
           break;
         }

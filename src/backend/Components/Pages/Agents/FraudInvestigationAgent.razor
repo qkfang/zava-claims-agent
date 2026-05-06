@@ -1,0 +1,74 @@
+@page "/agents/fraud-investigation"
+
+<PageTitle>Fraud Investigation Agent — Claims Team in a Day</PageTitle>
+
+<div class="agent-header" style="--accent: #ef4444">
+    <a class="back-link" href="/"><span aria-hidden="true">←</span> Back to claims office</a>
+    <div class="agent-header-row">
+        <div class="agent-header-icon">🛡️</div>
+        <div>
+            <div class="agent-header-dept">Fraud Investigation</div>
+            <h1>Fraud Investigation Agent</h1>
+            <div class="agent-header-persona">Felix — Fraud Investigator</div>
+            <p class="tagline">Quietly checks every claim for inconsistencies — fairly and explainably.</p>
+        </div>
+    </div>
+</div>
+
+<div class="agent-tab-panel standalone">
+    <section class="panel" style="--accent: #ef4444">
+        <h2>What this agent does</h2>
+        <p>
+            Scores the claim for fraud risk, explains every flag in plain English, and
+            recommends investigation steps for a human investigator.
+        </p>
+        <div class="two-col">
+            <div>
+                <h3>Responsibilities</h3>
+                <ul>
+                    <li>Build a timeline from emails, form data, and documents.</li>
+                    <li>Compare the claim against prior claim history.</li>
+                    <li>Run duplicate-receipt and document-tamper checks.</li>
+                    <li>Produce an explainable risk score with cited indicators.</li>
+                    <li>Recommend next investigation steps — never accuse the customer.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Tools available</h3>
+                <ul>
+                    <li>Timeline builder</li>
+                    <li>Document comparison</li>
+                    <li>Duplicate receipt checker</li>
+                    <li>Prior claims search</li>
+                    <li>Risk scoring model</li>
+                </ul>
+                <h3>Human approval</h3>
+                <p class="approval">
+                    Always required before fraud referral, claim delay due to investigation,
+                    customer interview, or fraud-based decline.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel" style="--accent: #ef4444">
+        <h2>Demo: how this agent helps with the claim</h2>
+        <div class="demo">
+            <p>
+                Every new claim is quietly checked by Felix's fraud agent in the background. It
+                builds a timeline from the email, form, and document timestamps, looks for
+                duplicate receipts across the network, and compares the claim against the
+                customer's prior history.
+            </p>
+            <p>
+                The output is an explainable risk score with the indicators that drove it. Most
+                claims come back green and continue along the standard path with no customer
+                friction. Anything elevated is handed to a human fraud investigator with the
+                evidence laid out — the agent never makes the call to delay or refer a claim
+                on its own.
+            </p>
+        </div>
+    </section>
+
+    <OtherAgentsBar CurrentId="fraud-investigation" />
+</div>
