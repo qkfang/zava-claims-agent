@@ -34,6 +34,11 @@ var agentOptions = new ClaimsAgentOptions
 builder.Services.AddSingleton(agentOptions);
 builder.Services.AddSingleton<ClaimsAgentFactory>();
 
+// In-memory store of claim cases minted by the Claims Intake demo's
+// "Try It Out" tab. Lets later agents in the demo flow look the case up
+// by claim number.
+builder.Services.AddSingleton<IntakeClaimStore>();
+
 // ── Notice intelligence integration (ported from demo-foundry-document-intelligence/agentdi)
 // Only enabled when the required Azure resources are configured. When enabled,
 // it exposes the four agentdi agents (Extract DI/CU, Notification, Correspondence)
@@ -166,6 +171,14 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
 
     return Results.Ok(new { response = agentResponse, references });
 });
+
+// ── Claims Intake demo endpoints (Try It Out tab on /agents/claims-intake) ──
+{
+    var intakeLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
+    var intakeFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
+    app.MapIntakeEndpoints(intakeStore, intakeFactory, intakeLogger);
+}
 
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
 if (noticeEnabled)
