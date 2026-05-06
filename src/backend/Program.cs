@@ -180,6 +180,15 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     app.MapIntakeEndpoints(intakeStore, intakeFactory, intakeLogger);
 }
 
+// ── Supplier Coordination demo endpoints (Try It Out tab on
+//    /agents/supplier-coordinator) ─────────────────────────────────────────
+{
+    var supplierLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    var supplierStore = app.Services.GetRequiredService<IntakeClaimStore>();
+    var supplierFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
+    app.MapSupplierEndpoints(supplierStore, supplierFactory, supplierLogger);
+}
+
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
 if (noticeEnabled)
 {
