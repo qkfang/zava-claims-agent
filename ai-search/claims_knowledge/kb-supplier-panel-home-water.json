@@ -1,0 +1,13 @@
+{
+  "id": "kb-supplier-panel-home-water",
+  "title": "Supplier panel — home water-damage builders & restoration partners",
+  "category": "Supplier Playbook",
+  "claimType": "home",
+  "claimNumber": "",
+  "policyNumber": "",
+  "content": "Zava Insurance maintains a tiered supplier panel for home water-damage events. Tier-1 partners (24/7 make-safe, SLA 4 hours): Steamatic Greater Melbourne, Restoration Express, AquaDry Victoria. Tier-2 partners (full strip-out and reinstatement, SLA 5 business days for scope): Homewise Builders, Renew & Restore, Burns Construction Group. Postcodes 3000-3025 default to Steamatic + Homewise; postcodes 3030-3199 default to AquaDry + Renew & Restore. Cash-settlement is offered when the customer's preferred builder is not on panel and the loss is under $20,000; in that case a Zava-quantity surveyor (Cordell SumSure) provides the scope of works. Always check whether the customer is on the vulnerable-customer register before assigning — if so, default to a Tier-1 partner with a single point of contact and a daily progress update cadence.",
+  "severity": "medium",
+  "department": "Supplier Coordination",
+  "tags": ["supplier", "home", "water-damage", "panel", "vulnerable-customer"],
+  "lastUpdated": "2026-02-08T08:00:00Z"
+}

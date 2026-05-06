@@ -1,0 +1,13 @@
+{
+  "id": "kb-cl-1004-business-interruption",
+  "title": "CL-1004 — Business interruption claim, café fire on Smith St",
+  "category": "Claim Case",
+  "claimType": "business",
+  "claimNumber": "CL-1004",
+  "policyNumber": "POL-BUS-2207",
+  "content": "Insured: 'Bean & Bird Café Pty Ltd', sole director Marco Lombardi. Cause of loss: kitchen fire originating from a faulty commercial deep fryer at 04:12 on 2026-04-22. Fire & Rescue Victoria report FRV-2026-04-22-3318 confirms accidental cause and clears arson. Building landlord's insurer handles structural restoration; Zava covers contents ($82k schedule), stock spoilage ($14k), and business-interruption (BI) loss of gross profit for the indemnity period (12 months, declared annual GP $410k). Adjusted weekly BI sum insured: $7,884. Loss Adjuster Patel inspected on 2026-04-24 and confirmed approximately 14 weeks of expected closure for kitchen rebuild + recommissioning. Claim now requires forensic-accountant review for BI calculation under the Zava-approved panel (Hall & Wilson). Reserve $235,000.",
+  "severity": "high",
+  "department": "Loss Adjusting",
+  "tags": ["business", "fire", "business-interruption", "forensic-accounting", "panel"],
+  "lastUpdated": "2026-04-25T09:40:00Z"
+}

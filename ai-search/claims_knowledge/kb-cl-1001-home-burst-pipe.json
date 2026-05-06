@@ -1,0 +1,13 @@
+{
+  "id": "kb-cl-1001-home-burst-pipe",
+  "title": "CL-1001 — Home claim, burst kitchen pipe, water damage to ground floor",
+  "category": "Claim Case",
+  "claimType": "home",
+  "claimNumber": "CL-1001",
+  "policyNumber": "POL-HOME-4421",
+  "content": "Customer: Margaret Chen (vulnerable — elderly, lives alone). Incident date: 2026-04-28 at 06:40. Cause of loss: a frozen kitchen mixer tap split overnight, releasing approximately 220 litres before the customer reached the stop-cock. Damage scope: kitchen vinyl flooring (full replacement), water-damaged kickboards on three lower cupboards, two damaged cookbooks, ceiling stain in the basement directly below. Emergency response: SES not required; Zava Insurance authorised same-day emergency plumbing under the policy's 24/7 make-safe benefit (capped at $500). Photos uploaded by the customer show standing water depth ~30mm and clear evidence of a split brass fitting. Reserve set at $14,800 pending Loss Adjuster inspection. Status: at Claims Assessment for coverage confirmation.",
+  "severity": "medium",
+  "department": "Claims Intake",
+  "tags": ["home", "water-damage", "burst-pipe", "vulnerable-customer", "make-safe"],
+  "lastUpdated": "2026-04-28T08:15:00Z"
+}

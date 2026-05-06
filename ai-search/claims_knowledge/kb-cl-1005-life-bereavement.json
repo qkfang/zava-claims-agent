@@ -1,0 +1,13 @@
+{
+  "id": "kb-cl-1005-life-bereavement",
+  "title": "CL-1005 — Life insurance claim, bereavement, single-adult policyholder",
+  "category": "Claim Case",
+  "claimType": "life",
+  "claimNumber": "CL-1005",
+  "policyNumber": "POL-LIFE-1138",
+  "content": "Deceased: Robert Hayes, 58, policyholder of a $450,000 term life policy, in-force since 2014, premiums up-to-date. Date of death 2026-04-15 from natural causes (myocardial infarction). Beneficiary: spouse Annette Hayes (sole nominated). Claim notified by Annette via Customer Communications on 2026-04-19 with high vulnerability indicators (recent bereavement, primary carer for adult child with disability). Required documents: certified death certificate (received 2026-04-23), proof of beneficiary identity (received), policy schedule (on file). No exclusions apply (death within first 13 months of policy review or self-inflicted causes are the typical exclusions and neither applies). Recommended path: priority settlement, hand-off to Settlement Officer with empathetic communications template B-LIFE-02. Reserve $450,000.",
+  "severity": "high",
+  "department": "Customer Communications",
+  "tags": ["life", "bereavement", "vulnerable-customer", "priority-settlement"],
+  "lastUpdated": "2026-04-24T14:20:00Z"
+}
