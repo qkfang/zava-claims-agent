@@ -15,13 +15,13 @@
     </div>
 </div>
 
-<div class="agent-tabs" role="tablist" aria-label="Loss Adjuster views">
-    <span class="agent-tab active" role="tab" aria-selected="true">Overview</span>
-    <a class="agent-tab" role="tab" aria-selected="false"
-       href="/agents/loss-adjuster/demo">Try It Out →</a>
-</div>
+<div class="agent-tab-scope" style="--accent: #f59e0b">
+    <nav class="agent-tabs" role="tablist" aria-label="Loss Adjuster agent details">
+        <button type="button" class="agent-tab active" data-tab="overview" role="tab" aria-selected="true" tabindex="0">Overview</button>
+        <button type="button" class="agent-tab" data-tab="try" role="tab" aria-selected="false" tabindex="-1">Try it out</button>
+    </nav>
 
-<div class="agent-tab-panel standalone" data-panel="overview">
+    <div class="agent-tab-panel active" data-panel="overview" role="tabpanel">
     <section class="panel" style="--accent: #f59e0b">
         <h2>What this agent does</h2>
         <p>
@@ -58,7 +58,7 @@
     </section>
 
     <section class="panel" style="--accent: #f59e0b">
-        <h2>Demo: how this agent helps with the claim</h2>
+        <h2>How this agent helps with the claim</h2>
         <div class="demo">
             <p>
                 For more complex or higher-value losses, Lara's loss-adjuster agent takes the
@@ -76,5 +76,385 @@
         </div>
     </section>
 
-    <OtherAgentsBar CurrentId="loss-adjuster" />
+    </div>
+
+    <div class="agent-tab-panel" data-panel="try" role="tabpanel">
+    <section class="panel adjuster-panel" style="--accent: #f59e0b">
+        <h2>Try It Out — Loss Adjuster Demo</h2>
+        <p class="muted adjuster-help">
+            Walk through how Lara's loss-adjuster agent picks up a complex or
+            higher-value claim that Claims Intake has just lodged, reviews the
+            evidence on file, and drafts an inspection brief and adjuster report
+            with a recommended reserve. All steps run live against the
+            <code>/loss-adjuster/*</code> endpoints in this app.
+        </p>
+
+        <!-- Step 1 — pick a Claim ID -->
+        <div class="adjuster-step" data-step="1">
+            <div class="adjuster-step-head">
+                <span class="adjuster-step-num">1</span>
+                <h3>Pick a Claim ID</h3>
+            </div>
+            <p class="muted">
+                Lara works from the queue of claims already lodged by Iris's
+                Claims Intake Agent. Pick one of the claim cases held in memory
+                for this demo.
+            </p>
+            <div class="adjuster-claim-row">
+                <select id="adjuster-claim-select" aria-label="Claim ID">
+                    <option value="">— Select a claim —</option>
+                </select>
+                <button type="button" id="adjuster-refresh-btn" class="adjuster-secondary"
+                        title="Reload the list of claims">↻ Refresh</button>
+            </div>
+            <p class="muted adjuster-empty" id="adjuster-empty" hidden>
+                No claims yet. Run the
+                <a href="/agents/claims-intake">Claims Intake Try It Out</a>
+                tab first to lodge a claim, then come back here.
+            </p>
+            <div class="adjuster-claim-card" id="adjuster-claim-card" hidden>
+                <div class="adjuster-claim-num" id="adjuster-claim-num"></div>
+                <div class="adjuster-claim-grid">
+                    <div><span class="k">Customer</span><span id="adjuster-claim-customer"></span></div>
+                    <div><span class="k">Policy</span><span id="adjuster-claim-policy"></span></div>
+                    <div><span class="k">Claim type</span><span id="adjuster-claim-type"></span></div>
+                    <div><span class="k">Incident date</span><span id="adjuster-claim-date"></span></div>
+                    <div class="span-2"><span class="k">Incident location</span><span id="adjuster-claim-location"></span></div>
+                    <div class="span-2"><span class="k">Description</span><span id="adjuster-claim-desc"></span></div>
+                    <div><span class="k">Estimated loss</span><span id="adjuster-claim-loss"></span></div>
+                    <div><span class="k">Urgency</span><span id="adjuster-claim-urgency"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 — engage the agent -->
+        <div class="adjuster-step" data-step="2">
+            <div class="adjuster-step-head">
+                <span class="adjuster-step-num">2</span>
+                <h3>Engage Loss Adjuster Agent</h3>
+            </div>
+            <p class="muted">
+                The agent loads the selected claim's details, reviews the
+                available report and site evidence, validates scope and quantum,
+                and produces a structured Loss Adjuster Report with a
+                recommended reserve.
+            </p>
+            <button id="adjuster-process-btn" type="button" disabled>Process with Loss Adjuster Agent</button>
+            <div id="adjuster-process-status" class="adjuster-status" hidden></div>
+        </div>
+
+        <!-- Step 3 — adjuster report -->
+        <div class="adjuster-step adjuster-report" data-step="3" id="adjuster-report" hidden>
+            <div class="adjuster-step-head">
+                <span class="adjuster-step-num">3</span>
+                <h3>Loss Adjuster Report</h3>
+            </div>
+            <div class="adjuster-notes-label">Agent narrative</div>
+            <div id="adjuster-notes-body" class="agent-md"></div>
+            <p class="muted adjuster-handoff">
+                Held in memory for the rest of the demo. The next agent
+                (<a href="/agents/claims-assessment">Claims Assessment</a>) can
+                confirm coverage and finalise the reserve, with human approval
+                for any large-loss findings or disputed cause.
+            </p>
+        </div>
+    </section>
+    </div>
 </div>
+
+<style>
+    .adjuster-panel { --adjuster-accent: #f59e0b; }
+    .adjuster-help { margin-bottom: 0.9rem; }
+    .adjuster-help code { background: rgba(245, 158, 11, 0.12); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
+
+    .adjuster-step {
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        background: rgba(15, 22, 38, 0.4);
+        border-radius: 12px;
+        padding: 0.95rem 1.1rem 1rem 1.1rem;
+        margin-top: 0.9rem;
+    }
+    .adjuster-step-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; }
+    .adjuster-step-head h3 { margin: 0; color: #fff; font-size: 1rem; }
+    .adjuster-step-num {
+        display: inline-grid; place-items: center;
+        width: 1.55rem; height: 1.55rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--adjuster-accent) 22%, rgba(20, 28, 46, 0.7));
+        border: 1px solid color-mix(in srgb, var(--adjuster-accent) 55%, transparent);
+        color: var(--adjuster-accent);
+        font-size: 0.78rem; font-weight: 700;
+    }
+    .adjuster-step .muted { color: var(--zava-muted, #97a3b6); font-size: 0.9rem; margin: 0.35rem 0 0.7rem 0; }
+
+    .adjuster-claim-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .adjuster-claim-row select {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        color: #fff;
+        padding: 0.5rem 0.7rem;
+        font-size: 0.9rem;
+        min-width: 280px;
+    }
+    .adjuster-claim-row select:focus {
+        outline: none;
+        border-color: var(--adjuster-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--adjuster-accent) 25%, transparent);
+    }
+    .adjuster-secondary {
+        background: transparent;
+        color: rgba(238, 242, 247, 0.86);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+    .adjuster-secondary:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+    .adjuster-empty { margin-top: 0.6rem; }
+    .adjuster-empty a { color: var(--adjuster-accent); }
+
+    .adjuster-claim-card {
+        margin-top: 0.8rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.8rem 0.95rem;
+    }
+    .adjuster-claim-num {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: var(--adjuster-accent);
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 0.45rem;
+    }
+    .adjuster-claim-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem 0.85rem;
+        font-size: 0.85rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    @@media (max-width: 820px) { .adjuster-claim-grid { grid-template-columns: 1fr; } }
+    .adjuster-claim-grid .span-2 { grid-column: span 2; }
+    @@media (max-width: 820px) { .adjuster-claim-grid .span-2 { grid-column: span 1; } }
+    .adjuster-claim-grid .k {
+        display: inline-block;
+        min-width: 110px;
+        color: var(--zava-muted, #97a3b6);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.66rem;
+        letter-spacing: 0.08em;
+        margin-right: 0.5rem;
+    }
+
+    #adjuster-process-btn {
+        background: var(--adjuster-accent);
+        color: #1a1100;
+        border: none;
+        border-radius: 8px;
+        padding: 0.55rem 1.1rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.35rem;
+    }
+    #adjuster-process-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+    #adjuster-process-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .adjuster-status {
+        margin-top: 0.6rem; font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    .adjuster-status.error { color: #fca5a5; }
+    .adjuster-status .spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        animation: adjuster-spin 0.7s linear infinite;
+    }
+    @@keyframes adjuster-spin { to { transform: rotate(360deg); } }
+
+    .adjuster-report {
+        background: color-mix(in srgb, var(--adjuster-accent) 8%, rgba(15, 22, 38, 0.4));
+        border-color: color-mix(in srgb, var(--adjuster-accent) 35%, transparent);
+    }
+    .adjuster-notes-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
+    }
+    .adjuster-report pre {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.8rem 0.95rem;
+        color: rgba(238, 242, 247, 0.92);
+        font-size: 0.85rem;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        max-height: 480px;
+        overflow: auto;
+    }
+    .adjuster-handoff { margin-top: 0.7rem; }
+    .adjuster-handoff a { color: var(--adjuster-accent); }
+</style>
+
+<script>
+    (function () {
+        function init() {
+        const root = document.querySelector('.adjuster-panel');
+        if (!root || root.dataset.wired === '1') return;
+        root.dataset.wired = '1';
+
+        const $ = sel => root.querySelector(sel);
+        const selectEl = $('#adjuster-claim-select');
+        const refreshBtn = $('#adjuster-refresh-btn');
+        const emptyEl = $('#adjuster-empty');
+        const cardEl = $('#adjuster-claim-card');
+        const processBtn = $('#adjuster-process-btn');
+        const processStatus = $('#adjuster-process-status');
+        const reportEl = $('#adjuster-report');
+        const notesBody = $('#adjuster-notes-body');
+
+        let selectedClaim = null;
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        function setSelectedClaim(claim) {
+            selectedClaim = claim;
+            if (!claim) {
+                cardEl.hidden = true;
+                processBtn.disabled = true;
+                return;
+            }
+            $('#adjuster-claim-num').textContent = claim.claimNumber;
+            $('#adjuster-claim-customer').textContent = claim.customerName || '—';
+            $('#adjuster-claim-policy').textContent   = claim.policyNumber || '—';
+            $('#adjuster-claim-type').textContent     = claim.claimType || '—';
+            $('#adjuster-claim-date').textContent     = claim.incidentDate || '—';
+            $('#adjuster-claim-location').textContent = claim.incidentLocation || '—';
+            $('#adjuster-claim-desc').textContent     = claim.incidentDescription || '—';
+            $('#adjuster-claim-loss').textContent     = claim.estimatedLoss || '—';
+            $('#adjuster-claim-urgency').textContent  = claim.urgency || '—';
+            cardEl.hidden = false;
+            processBtn.disabled = false;
+        }
+
+        async function loadClaims() {
+            selectEl.innerHTML = '<option value="">— Loading… —</option>';
+            emptyEl.hidden = true;
+            cardEl.hidden = true;
+            processBtn.disabled = true;
+            reportEl.hidden = true;
+            processStatus.hidden = true;
+
+            try {
+                const res = await fetch('/loss-adjuster/claims');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const claims = await res.json();
+                if (!claims.length) {
+                    selectEl.innerHTML = '<option value="">— No claims available —</option>';
+                    emptyEl.hidden = false;
+                    return;
+                }
+                selectEl.innerHTML = '<option value="">— Select a claim —</option>' +
+                    claims.map(c =>
+                        `<option value="${escapeHtml(c.claimNumber)}">` +
+                        `${escapeHtml(c.claimNumber)} — ${escapeHtml(c.customerName)} (${escapeHtml(c.claimType)})` +
+                        `</option>`).join('');
+            } catch (err) {
+                selectEl.innerHTML = '<option value="">— Failed to load —</option>';
+                processStatus.hidden = false;
+                processStatus.className = 'adjuster-status error';
+                processStatus.textContent = 'Failed to load claims: ' + err.message;
+            }
+        }
+
+        async function selectClaim(claimNumber) {
+            reportEl.hidden = true;
+            processStatus.hidden = true;
+            if (!claimNumber) {
+                setSelectedClaim(null);
+                return;
+            }
+            try {
+                const res = await fetch(`/loss-adjuster/claims/${encodeURIComponent(claimNumber)}`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const claim = await res.json();
+                setSelectedClaim(claim);
+            } catch (err) {
+                setSelectedClaim(null);
+                processStatus.hidden = false;
+                processStatus.className = 'adjuster-status error';
+                processStatus.textContent = 'Failed to load claim: ' + err.message;
+            }
+        }
+
+        async function processClaim() {
+            if (!selectedClaim) return;
+            processBtn.disabled = true;
+            processStatus.hidden = false;
+            processStatus.className = 'adjuster-status';
+            processStatus.innerHTML = '<span class="spinner"></span>Engaging Loss Adjuster Agent…';
+            reportEl.hidden = true;
+
+            try {
+                const res = await fetch('/loss-adjuster/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claimNumber: selectedClaim.claimNumber })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                if (data.agentNotes) {
+                    window.zcRenderMarkdown(notesBody, data.agentNotes);
+                    reportEl.hidden = false;
+                    processStatus.textContent = 'Loss Adjuster Agent produced a report.';
+                    reportEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (!data.agentConfigured) {
+                    processStatus.className = 'adjuster-status error';
+                    processStatus.textContent =
+                        'Loss Adjuster Foundry agent is not configured. ' +
+                        'Set AZURE_AI_PROJECT_ENDPOINT and AZURE_AI_MODEL_DEPLOYMENT_NAME to enable it.';
+                } else {
+                    processStatus.className = 'adjuster-status error';
+                    processStatus.textContent = data.agentError
+                        ? 'Loss Adjuster Agent failed: ' + data.agentError
+                        : 'Loss Adjuster Agent returned no narrative.';
+                }
+            } catch (err) {
+                processStatus.className = 'adjuster-status error';
+                processStatus.textContent = 'Failed to process: ' + err.message;
+            } finally {
+                processBtn.disabled = !selectedClaim;
+            }
+        }
+
+        selectEl.addEventListener('change', () => selectClaim(selectEl.value));
+        refreshBtn.addEventListener('click', loadClaims);
+        processBtn.addEventListener('click', processClaim);
+
+        loadClaims();
+        }
+
+        init();
+
+        if (!window.__adjusterDemoEnhancedHook) {
+            window.__adjusterDemoEnhancedHook = true;
+            const hook = () => init();
+            if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
+                Blazor.addEventListener('enhancedload', hook);
+            } else {
+                document.addEventListener('enhancedload', hook);
+            }
+        }
+    })();
+</script>

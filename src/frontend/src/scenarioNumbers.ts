@@ -5,6 +5,8 @@
  */
 import type { ScenarioId } from "./personaData";
 
+// Keep the property order aligned with docs/scenario-N-*.md so the
+// canonical 1..5 sequence is consistent across frontend, backend and docs.
 export const SCENARIO_NUMBER: Record<ScenarioId, number> = {
   motor: 1,
   travel: 2,

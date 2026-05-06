@@ -15,13 +15,13 @@
     </div>
 </div>
 
-<div class="agent-tabs" role="tablist" aria-label="Supplier Coordination views">
-    <span class="agent-tab active" role="tab" aria-selected="true">Overview</span>
-    <a class="agent-tab" role="tab" aria-selected="false"
-       href="/agents/supplier-coordinator/demo">Try It Out →</a>
-</div>
+<div class="agent-tab-scope" style="--accent: #10b981">
+    <nav class="agent-tabs" role="tablist" aria-label="Supplier Coordinator agent details">
+        <button type="button" class="agent-tab active" data-tab="overview" role="tab" aria-selected="true" tabindex="0">Overview</button>
+        <button type="button" class="agent-tab" data-tab="try" role="tab" aria-selected="false" tabindex="-1">Try it out</button>
+    </nav>
 
-<div class="agent-tab-panel standalone" data-panel="overview">
+    <div class="agent-tab-panel active" data-panel="overview" role="tabpanel">
     <section class="panel" style="--accent: #10b981">
         <h2>What this agent does</h2>
         <p>
@@ -58,7 +58,7 @@
     </section>
 
     <section class="panel" style="--accent: #10b981">
-        <h2>Demo: how this agent helps with the claim</h2>
+        <h2>How this agent helps with the claim</h2>
         <div class="demo">
             <p>
                 Once a claim is approved, Sam's supplier coordinator agent matches the loss to
@@ -75,5 +75,535 @@
         </div>
     </section>
 
-    <OtherAgentsBar CurrentId="supplier-coordinator" />
+    </div>
+
+    <div class="agent-tab-panel" data-panel="try" role="tabpanel">
+    <section class="panel supplier-panel" style="--accent: #10b981">
+        <h2>Try It Out — Supplier Coordination Demo</h2>
+        <p class="muted supplier-help">
+            Walk through how Sam's supplier coordinator agent picks up an approved
+            claim, matches it to a suitable repairer / builder / assessor / hire
+            car / temporary accommodation, dispatches a work order and drafts an
+            update for the customer. Steps run live against the
+            <code>/supplier/*</code> endpoints in this app.
+        </p>
+
+        <!-- Step 1 — pick a claim -->
+        <div class="supplier-step" data-step="1">
+            <div class="supplier-step-head">
+                <span class="supplier-step-num">1</span>
+                <h3>Pick a Claim ID</h3>
+            </div>
+            <p class="muted">
+                Claim IDs come from the <a href="/agents/claims-intake">Claims Intake</a>
+                demo and are held in memory for the rest of the demo flow. Lodge a
+                claim there first if the dropdown is empty.
+            </p>
+            <div class="supplier-pick">
+                <label for="supplier-claim-select">Claim</label>
+                <select id="supplier-claim-select"></select>
+                <button type="button" id="supplier-refresh-btn" class="supplier-refresh" title="Reload claim list">↻</button>
+            </div>
+            <div class="supplier-claim-summary" id="supplier-claim-summary" hidden></div>
+        </div>
+
+        <!-- Step 2 — engage the agent -->
+        <div class="supplier-step" data-step="2">
+            <div class="supplier-step-head">
+                <span class="supplier-step-num">2</span>
+                <h3>Engage Supplier Coordinator Agent</h3>
+            </div>
+            <p class="muted">
+                The agent reviews the claim, matches it to a supplier on Zava's
+                approved network, proposes appointment slots, dispatches a work
+                order and drafts a plain-English update for the customer.
+            </p>
+            <button id="supplier-process-btn" type="button" disabled>Engage Supplier Coordinator Agent</button>
+            <div id="supplier-process-status" class="supplier-status" hidden></div>
+            <div id="supplier-agent-notes" class="supplier-notes" hidden>
+                <div class="supplier-notes-label">Agent narrative</div>
+                <div id="supplier-agent-notes-body" class="agent-md"></div>
+            </div>
+        </div>
+
+        <!-- Step 3 — match results -->
+        <div class="supplier-step" data-step="3" id="supplier-result" hidden>
+            <div class="supplier-step-head">
+                <span class="supplier-step-num">3</span>
+                <h3>Recommended supplier &amp; appointment options</h3>
+            </div>
+            <div class="supplier-result-grid">
+                <div class="supplier-card">
+                    <div class="supplier-card-label">Recommended</div>
+                    <div class="supplier-card-name" id="supplier-rec-name"></div>
+                    <div class="supplier-card-meta" id="supplier-rec-specialty"></div>
+                    <div class="supplier-card-meta" id="supplier-rec-location"></div>
+                    <div class="supplier-card-meta">
+                        <span class="supplier-pill" id="supplier-rec-rating"></span>
+                        <span class="supplier-pill" id="supplier-rec-sla"></span>
+                    </div>
+                </div>
+                <div>
+                    <div class="supplier-card-label">Appointment options</div>
+                    <ul class="supplier-appts" id="supplier-appts"></ul>
+                    <div class="supplier-card-label" style="margin-top: 0.6rem;">Alternatives</div>
+                    <ul class="supplier-alts" id="supplier-alts"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4 — work order + customer update -->
+        <div class="supplier-step" data-step="4" id="supplier-dispatch" hidden>
+            <div class="supplier-step-head">
+                <span class="supplier-step-num">4</span>
+                <h3>Work order dispatched</h3>
+            </div>
+            <div class="supplier-wo">
+                <div class="supplier-wo-head">
+                    <span class="supplier-wo-num" id="supplier-wo-num"></span>
+                    <span class="supplier-wo-status">Dispatched</span>
+                </div>
+                <div class="supplier-wo-row"><span class="k">Scope</span><span id="supplier-wo-scope"></span></div>
+                <div class="supplier-wo-row"><span class="k">ETA</span><span id="supplier-wo-eta"></span></div>
+                <div class="supplier-wo-row"><span class="k">Type</span><span id="supplier-wo-type"></span></div>
+            </div>
+
+            <div class="supplier-customer">
+                <div class="supplier-customer-label">Customer update — draft</div>
+                <div id="supplier-customer-body" class="agent-md"></div>
+            </div>
+
+            <div class="supplier-approval" id="supplier-approval" hidden>
+                <span class="supplier-approval-pill">Human approval required</span>
+                <span id="supplier-approval-reason"></span>
+            </div>
+        </div>
+    </section>
+    </div>
 </div>
+
+<style>
+    .supplier-panel { --supplier-accent: #10b981; }
+    .supplier-help { margin-bottom: 0.9rem; }
+    .supplier-help code { background: rgba(16, 185, 129, 0.12); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
+
+    .supplier-step {
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        background: rgba(15, 22, 38, 0.4);
+        border-radius: 12px;
+        padding: 0.95rem 1.1rem 1rem 1.1rem;
+        margin-top: 0.9rem;
+    }
+    .supplier-step-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; }
+    .supplier-step-head h3 { margin: 0; color: #fff; font-size: 1rem; }
+    .supplier-step-num {
+        display: inline-grid; place-items: center;
+        width: 1.55rem; height: 1.55rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--supplier-accent) 22%, rgba(20, 28, 46, 0.7));
+        border: 1px solid color-mix(in srgb, var(--supplier-accent) 55%, transparent);
+        color: var(--supplier-accent);
+        font-size: 0.78rem; font-weight: 700;
+    }
+    .supplier-step .muted { color: var(--zava-muted, #97a3b6); font-size: 0.9rem; margin: 0.35rem 0 0.7rem 0; }
+    .supplier-step .muted a { color: var(--supplier-accent); }
+
+    .supplier-pick {
+        display: flex; align-items: center; gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+    .supplier-pick label {
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700;
+    }
+    .supplier-pick select {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.22);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.7rem;
+        min-width: 280px;
+    }
+    .supplier-pick select:focus {
+        outline: none;
+        border-color: var(--supplier-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--supplier-accent) 25%, transparent);
+    }
+    .supplier-refresh {
+        background: transparent;
+        color: rgba(238, 242, 247, 0.86);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        padding: 0.4rem 0.7rem;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+    .supplier-refresh:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+    .supplier-claim-summary {
+        margin-top: 0.7rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.5rem 1rem;
+        font-size: 0.85rem;
+        color: rgba(238, 242, 247, 0.86);
+    }
+    .supplier-claim-summary .k {
+        display: block;
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.15rem;
+    }
+
+    #supplier-process-btn {
+        background: var(--supplier-accent);
+        color: #04241a;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.88rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.35rem;
+    }
+    #supplier-process-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .supplier-status {
+        margin-top: 0.6rem; font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    .supplier-status.error { color: #fca5a5; }
+    .supplier-status .spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        animation: supplier-spin 0.7s linear infinite;
+    }
+    @@keyframes supplier-spin { to { transform: rotate(360deg); } }
+
+    .supplier-notes {
+        margin-top: 0.7rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+    .supplier-notes-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
+    }
+    .supplier-notes pre {
+        color: rgba(238, 242, 247, 0.86);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .supplier-result-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.85rem;
+    }
+    @@media (max-width: 820px) { .supplier-result-grid { grid-template-columns: 1fr; } }
+
+    .supplier-card {
+        background: color-mix(in srgb, var(--supplier-accent) 10%, rgba(15, 22, 38, 0.7));
+        border: 1px solid color-mix(in srgb, var(--supplier-accent) 35%, transparent);
+        border-radius: 10px;
+        padding: 0.8rem 0.95rem;
+    }
+    .supplier-card-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
+    }
+    .supplier-card-name { color: #fff; font-weight: 700; font-size: 1rem; margin-bottom: 0.25rem; }
+    .supplier-card-meta { color: rgba(238, 242, 247, 0.86); font-size: 0.85rem; margin-top: 0.15rem; }
+    .supplier-pill {
+        display: inline-block;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        color: #6ee7b7;
+        padding: 0.1rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        margin-right: 0.35rem;
+        margin-top: 0.3rem;
+    }
+
+    .supplier-appts, .supplier-alts {
+        margin: 0.3rem 0 0 0;
+        padding: 0;
+        list-style: none;
+    }
+    .supplier-appts li {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 6px;
+        padding: 0.4rem 0.7rem;
+        font-size: 0.85rem;
+        color: rgba(238, 242, 247, 0.9);
+        margin-bottom: 0.3rem;
+    }
+    .supplier-alts li {
+        font-size: 0.82rem;
+        color: rgba(238, 242, 247, 0.78);
+        padding: 0.2rem 0;
+    }
+    .supplier-alts li strong { color: #fff; font-weight: 600; }
+
+    .supplier-wo {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+    .supplier-wo-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.45rem; }
+    .supplier-wo-num {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #6ee7b7;
+        font-weight: 700;
+        font-size: 1rem;
+        letter-spacing: 0.5px;
+    }
+    .supplier-wo-status {
+        margin-left: auto;
+        background: rgba(34, 197, 94, 0.16);
+        color: #86efac;
+        border: 1px solid rgba(34, 197, 94, 0.4);
+        padding: 0.1rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .supplier-wo-row { font-size: 0.86rem; padding: 0.18rem 0; color: rgba(238, 242, 247, 0.86); }
+    .supplier-wo-row .k {
+        display: inline-block; min-width: 64px;
+        color: var(--zava-muted, #97a3b6); font-weight: 600;
+        text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.08em;
+        margin-right: 0.5rem;
+    }
+
+    .supplier-customer {
+        margin-top: 0.7rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+    .supplier-customer-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
+    }
+    .supplier-customer pre {
+        color: rgba(238, 242, 247, 0.9);
+        font-size: 0.88rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        margin: 0;
+        font-family: inherit;
+    }
+
+    .supplier-approval {
+        margin-top: 0.7rem;
+        background: rgba(245, 158, 11, 0.10);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        color: #fcd34d;
+        border-radius: 8px;
+        padding: 0.55rem 0.8rem;
+        font-size: 0.86rem;
+    }
+    .supplier-approval-pill {
+        display: inline-block;
+        background: rgba(245, 158, 11, 0.18);
+        color: #fcd34d;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        padding: 0.1rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+        margin-right: 0.5rem;
+    }
+</style>
+
+<script>
+    (function () {
+        function init() {
+        const root = document.querySelector('.supplier-panel');
+        if (!root || root.dataset.wired === '1') return;
+        root.dataset.wired = '1';
+
+        const $ = sel => root.querySelector(sel);
+        const select = $('#supplier-claim-select');
+        const refreshBtn = $('#supplier-refresh-btn');
+        const summaryEl = $('#supplier-claim-summary');
+        const processBtn = $('#supplier-process-btn');
+        const processStatus = $('#supplier-process-status');
+        const agentNotesEl = $('#supplier-agent-notes');
+        const agentNotesBody = $('#supplier-agent-notes-body');
+        const resultEl = $('#supplier-result');
+        const dispatchEl = $('#supplier-dispatch');
+        const apptsEl = $('#supplier-appts');
+        const altsEl = $('#supplier-alts');
+        const approvalEl = $('#supplier-approval');
+        const approvalReason = $('#supplier-approval-reason');
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        function resetDownstream() {
+            processStatus.hidden = true;
+            agentNotesEl.hidden = true;
+            resultEl.hidden = true;
+            dispatchEl.hidden = true;
+            approvalEl.hidden = true;
+        }
+
+        async function loadClaims() {
+            select.innerHTML = '<option value="">Loading…</option>';
+            summaryEl.hidden = true;
+            processBtn.disabled = true;
+            resetDownstream();
+            try {
+                const res = await fetch('/supplier/claims');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const claims = await res.json();
+                if (!claims.length) {
+                    select.innerHTML = '<option value="">No claims yet — lodge one in Claims Intake first</option>';
+                    return;
+                }
+                select.innerHTML = '<option value="">— Select a claim —</option>' + claims.map(c =>
+                    `<option value="${escapeHtml(c.claimNumber)}">${escapeHtml(c.claimNumber)} — ${escapeHtml(c.customerName)} (${escapeHtml(c.claimType)})</option>`
+                ).join('');
+            } catch (err) {
+                select.innerHTML = '<option value="">Failed to load claims</option>';
+                processStatus.hidden = false;
+                processStatus.className = 'supplier-status error';
+                processStatus.textContent = 'Failed to load claims: ' + err.message;
+            }
+        }
+
+        async function selectClaim() {
+            const claimNumber = select.value;
+            resetDownstream();
+            if (!claimNumber) {
+                summaryEl.hidden = true;
+                processBtn.disabled = true;
+                return;
+            }
+            try {
+                const res = await fetch('/supplier/claims/' + encodeURIComponent(claimNumber));
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const c = await res.json();
+                summaryEl.innerHTML = `
+                    <div><span class="k">Claim</span>${escapeHtml(c.claimNumber)}</div>
+                    <div><span class="k">Customer</span>${escapeHtml(c.customerName)}</div>
+                    <div><span class="k">Policy</span>${escapeHtml(c.policyNumber)}</div>
+                    <div><span class="k">Claim type</span>${escapeHtml(c.claimType)}</div>
+                    <div><span class="k">Incident date</span>${escapeHtml(c.incidentDate)}</div>
+                    <div><span class="k">Location</span>${escapeHtml(c.incidentLocation)}</div>
+                    <div><span class="k">Estimated loss</span>${escapeHtml(c.estimatedLoss)}</div>
+                    <div><span class="k">Urgency</span>${escapeHtml(c.urgency)}</div>`;
+                summaryEl.hidden = false;
+                processBtn.disabled = false;
+            } catch (err) {
+                summaryEl.hidden = true;
+                processBtn.disabled = true;
+                processStatus.hidden = false;
+                processStatus.className = 'supplier-status error';
+                processStatus.textContent = 'Failed to load claim: ' + err.message;
+            }
+        }
+
+        async function process() {
+            const claimNumber = select.value;
+            if (!claimNumber) return;
+            processBtn.disabled = true;
+            processStatus.hidden = false;
+            processStatus.className = 'supplier-status';
+            processStatus.innerHTML = '<span class="spinner"></span>Engaging Supplier Coordinator Agent…';
+            agentNotesEl.hidden = true;
+            resultEl.hidden = true;
+            dispatchEl.hidden = true;
+            approvalEl.hidden = true;
+
+            try {
+                const res = await fetch('/supplier/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claimNumber })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                processStatus.textContent = data.agentConfigured
+                    ? 'Supplier Coordinator Agent matched a supplier and dispatched a work order.'
+                    : 'Processed (Foundry agent not configured — using deterministic demo match).';
+                if (data.agentNotes) {
+                    agentNotesEl.hidden = false;
+                    window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
+                }
+
+                const r = data.recommendedSupplier || {};
+                $('#supplier-rec-name').textContent = r.name || '';
+                $('#supplier-rec-specialty').textContent = r.specialty || '';
+                $('#supplier-rec-location').textContent = '📍 ' + (r.location || '');
+                $('#supplier-rec-rating').textContent = '★ ' + Number(r.rating || 0).toFixed(1) + '/5';
+                $('#supplier-rec-sla').textContent = 'SLA ' + (r.slaDays ?? '—') + ' days';
+
+                apptsEl.innerHTML = (data.appointmentOptions || []).map(a =>
+                    `<li>📅 ${escapeHtml(a)}</li>`).join('');
+
+                altsEl.innerHTML = (data.alternativeSuppliers || []).map(s =>
+                    `<li><strong>${escapeHtml(s.name)}</strong> — ${escapeHtml(s.specialty)} <em>(SLA ${s.slaDays}d, ★ ${Number(s.rating || 0).toFixed(1)})</em></li>`).join('');
+
+                resultEl.hidden = false;
+
+                const w = data.workOrder || {};
+                $('#supplier-wo-num').textContent = w.workOrderNumber || '';
+                $('#supplier-wo-scope').textContent = w.scope || '';
+                $('#supplier-wo-eta').textContent = w.eta || '';
+                $('#supplier-wo-type').textContent = data.supplierType || '';
+                window.zcRenderMarkdown('#supplier-customer-body', data.customerUpdate || '');
+                dispatchEl.hidden = false;
+
+                if (data.humanApprovalRequired) {
+                    approvalReason.textContent = data.humanApprovalReason || '';
+                    approvalEl.hidden = false;
+                }
+
+                dispatchEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (err) {
+                processStatus.className = 'supplier-status error';
+                processStatus.textContent = 'Failed to process: ' + err.message;
+            } finally {
+                processBtn.disabled = !select.value;
+            }
+        }
+
+        select.addEventListener('change', selectClaim);
+        refreshBtn.addEventListener('click', loadClaims);
+        processBtn.addEventListener('click', process);
+
+        loadClaims();
+        }
+
+        init();
+
+        if (!window.__supplierDemoEnhancedHook) {
+            window.__supplierDemoEnhancedHook = true;
+            const hook = () => init();
+            if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
+                Blazor.addEventListener('enhancedload', hook);
+            } else {
+                document.addEventListener('enhancedload', hook);
+            }
+        }
+    })();
+</script>

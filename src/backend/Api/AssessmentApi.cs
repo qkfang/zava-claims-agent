@@ -66,6 +66,8 @@ public static class AssessmentApi
 
             string? agentNotes = null;
             string? agentError = null;
+            string? agentInput = null;
+            object? agentRawOutput = null;
             if (agentFactory.IsConfigured)
             {
                 try
@@ -93,8 +95,17 @@ public static class AssessmentApi
                         "in your standard output format.";
 
                     var agent = agentFactory.Create("assessment");
-                    var result = await agent.RunAsync(prompt);
-                    agentNotes = result.Text;
+                    var trace = await agent.RunWithTraceAsync(prompt);
+                    agentNotes = trace.Text;
+                    agentInput = trace.Input;
+                    agentRawOutput = new
+                    {
+                        text = trace.Text,
+                        citations = trace.Citations,
+                        outputItems = trace.OutputItems,
+                        responseId = trace.ResponseId,
+                        durationMs = trace.DurationMs
+                    };
                 }
                 catch (Exception ex)
                 {
@@ -116,7 +127,9 @@ public static class AssessmentApi
                 claimNumber = claim.ClaimNumber,
                 agentNotes,
                 agentConfigured = agentFactory.IsConfigured,
-                agentError
+                agentError,
+                agentInput,
+                agentRawOutput
             });
         });
     }

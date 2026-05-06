@@ -12,7 +12,7 @@ public class TeamLeaderAgent : ClaimsAgent
 {
     private const string AgentId = "team-leader-agent";
 
-    private const string Instructions = """
+    public const string Instructions = """
         You are the Team Leader Agent in a digital claims office.
         You represent Theo, the Claims Team Leader — decisive,
         experienced, supportive and commercially aware.

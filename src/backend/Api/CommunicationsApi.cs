@@ -70,6 +70,8 @@ public static class CommunicationsApi
             var drafts = CustomerCommunicationsDrafter.Draft(record);
 
             string? agentNotes = null;
+            string? agentInput = null;
+            object? agentRawOutput = null;
             if (agentFactory.IsConfigured)
             {
                 try
@@ -96,8 +98,17 @@ public static class CommunicationsApi
                         "human reviewer before sending.";
 
                     var agent = agentFactory.Create("communications");
-                    var result = await agent.RunAsync(prompt);
+                    var result = await agent.RunWithTraceAsync(prompt);
                     agentNotes = result.Text;
+                    agentInput = result.Input;
+                    agentRawOutput = new
+                    {
+                        text = result.Text,
+                        citations = result.Citations,
+                        outputItems = result.OutputItems,
+                        responseId = result.ResponseId,
+                        durationMs = result.DurationMs
+                    };
                 }
                 catch (Exception ex)
                 {
@@ -121,7 +132,9 @@ public static class CommunicationsApi
                 drafts.HumanApprovalRequired,
                 drafts.HumanApprovalReason,
                 agentNotes,
-                agentConfigured = agentFactory.IsConfigured
+                agentConfigured = agentFactory.IsConfigured,
+                agentInput,
+                agentRawOutput
             });
         });
     }

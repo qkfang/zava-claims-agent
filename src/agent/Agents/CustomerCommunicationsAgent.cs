@@ -12,7 +12,7 @@ public class CustomerCommunicationsAgent : ClaimsAgent
 {
     private const string AgentId = "customer-communications-agent";
 
-    private const string Instructions = """
+    public const string Instructions = """
         You are the Customer Communications Agent in a digital claims office.
         You represent Cara, the Customer Communications Specialist — warm,
         articulate, empathetic and clear.

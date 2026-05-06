@@ -11,7 +11,7 @@ public class FraudInvestigationAgent : ClaimsAgent
 {
     private const string AgentId = "fraud-investigation-agent";
 
-    private const string Instructions = """
+    public const string Instructions = """
         You are the Fraud Investigation Agent in a digital claims office.
         You represent Felix, the Fraud Investigator — observant, careful,
         skeptical and evidence-driven.

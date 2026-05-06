@@ -15,13 +15,13 @@
     </div>
 </div>
 
-<div class="agent-tabs" role="tablist" aria-label="Settlement views">
-    <span class="agent-tab active" role="tab" aria-selected="true">Overview</span>
-    <a class="agent-tab" role="tab" aria-selected="false"
-       href="/agents/settlement/demo">Try It Out →</a>
-</div>
+<div class="agent-tab-scope" style="--accent: #a855f7">
+    <nav class="agent-tabs" role="tablist" aria-label="Settlement agent details">
+        <button type="button" class="agent-tab active" data-tab="overview" role="tab" aria-selected="true" tabindex="0">Overview</button>
+        <button type="button" class="agent-tab" data-tab="try" role="tab" aria-selected="false" tabindex="-1">Try it out</button>
+    </nav>
 
-<div class="agent-tab-panel standalone" data-panel="overview">
+    <div class="agent-tab-panel active" data-panel="overview" role="tabpanel">
     <section class="panel" style="--accent: #a855f7">
         <h2>What this agent does</h2>
         <p>
@@ -59,7 +59,7 @@
     </section>
 
     <section class="panel" style="--accent: #a855f7">
-        <h2>Demo: how this agent helps with the claim</h2>
+        <h2>How this agent helps with the claim</h2>
         <div class="demo">
             <p>
                 When the supplier invoice arrives, Seth's settlement agent matches it line-for-line
@@ -77,5 +77,547 @@
         </div>
     </section>
 
-    <OtherAgentsBar CurrentId="settlement" />
+    </div>
+
+    <div class="agent-tab-panel" data-panel="try" role="tabpanel">
+    <section class="panel settlement-panel" style="--accent: #a855f7">
+        <h2>Try It Out — Settlement Demo</h2>
+        <p class="muted settlement-help">
+            Walk through how Seth's settlement agent picks up a claim case opened
+            by the Claims Intake demo, applies policy terms transparently, and
+            prepares the payment package for human approval. All steps run live
+            against the <code>/settlement/*</code> endpoints in this app.
+        </p>
+
+        <!-- Step 1 — pick a claim from the dropdown -->
+        <div class="settlement-step" data-step="1">
+            <div class="settlement-step-head">
+                <span class="settlement-step-num">1</span>
+                <h3>Pick a claim</h3>
+            </div>
+            <p class="muted">
+                Choose one of the claims previously lodged via the
+                <a href="/agents/claims-intake">Claims Intake</a> demo. The list
+                is read from the in-memory claim store.
+            </p>
+            <div class="settlement-claim-picker">
+                <select id="settlement-claim-select" class="settlement-select">
+                    <option value="">— Select a Claim ID —</option>
+                </select>
+                <button id="settlement-refresh-btn" type="button" class="settlement-refresh" title="Reload claims">↻</button>
+            </div>
+            <div id="settlement-claim-empty" class="settlement-status" hidden>
+                No claims in memory yet. Run the
+                <a href="/agents/claims-intake">Claims Intake</a> demo first to mint
+                a claim number.
+            </div>
+            <div id="settlement-claim-summary" class="settlement-summary" hidden>
+                <div class="settlement-summary-grid">
+                    <div><span class="k">Claim</span><span id="settlement-claim-num"></span></div>
+                    <div><span class="k">Customer</span><span id="settlement-claim-customer"></span></div>
+                    <div><span class="k">Policy</span><span id="settlement-claim-policy"></span></div>
+                    <div><span class="k">Type</span><span id="settlement-claim-type"></span></div>
+                    <div class="span-2"><span class="k">Incident</span><span id="settlement-claim-incident"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 — settlement inputs -->
+        <div class="settlement-step" data-step="2" id="settlement-inputs-step" hidden>
+            <div class="settlement-step-head">
+                <span class="settlement-step-num">2</span>
+                <h3>Confirm settlement inputs</h3>
+            </div>
+            <p class="muted">
+                The agent will use these values when applying the policy terms.
+                Defaults are pre-filled from the claim record and product
+                defaults; edit any of them before engaging the agent.
+            </p>
+            <form id="settlement-inputs-form" class="settlement-form" autocomplete="off">
+                <div class="settlement-grid">
+                    <label>Approved amount<input type="number" name="approvedAmount" min="0" step="0.01" required /></label>
+                    <label>Policy limit<input type="number" name="policyLimit" min="0" step="0.01" required /></label>
+                    <label>Excess / deductible<input type="number" name="excess" min="0" step="0.01" /></label>
+                    <label>Depreciation<input type="number" name="depreciation" min="0" step="0.01" /></label>
+                    <label>Prior payments<input type="number" name="priorPayments" min="0" step="0.01" /></label>
+                </div>
+            </form>
+        </div>
+
+        <!-- Step 3 — engage agent -->
+        <div class="settlement-step" data-step="3" id="settlement-process-step" hidden>
+            <div class="settlement-step-head">
+                <span class="settlement-step-num">3</span>
+                <h3>Engage Settlement Agent</h3>
+            </div>
+            <p class="muted">
+                The agent loads the claim from memory, applies the inputs above,
+                and returns the itemised calculation, settlement letter draft,
+                and payment approval request.
+            </p>
+            <button id="settlement-process-btn" type="button">Process with Settlement Agent</button>
+            <div id="settlement-process-status" class="settlement-status" hidden></div>
+
+            <div id="settlement-result" class="settlement-result" hidden>
+                <div class="settlement-calc">
+                    <div class="settlement-calc-label">Settlement calculation</div>
+                    <table class="settlement-calc-table">
+                        <tbody id="settlement-calc-body"></tbody>
+                    </table>
+                    <div class="settlement-payable">
+                        <span class="k">Payable amount</span>
+                        <span id="settlement-payable-amount"></span>
+                    </div>
+                </div>
+
+                <div class="settlement-approval" id="settlement-approval">
+                    <div class="settlement-approval-head">
+                        <span class="settlement-step-num small">!</span>
+                        <span class="settlement-approval-title">Human approval</span>
+                        <span class="settlement-approval-pill" id="settlement-approval-pill"></span>
+                    </div>
+                    <p id="settlement-approval-reason"></p>
+                </div>
+
+                <div class="settlement-notes">
+                    <div class="settlement-notes-label">Settlement letter draft</div>
+                    <div id="settlement-letter" class="agent-md"></div>
+                </div>
+
+                <div class="settlement-notes" id="settlement-agent-notes" hidden>
+                    <div class="settlement-notes-label">Agent narrative</div>
+                    <div id="settlement-agent-notes-body" class="agent-md"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    </div>
 </div>
+
+<style>
+    .settlement-panel { --settlement-accent: #a855f7; }
+    .settlement-help { margin-bottom: 0.9rem; }
+    .settlement-help code { background: rgba(168, 85, 247, 0.14); padding: 1px 6px; border-radius: 4px; font-size: 0.85rem; }
+
+    .settlement-step {
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        background: rgba(15, 22, 38, 0.4);
+        border-radius: 12px;
+        padding: 0.95rem 1.1rem 1rem 1.1rem;
+        margin-top: 0.9rem;
+    }
+    .settlement-step-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; }
+    .settlement-step-head h3 { margin: 0; color: #fff; font-size: 1rem; }
+    .settlement-step-num {
+        display: inline-grid; place-items: center;
+        width: 1.55rem; height: 1.55rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--settlement-accent) 22%, rgba(20, 28, 46, 0.7));
+        border: 1px solid color-mix(in srgb, var(--settlement-accent) 55%, transparent);
+        color: var(--settlement-accent);
+        font-size: 0.78rem; font-weight: 700;
+    }
+    .settlement-step-num.small { width: 1.35rem; height: 1.35rem; font-size: 0.7rem; }
+    .settlement-step .muted { color: var(--zava-muted, #97a3b6); font-size: 0.9rem; margin: 0.35rem 0 0.7rem 0; }
+
+    .settlement-claim-picker { display: flex; gap: 0.5rem; align-items: center; }
+    .settlement-select {
+        flex: 1; min-width: 0;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.22);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 0.9rem;
+        padding: 0.55rem 0.7rem;
+    }
+    .settlement-select:focus {
+        outline: none;
+        border-color: var(--settlement-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--settlement-accent) 25%, transparent);
+    }
+    .settlement-refresh {
+        background: transparent;
+        color: rgba(238, 242, 247, 0.86);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 6px;
+        padding: 0.45rem 0.7rem;
+        font-size: 0.95rem;
+        cursor: pointer;
+    }
+    .settlement-refresh:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
+    .settlement-summary {
+        margin-top: 0.7rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+    .settlement-summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem 0.85rem;
+        font-size: 0.85rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    @@media (max-width: 820px) { .settlement-summary-grid { grid-template-columns: 1fr; } }
+    .settlement-summary-grid .span-2 { grid-column: span 2; }
+    @@media (max-width: 820px) { .settlement-summary-grid .span-2 { grid-column: span 1; } }
+    .settlement-summary-grid .k {
+        display: inline-block; min-width: 80px;
+        color: var(--zava-muted, #97a3b6); font-weight: 600;
+        text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.08em;
+        margin-right: 0.5rem;
+    }
+
+    .settlement-form .settlement-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.7rem 0.85rem;
+    }
+    @@media (max-width: 820px) { .settlement-form .settlement-grid { grid-template-columns: 1fr; } }
+    .settlement-form label {
+        display: block;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--zava-muted, #97a3b6);
+        font-weight: 700;
+    }
+    .settlement-form input {
+        display: block; width: 100%;
+        margin-top: 0.3rem;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.22);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 0.9rem;
+        padding: 0.55rem 0.7rem;
+        font-family: inherit;
+        text-transform: none;
+        letter-spacing: normal;
+    }
+    .settlement-form input:focus {
+        outline: none;
+        border-color: var(--settlement-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--settlement-accent) 25%, transparent);
+    }
+
+    #settlement-process-btn {
+        background: var(--settlement-accent);
+        color: #1a0633;
+        border: none;
+        border-radius: 8px;
+        padding: 0.55rem 1.1rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.35rem;
+    }
+    #settlement-process-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    #settlement-process-btn:hover:not(:disabled) { filter: brightness(1.08); }
+
+    .settlement-status {
+        margin-top: 0.6rem; font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.88);
+    }
+    .settlement-status.error { color: #fca5a5; }
+    .settlement-status .spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        animation: settlement-spin 0.7s linear infinite;
+    }
+    @@keyframes settlement-spin { to { transform: rotate(360deg); } }
+
+    .settlement-result { margin-top: 0.85rem; display: grid; gap: 0.85rem; }
+
+    .settlement-calc {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+    }
+    .settlement-calc-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.5rem;
+    }
+    .settlement-calc-table {
+        width: 100%; border-collapse: collapse;
+        font-size: 0.88rem;
+        color: rgba(238, 242, 247, 0.9);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .settlement-calc-table td { padding: 0.3rem 0.2rem; border-bottom: 1px dashed rgba(120, 150, 200, 0.18); }
+    .settlement-calc-table td.amount { text-align: right; }
+    .settlement-calc-table td.amount.neg { color: #fca5a5; }
+    .settlement-calc-table td.amount.pos { color: #86efac; }
+    .settlement-calc-table tr.total td { border-bottom: none; padding-top: 0.6rem; font-weight: 700; }
+
+    .settlement-payable {
+        margin-top: 0.6rem;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.55rem 0.85rem;
+        background: color-mix(in srgb, var(--settlement-accent) 14%, rgba(20, 28, 46, 0.7));
+        border: 1px solid color-mix(in srgb, var(--settlement-accent) 45%, transparent);
+        border-radius: 8px;
+    }
+    .settlement-payable .k {
+        color: rgba(238, 242, 247, 0.86);
+        font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+    }
+    .settlement-payable #settlement-payable-amount {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 1.1rem; font-weight: 700; color: #fff;
+    }
+
+    .settlement-approval {
+        background: color-mix(in srgb, var(--settlement-accent) 8%, rgba(15, 22, 38, 0.7));
+        border: 1px solid color-mix(in srgb, var(--settlement-accent) 30%, transparent);
+        border-radius: 10px;
+        padding: 0.7rem 0.9rem;
+    }
+    .settlement-approval-head { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.25rem; }
+    .settlement-approval-title { color: #fff; font-weight: 700; font-size: 0.92rem; }
+    .settlement-approval-pill {
+        margin-left: auto;
+        padding: 0.15rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .settlement-approval-pill.required { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .settlement-approval-pill.optional { background: rgba(34, 197, 94, 0.16); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .settlement-approval p { margin: 0; color: rgba(238, 242, 247, 0.88); font-size: 0.88rem; line-height: 1.45; }
+
+    .settlement-notes {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+    .settlement-notes-label {
+        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
+    }
+    .settlement-notes pre {
+        color: rgba(238, 242, 247, 0.86);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+</style>
+
+<script>
+    (function () {
+        function init() {
+        const root = document.querySelector('.settlement-panel');
+        if (!root || root.dataset.wired === '1') return;
+        root.dataset.wired = '1';
+
+        const $ = sel => root.querySelector(sel);
+        const select = $('#settlement-claim-select');
+        const refreshBtn = $('#settlement-refresh-btn');
+        const emptyEl = $('#settlement-claim-empty');
+        const summaryEl = $('#settlement-claim-summary');
+        const inputsStep = $('#settlement-inputs-step');
+        const inputsForm = $('#settlement-inputs-form');
+        const processStep = $('#settlement-process-step');
+        const processBtn = $('#settlement-process-btn');
+        const processStatus = $('#settlement-process-status');
+        const resultEl = $('#settlement-result');
+        const calcBody = $('#settlement-calc-body');
+        const payableEl = $('#settlement-payable-amount');
+        const approvalPill = $('#settlement-approval-pill');
+        const approvalReason = $('#settlement-approval-reason');
+        const letterEl = $('#settlement-letter');
+        const agentNotesEl = $('#settlement-agent-notes');
+        const agentNotesBody = $('#settlement-agent-notes-body');
+
+        let claims = [];
+        let selected = null;
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        function fmtMoney(n) {
+            const num = Number(n) || 0;
+            return num.toLocaleString('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 });
+        }
+
+        function parseMoney(value) {
+            if (value === null || value === undefined) return 0;
+            const cleaned = String(value).replace(/[^0-9.\-]/g, '');
+            const n = parseFloat(cleaned);
+            return Number.isFinite(n) ? n : 0;
+        }
+
+        function defaultPolicyLimit(claimType, approved) {
+            const t = (claimType || '').toLowerCase();
+            if (t.includes('home')) return 750000;
+            if (t.includes('motor') || t.includes('car')) return 60000;
+            if (t.includes('travel')) return 15000;
+            if (t.includes('business')) return 250000;
+            if (t.includes('life')) return 500000;
+            return Math.max(approved * 5, 50000);
+        }
+
+        function defaultExcess(claimType) {
+            const t = (claimType || '').toLowerCase();
+            if (t.includes('home')) return 500;
+            if (t.includes('motor') || t.includes('car')) return 800;
+            if (t.includes('travel')) return 250;
+            if (t.includes('business')) return 1000;
+            return 500;
+        }
+
+        async function loadClaims() {
+            try {
+                const res = await fetch('/settlement/claims');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                claims = await res.json();
+                const previous = select.value;
+                select.innerHTML = '<option value="">— Select a Claim ID —</option>' +
+                    claims.map(c => `<option value="${escapeHtml(c.claimNumber)}">${escapeHtml(c.claimNumber)} — ${escapeHtml(c.customerName)} (${escapeHtml(c.claimType)})</option>`).join('');
+                if (previous && claims.some(c => c.claimNumber === previous)) {
+                    select.value = previous;
+                }
+                emptyEl.hidden = claims.length > 0;
+            } catch (err) {
+                emptyEl.hidden = false;
+                emptyEl.textContent = 'Failed to load claims: ' + err.message;
+            }
+        }
+
+        async function selectClaim(claimNumber) {
+            resultEl.hidden = true;
+            processStatus.hidden = true;
+            if (!claimNumber) {
+                selected = null;
+                summaryEl.hidden = true;
+                inputsStep.hidden = true;
+                processStep.hidden = true;
+                return;
+            }
+            try {
+                const res = await fetch(`/settlement/claims/${encodeURIComponent(claimNumber)}`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                selected = await res.json();
+            } catch (err) {
+                selected = null;
+                summaryEl.hidden = true;
+                inputsStep.hidden = true;
+                processStep.hidden = true;
+                emptyEl.hidden = false;
+                emptyEl.textContent = 'Failed to load claim: ' + err.message;
+                return;
+            }
+
+            $('#settlement-claim-num').textContent = selected.claimNumber;
+            $('#settlement-claim-customer').textContent = selected.customerName;
+            $('#settlement-claim-policy').textContent = selected.policyNumber;
+            $('#settlement-claim-type').textContent = selected.claimType;
+            $('#settlement-claim-incident').textContent =
+                `${selected.incidentDate || '—'} · ${selected.incidentLocation || '—'} — ${selected.incidentDescription || ''}`;
+            summaryEl.hidden = false;
+
+            const approved = parseMoney(selected.estimatedLoss);
+            inputsForm.approvedAmount.value = approved.toFixed(2);
+            inputsForm.policyLimit.value = defaultPolicyLimit(selected.claimType, approved).toFixed(2);
+            inputsForm.excess.value = defaultExcess(selected.claimType).toFixed(2);
+            inputsForm.depreciation.value = '0';
+            inputsForm.priorPayments.value = '0';
+
+            inputsStep.hidden = false;
+            processStep.hidden = false;
+        }
+
+        async function processSettlement() {
+            if (!selected) return;
+            processBtn.disabled = true;
+            processStatus.hidden = false;
+            processStatus.className = 'settlement-status';
+            processStatus.innerHTML = '<span class="spinner"></span>Engaging Settlement Agent…';
+            resultEl.hidden = true;
+
+            const payload = {
+                claimNumber: selected.claimNumber,
+                approvedAmount: parseFloat(inputsForm.approvedAmount.value) || 0,
+                policyLimit: parseFloat(inputsForm.policyLimit.value) || 0,
+                excess: parseFloat(inputsForm.excess.value) || 0,
+                depreciation: parseFloat(inputsForm.depreciation.value) || 0,
+                priorPayments: parseFloat(inputsForm.priorPayments.value) || 0
+            };
+
+            try {
+                const res = await fetch('/settlement/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                processStatus.textContent = data.agentConfigured
+                    ? 'Settlement Agent processed the claim.'
+                    : 'Processed (Foundry agent not configured — using deterministic demo calculation).';
+
+                calcBody.innerHTML = (data.calculation || []).map((row, idx, arr) => {
+                    const isTotal = idx === arr.length - 1;
+                    const cls = isTotal ? 'pos' : (row.amount < 0 ? 'neg' : (row.amount > 0 ? 'pos' : ''));
+                    const sign = row.amount < 0 ? '−' : (row.amount > 0 && !isTotal && idx > 0 ? '+' : '');
+                    const display = sign + fmtMoney(Math.abs(row.amount));
+                    return `<tr${isTotal ? ' class="total"' : ''}>
+                        <td>${escapeHtml(row.label)}</td>
+                        <td class="amount ${cls}">${escapeHtml(display)}</td>
+                    </tr>`;
+                }).join('');
+
+                payableEl.textContent = data.payableAmountFormatted || fmtMoney(data.payableAmount);
+
+                approvalPill.textContent = data.humanApprovalRequired ? 'Required' : 'Optional';
+                approvalPill.className = 'settlement-approval-pill ' + (data.humanApprovalRequired ? 'required' : 'optional');
+                approvalReason.textContent = data.humanApprovalReason || '';
+
+                window.zcRenderMarkdown(letterEl, data.settlementLetter || '');
+
+                if (data.agentNotes) {
+                    agentNotesEl.hidden = false;
+                    window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
+                } else {
+                    agentNotesEl.hidden = true;
+                }
+
+                resultEl.hidden = false;
+                resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (err) {
+                processStatus.className = 'settlement-status error';
+                processStatus.textContent = 'Failed to process: ' + err.message;
+            } finally {
+                processBtn.disabled = false;
+            }
+        }
+
+        select.addEventListener('change', () => selectClaim(select.value));
+        refreshBtn.addEventListener('click', loadClaims);
+        processBtn.addEventListener('click', processSettlement);
+
+        loadClaims();
+        }
+
+        init();
+
+        if (!window.__settlementDemoEnhancedHook) {
+            window.__settlementDemoEnhancedHook = true;
+            const hook = () => init();
+            if (typeof Blazor !== 'undefined' && typeof Blazor.addEventListener === 'function') {
+                Blazor.addEventListener('enhancedload', hook);
+            } else {
+                document.addEventListener('enhancedload', hook);
+            }
+        }
+    })();
+</script>

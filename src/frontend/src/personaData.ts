@@ -43,7 +43,9 @@ export interface StaffPersona {
   active_in_pipeline: boolean;
 }
 
-export type ScenarioId = "home" | "motor" | "business" | "travel" | "life";
+// Order matches docs/scenario-N-*.md and scenarioNumbers.ts:
+//   1 motor, 2 travel, 3 home, 4 business, 5 life.
+export type ScenarioId = "motor" | "travel" | "home" | "business" | "life";
 
 export interface CustomerPersona {
   id: ScenarioId;
@@ -262,28 +264,8 @@ export const STAFF_PERSONAS: StaffPersona[] = [
 /* ------------------------------------------------------------------------ */
 
 export const CUSTOMER_PERSONAS: CustomerPersona[] = [
-  {
-    id: "home",
-    name: "Michael",
-    situation: "Burst pipe damaged the kitchen.",
-    situation_long:
-      "His kitchen was damaged after a burst pipe. The family cannot properly use the kitchen, and he is unsure whether water damage is covered.",
-    need: [
-      "Wants repairs approved quickly",
-      "Needs clear instructions on what evidence to provide",
-      "Wants to know whether temporary accommodation or urgent repairs are covered",
-    ],
-    concern:
-      "His family cannot properly use the kitchen, and he is unsure whether water damage is covered.",
-    personality: "Stressed, practical, and eager for a fast answer.",
-    typical_line:
-      "I just need to know if this is covered and how soon repairs can start.",
-    palette: "customerHome",
-    claim_type: "Home — burst pipe damage",
-    amount_min: 1500,
-    amount_max: 18000,
-    color: "#3a8fd6",
-  },
+  // Order matches docs/scenario-N-*.md and scenarioNumbers.ts:
+  //   1. motor   2. travel   3. home   4. business   5. life
   {
     id: "motor",
     name: "Aisha",
@@ -307,28 +289,6 @@ export const CUSTOMER_PERSONAS: CustomerPersona[] = [
     color: "#d36b5b",
   },
   {
-    id: "business",
-    name: "Tom",
-    situation: "Café smoke-damaged after an electrical fire.",
-    situation_long:
-      "His café suffered smoke damage after an electrical fire. Every day the café is closed means lost revenue and staff uncertainty.",
-    need: [
-      "Wants property damage assessed",
-      "Needs business interruption support",
-      "Wants clarity on lost income coverage",
-    ],
-    concern:
-      "Every day the café is closed means lost revenue and staff uncertainty.",
-    personality: "Anxious, business-minded, and focused on reopening quickly.",
-    typical_line:
-      "The repairs are one thing, but I’m also losing revenue while we’re closed.",
-    palette: "customerBusiness",
-    claim_type: "Business — café smoke damage",
-    amount_min: 4000,
-    amount_max: 35000,
-    color: "#e07a3a",
-  },
-  {
     id: "travel",
     name: "Grace",
     situation: "Luggage lost during an overseas trip.",
@@ -349,6 +309,50 @@ export const CUSTOMER_PERSONAS: CustomerPersona[] = [
     amount_min: 200,
     amount_max: 4000,
     color: "#c188d4",
+  },
+  {
+    id: "home",
+    name: "Michael",
+    situation: "Burst pipe damaged the kitchen.",
+    situation_long:
+      "His kitchen was damaged after a burst pipe. The family cannot properly use the kitchen, and he is unsure whether water damage is covered.",
+    need: [
+      "Wants repairs approved quickly",
+      "Needs clear instructions on what evidence to provide",
+      "Wants to know whether temporary accommodation or urgent repairs are covered",
+    ],
+    concern:
+      "His family cannot properly use the kitchen, and he is unsure whether water damage is covered.",
+    personality: "Stressed, practical, and eager for a fast answer.",
+    typical_line:
+      "I just need to know if this is covered and how soon repairs can start.",
+    palette: "customerHome",
+    claim_type: "Home — burst pipe damage",
+    amount_min: 1500,
+    amount_max: 18000,
+    color: "#3a8fd6",
+  },
+  {
+    id: "business",
+    name: "Tom",
+    situation: "Café smoke-damaged after an electrical fire.",
+    situation_long:
+      "His café suffered smoke damage after an electrical fire. Every day the café is closed means lost revenue and staff uncertainty.",
+    need: [
+      "Wants property damage assessed",
+      "Needs business interruption support",
+      "Wants clarity on lost income coverage",
+    ],
+    concern:
+      "Every day the café is closed means lost revenue and staff uncertainty.",
+    personality: "Anxious, business-minded, and focused on reopening quickly.",
+    typical_line:
+      "The repairs are one thing, but I’m also losing revenue while we’re closed.",
+    palette: "customerBusiness",
+    claim_type: "Business — café smoke damage",
+    amount_min: 4000,
+    amount_max: 35000,
+    color: "#e07a3a",
   },
   {
     id: "life",

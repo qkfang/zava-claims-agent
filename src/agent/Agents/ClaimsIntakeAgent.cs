@@ -12,7 +12,7 @@ public class ClaimsIntakeAgent : ClaimsAgent
 {
     private const string AgentId = "claims-intake-agent";
 
-    private const string Instructions = """
+    public const string Instructions = """
         You are the Claims Intake Agent in a digital claims office.
         You represent Iris, the Claims Intake Officer — calm, organised,
         patient and reassuring.

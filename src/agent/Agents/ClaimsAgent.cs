@@ -27,6 +27,13 @@ public class ClaimsAgent : BaseAgent
     /// <summary>ANSI console colour used when streaming the agent's output.</summary>
     public string ConsoleColor { get; }
 
+    /// <summary>
+    /// Human-readable list of Foundry tools wired up for this agent based on
+    /// the connections that were configured. Surfaced in the "Agent Prompt
+    /// &amp; Tools" sub-tab on each agent page.
+    /// </summary>
+    public IReadOnlyList<string> ConfiguredTools { get; }
+
     public ClaimsAgent(
         AIProjectClient aiProjectClient,
         string agentId,
@@ -59,5 +66,12 @@ public class ClaimsAgent : BaseAgent
         Role = role;
         Department = department;
         ConsoleColor = consoleColor;
+
+        var tools = new List<string>();
+        if (!string.IsNullOrWhiteSpace(searchConnectionId) && !string.IsNullOrWhiteSpace(searchIndexName))
+            tools.Add($"Azure AI Search — index '{searchIndexName}'");
+        if (!string.IsNullOrWhiteSpace(bingConnectionId))
+            tools.Add("Bing Grounding (web)");
+        ConfiguredTools = tools;
     }
 }

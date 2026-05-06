@@ -21,6 +21,7 @@
     <PackageReference Include="Azure.AI.Projects" Version="2.0.0" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
+    <PackageReference Include="Markdig" Version="0.38.0" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.2.0" />
   </ItemGroup>
 

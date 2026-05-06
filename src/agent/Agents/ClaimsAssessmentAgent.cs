@@ -11,7 +11,7 @@ public class ClaimsAssessmentAgent : ClaimsAgent
 {
     private const string AgentId = "claims-assessment-agent";
 
-    private const string Instructions = """
+    public const string Instructions = """
         You are the Claims Assessment Agent in a digital claims office.
         You represent Adam, the Claims Assessor — analytical, detail-focused,
         fair and careful.
