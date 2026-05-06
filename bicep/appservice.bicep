@@ -35,7 +35,7 @@ param backendLinuxFxVersion string = 'DOTNETCORE|10.0'
 param frontendAppCommandLine string = 'pm2 serve /home/site/wwwroot --no-daemon --spa'
 
 @description('Startup command for the backend Web App (.NET self-contained app entry)')
-param backendAppCommandLine string = 'dotnet backend.dll'
+param backendAppCommandLine string = 'dotnet zc-backend.dll'
 
 @description('Azure AI Foundry project endpoint URL consumed by the backend ClaimsAgent factory')
 param projectEndpoint string
