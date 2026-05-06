@@ -1,3 +1,4 @@
+using ZavaClaims.Agents;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -58,7 +59,11 @@ public static class TeamLeaderApi
         // agent receives the claim's structured intake fields and returns
         // its workload / escalation / approval / coaching narrative so the
         // human team leader can prioritise the floor.
-        app.MapPost("/team-leader/process", async (TeamLeaderProcessRequest request) =>
+        //
+        // Clients can request a live SSE stream of the agent reply by sending
+        // `Accept: text/event-stream`; otherwise the response is a single JSON
+        // envelope as before.
+        app.MapPost("/team-leader/process", async (HttpContext httpContext, TeamLeaderProcessRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.ClaimNumber))
                 return Results.BadRequest(new { error = "claimNumber is required" });
@@ -70,70 +75,74 @@ public static class TeamLeaderApi
             logger.LogInformation("Team Leader process: claimNumber={ClaimNumber}",
                 Sanitize(claim.ClaimNumber));
 
-            string? agentNotes = null;
-            string? agentError = null;
-            string? agentInput = null;
-            object? agentRawOutput = null;
-            if (agentFactory.IsConfigured)
-            {
-                try
-                {
-                    var brief =
-                        "CLAIM CASE FOR TEAM-LEADER REVIEW\n" +
-                        "=================================\n" +
-                        $"Claim number    : {claim.ClaimNumber}\n" +
-                        $"Customer        : {claim.CustomerName}\n" +
-                        $"Customer email  : {claim.CustomerEmail}\n" +
-                        $"Customer phone  : {claim.CustomerPhone}\n" +
-                        $"Policy number   : {claim.PolicyNumber}\n" +
-                        $"Claim type      : {claim.ClaimType}\n" +
-                        $"Incident date   : {claim.IncidentDate}\n" +
-                        $"Incident location: {claim.IncidentLocation}\n" +
-                        $"Estimated loss  : {claim.EstimatedLoss}\n" +
-                        $"Urgency         : {claim.Urgency} ({claim.UrgencyReason})\n" +
-                        $"Lodged at       : {claim.CreatedAt:u}\n\n" +
-                        "INCIDENT DESCRIPTION\n" +
-                        "--------------------\n" +
-                        claim.IncidentDescription + "\n\n" +
-                        "TASK\n" +
-                        "----\n" +
-                        "Review this claim from a team-leader perspective. Produce your\n" +
-                        "structured Team Leader output: Workload Summary, Escalations,\n" +
-                        "Approval Queue, Quality / Coaching Insights, and Recommended\n" +
-                        "Priorities for Today. Flag SLA risk, vulnerable-customer concerns,\n" +
-                        "and any items that need human approval. Recommend, do not decide.";
+            var brief =
+                "CLAIM CASE FOR TEAM-LEADER REVIEW\n" +
+                "=================================\n" +
+                $"Claim number    : {claim.ClaimNumber}\n" +
+                $"Customer        : {claim.CustomerName}\n" +
+                $"Customer email  : {claim.CustomerEmail}\n" +
+                $"Customer phone  : {claim.CustomerPhone}\n" +
+                $"Policy number   : {claim.PolicyNumber}\n" +
+                $"Claim type      : {claim.ClaimType}\n" +
+                $"Incident date   : {claim.IncidentDate}\n" +
+                $"Incident location: {claim.IncidentLocation}\n" +
+                $"Estimated loss  : {claim.EstimatedLoss}\n" +
+                $"Urgency         : {claim.Urgency} ({claim.UrgencyReason})\n" +
+                $"Lodged at       : {claim.CreatedAt:u}\n\n" +
+                "INCIDENT DESCRIPTION\n" +
+                "--------------------\n" +
+                claim.IncidentDescription + "\n\n" +
+                "TASK\n" +
+                "----\n" +
+                "Review this claim from a team-leader perspective. Produce your\n" +
+                "structured Team Leader output: Workload Summary, Escalations,\n" +
+                "Approval Queue, Quality / Coaching Insights, and Recommended\n" +
+                "Priorities for Today. Flag SLA risk, vulnerable-customer concerns,\n" +
+                "and any items that need human approval. Recommend, do not decide.";
 
-                    var agent = agentFactory.Create("team-leader");
-                    var result = await agent.RunWithTraceAsync(brief);
-                    agentNotes = result.Text;
-                    agentInput = result.Input;
-                    agentRawOutput = new
-                    {
-                        text = result.Text,
-                        citations = result.Citations,
-                        outputItems = result.OutputItems,
-                        responseId = result.ResponseId,
-                        durationMs = result.DurationMs
-                    };
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Team Leader Agent invocation failed");
-                    agentError = ex.Message;
-                }
-            }
-
-            return Results.Ok(new
+            object BuildEnvelope(AgentTraceResult? trace, string? agentError) => new
             {
                 claimNumber = claim.ClaimNumber,
                 customerName = claim.CustomerName,
                 claimType = claim.ClaimType,
-                agentNotes,
+                agentNotes = trace?.Text,
                 agentError,
                 agentConfigured = agentFactory.IsConfigured,
-                agentInput,
-                agentRawOutput
-            });
+                agentInput = trace?.Input,
+                agentRawOutput = trace is null ? null : new
+                {
+                    text = trace.Text,
+                    citations = trace.Citations,
+                    outputItems = trace.OutputItems,
+                    responseId = trace.ResponseId,
+                    durationMs = trace.DurationMs
+                }
+            };
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured ? agentFactory.Create("team-leader") : null;
+                await AgentSseStreaming.StreamAsync(httpContext, streamingAgent, brief, BuildEnvelope, logger, "Team Leader Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? traceResult = null;
+            string? agentInvocationError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("team-leader");
+                    traceResult = await agent.RunWithTraceAsync(brief);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Team Leader Agent invocation failed");
+                    agentInvocationError = ex.Message;
+                }
+            }
+
+            return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
         });
     }
 

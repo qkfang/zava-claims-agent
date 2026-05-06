@@ -593,15 +593,23 @@
             reportEl.hidden = true;
 
             try {
-                const res = await fetch('/team-leader/process', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ claimNumber: selectedClaim.claimNumber })
+                const data = await window.zcAgentStream({
+                    url: '/team-leader/process',
+                    body: { claimNumber: selectedClaim.claimNumber },
+                    onDelta: (_chunk, fullText) => {
+                        reportEl.hidden = false;
+                        notesBody.classList.add('agent-md-streaming');
+                        notesBody.textContent = fullText;
+                    },
+                    onError: (msg) => {
+                        processStatus.className = 'leader-status error';
+                        processStatus.textContent = 'Agent error: ' + msg;
+                    }
                 });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                if (!data) throw new Error('No response from agent');
 
                 if (data.agentNotes) {
+                    notesBody.classList.remove('agent-md-streaming');
                     window.zcRenderMarkdown(notesBody, data.agentNotes);
                     reportEl.hidden = false;
                     processStatus.textContent = 'Team Leader Agent produced a report.';
