@@ -165,9 +165,40 @@ app.Use(async (context, next) =>
 // /mcp endpoint when noticeEnabled.
 app.MapMcp("/mcp");
 
+// In Development, force browsers to never cache static assets, Razor pages,
+// or any other response from http://localhost:5212/. This prevents stale JS
+// / HTML / CSS from being served while iterating on the demo locally.
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.OnStarting(() =>
+        {
+            var headers = context.Response.Headers;
+            headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+            headers["Pragma"] = "no-cache";
+            headers["Expires"] = "0";
+            return Task.CompletedTask;
+        });
+        await next();
+    });
+}
+
 // Serve dynamically-generated loss-adjuster output files (Excel workbooks
 // produced by the generateClaimExcel MCP tool) from wwwroot/loss-adjuster/output/.
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        if (ctx.Context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
+        {
+            var headers = ctx.Context.Response.Headers;
+            headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+            headers["Pragma"] = "no-cache";
+            headers["Expires"] = "0";
+        }
+    }
+});
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
+using PdfSharp.Fonts;
 namespace ZavaClaims.App.Services;
 
 /// <summary>
@@ -53,6 +54,25 @@ public class QuoteRequestPdfService
     private static readonly Color PanelBorder = Color.FromRgb(0xcb, 0xd5, 0xe1);
 
     private readonly ConcurrentDictionary<string, QuoteRequestPdfRecord> _store = new();
+
+    // PDFsharp 6.x doesn't ship a default font resolver — without one, any
+    // attempt to render a font (even just the predefined "error font") throws
+    // "The font 'Courier New' cannot be resolved …". Enabling the built-in
+    // Windows-fonts resolver lets MigraDoc load Arial/Courier/etc. from
+    // C:\Windows\Fonts on Windows hosts. Done once per process.
+    static QuoteRequestPdfService()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            GlobalFontSettings.UseWindowsFontsUnderWindows = true;
+        }
+        else
+        {
+            // On Linux/macOS containers, fall back to a permissive resolver
+            // that uses any installed font matching the requested family.
+            GlobalFontSettings.UseWindowsFontsUnderWsl2 = true;
+        }
+    }
 
     /// <summary>
     /// Generate a quote-request PDF and store it in memory. Returns the
