@@ -1,0 +1,101 @@
+@page "/scenarios/{ScenarioId}"
+
+@code {
+    [Parameter] public string? ScenarioId { get; set; }
+
+    private ScenarioDefinition? Def =>
+        string.IsNullOrEmpty(ScenarioId) ? null : ScenarioCatalog.FindById(ScenarioId);
+}
+
+@if (Def is null)
+{
+    <PageTitle>Scenario not found — Claims Team in a Day</PageTitle>
+    <div class="agent-header" style="--accent: #94a3b8">
+        <a class="back-link" href="/"><span aria-hidden="true">←</span> Back to claims office</a>
+        <div class="agent-header-row">
+            <div class="agent-header-icon">❓</div>
+            <div>
+                <div class="agent-header-dept">Scenario</div>
+                <h1>Scenario not found</h1>
+                <p class="tagline">We couldn't find a scenario with that id.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <PageTitle>@Def.ShortTitle — Claims Team in a Day</PageTitle>
+
+    <div class="agent-header" style="--accent: @Def.Accent">
+        <a class="back-link" href="/"><span aria-hidden="true">←</span> Back to claims office</a>
+        <div class="agent-header-row">
+            <div class="agent-header-icon">@Def.Icon</div>
+            <div>
+                <div class="agent-header-dept">Scenario @Def.Number</div>
+                <h1>@Def.Title</h1>
+                <div class="agent-header-persona">@Def.Persona</div>
+                <p class="tagline">@Def.Tagline</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="agent-tab-panel standalone">
+        <section class="panel" style="--accent: @Def.Accent">
+            <h2>About this scenario</h2>
+            <p>@Def.Flavor</p>
+            <div class="two-col">
+                <div>
+                    <h3>Incident</h3>
+                    <p>@Def.Incident</p>
+                </div>
+                <div>
+                    <h3>AI agents featured</h3>
+                    <ul>
+                        @foreach (var agent in Def.AgentsFeatured)
+                        {
+                            <li>@agent</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" style="--accent: @Def.Accent">
+            <h2>Claim journey — what each agent does</h2>
+            <p class="muted">
+                The claim moves through these stages. Each step lists exactly what the responsible
+                AI agent carries out at that point in the journey.
+            </p>
+            <ol class="scenario-steps">
+                @foreach (var step in Def.Steps)
+                {
+                    <li class="scenario-step" style="--accent: @Def.Accent">
+                        <div class="scenario-step-head">
+                            <span class="scenario-step-num">@step.Number</span>
+                            <div class="scenario-step-title">
+                                <h3>@step.Title</h3>
+                                <div class="scenario-step-agent">
+                                    <span class="scenario-step-agent-icon" aria-hidden="true">@step.AgentIcon</span>
+                                    <span>@step.AgentName</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="scenario-step-summary">@step.Summary</p>
+                        <div class="scenario-step-actions-label">Agent actions</div>
+                        <ul class="scenario-step-actions">
+                            @foreach (var action in step.Actions)
+                            {
+                                <li>@action</li>
+                            }
+                        </ul>
+                    </li>
+                }
+            </ol>
+        </section>
+
+        <section class="panel" style="--accent: @Def.Accent">
+            <h2>Demo highlight</h2>
+            <p>@Def.DemoHighlight</p>
+        </section>
+    </div>
+}
