@@ -1026,7 +1026,7 @@ function buildTeamLeaderOffice(
   partFrame.position = new Vector3(origin.x, 1.4, origin.z - 2.4);
   partFrame.material = mat("tlPartFrame", "#2a3a5c");
 
-  // Sign above
+  // Sign above the front glass partition (faces outward toward the corridor)
   const sign = MeshBuilder.CreateBox(
     "tlSign",
     { width: 3.0, height: 0.5, depth: 0.05 },
@@ -1042,6 +1042,43 @@ function buildTeamLeaderOffice(
     ctx.textBaseline = "middle";
     ctx.fillText("TEAM LEADER", 256, 50);
   });
+
+  // Overhead "TEAM LEADER" sign matching the other department zones so the
+  // executive office is clearly labelled from the bird's-eye orbit camera.
+  // Mounted at the back of the office, enlarged and tilted 30° upward so the
+  // face angles toward the camera, with a slim gold accent strip underneath.
+  const accentMat = mat("tlSignAccent", "#c9a14a");
+  const overheadSign = MeshBuilder.CreateBox(
+    "tlSignOverhead",
+    { width: 7.2, height: 1.6, depth: 0.08 },
+    scene,
+  );
+  overheadSign.rotation.x = Math.PI / 6; // 30 degrees
+  overheadSign.position = new Vector3(origin.x, 2.55, origin.z + 2.4);
+  drawSignTexture(scene, overheadSign, 1440, 320, (ctx) => {
+    ctx.fillStyle = "#2a3a5c";
+    ctx.fillRect(0, 0, 1440, 320);
+    ctx.fillStyle = "#ffffff";
+    const safeWidth = 1280;
+    let fontPx = 150;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.font = `bold ${fontPx}px sans-serif`;
+    const label = "TEAM LEADER";
+    while (ctx.measureText(label).width > safeWidth && fontPx > 80) {
+      fontPx -= 6;
+      ctx.font = `bold ${fontPx}px sans-serif`;
+    }
+    ctx.fillText(label, 720, 170);
+  });
+
+  const overheadUnderline = MeshBuilder.CreateBox(
+    "tlSignOverheadAccent",
+    { width: 7.2, height: 0.08, depth: 0.1 },
+    scene,
+  );
+  overheadUnderline.position = new Vector3(origin.x, 1.88, origin.z + 2.55);
+  overheadUnderline.material = accentMat;
 
   // Executive desk
   const desk = MeshBuilder.CreateBox(
