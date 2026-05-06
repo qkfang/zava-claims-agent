@@ -4,7 +4,7 @@ namespace ZavaClaims.App.Models;
 /// One sample inbound claim email and attached Word claims-form for the
 /// Claims Intake demo (the "Try It Out" tab on
 /// <c>/agents/claims-intake</c>, rendered by
-/// <see cref="ZavaClaims.App.Components.Pages.ClaimsIntakeDemo"/>).
+/// <see cref="ZavaClaims.App.Components.Pages.Agents.ClaimsIntakeDemo"/>).
 ///
 /// Each sample mirrors a customer persona from <c>docs/characters.md</c> so
 /// the demo follows the same cast as the rest of the Zava office:
