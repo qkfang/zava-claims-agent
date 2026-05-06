@@ -39,6 +39,17 @@ builder.Services.AddSingleton<ClaimsAgentFactory>();
 // by claim number.
 builder.Services.AddSingleton<IntakeClaimStore>();
 
+// Fraud Investigation document-authenticity demo: loads the static sample
+// manifest from wwwroot/fraud/samples/manifest.json and tracks per-claim
+// case-document attachments. Always registered — falls back to manifest
+// expectations when Content Understanding isn't configured.
+builder.Services.AddSingleton<FraudCaseDocumentStore>();
+builder.Services.AddSingleton<FraudDocumentVerifier>(sp => new FraudDocumentVerifier(
+    sp.GetRequiredService<FraudCaseDocumentStore>(),
+    sp.GetRequiredService<IConfiguration>(),
+    sp.GetRequiredService<ILogger<FraudDocumentVerifier>>(),
+    sp.GetService<ContentUnderstandingService>()));
+
 // ── Notice intelligence integration (ported from demo-foundry-document-intelligence/agentdi)
 // Only enabled when the required Azure resources are configured. When enabled,
 // it exposes the four agentdi agents (Extract DI/CU, Notification, Correspondence)
@@ -211,7 +222,9 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     var fraudLogger = app.Services.GetRequiredService<ILogger<Program>>();
     var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
     var fraudFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
-    app.MapFraudEndpoints(intakeStore, fraudFactory, fraudLogger);
+    var fraudDocStore = app.Services.GetRequiredService<FraudCaseDocumentStore>();
+    var fraudVerifier = app.Services.GetRequiredService<FraudDocumentVerifier>();
+    app.MapFraudEndpoints(intakeStore, fraudFactory, fraudDocStore, fraudVerifier, fraudLogger);
 }
 
 // ── Customer Communications demo endpoints (Try It Out tab on
