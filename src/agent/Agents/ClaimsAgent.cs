@@ -48,6 +48,8 @@ public class ClaimsAgent : BaseAgent
         string? searchIndexName = null,
         string? bingConnectionId = null,
         ILogger? logger = null,
+        string? mcpServerUri = null,
+        string? mcpServerLabel = null,
         IList<ResponseTool>? extraTools = null)
         : base(aiProjectClient, agentId, deploymentName, instructions, null,
             agentDef =>
@@ -61,6 +63,15 @@ public class ClaimsAgent : BaseAgent
                     agentDef.Tools.Add(new BingGroundingTool(new BingGroundingSearchToolOptions([
                         new BingGroundingSearchConfiguration(bingConnectionId)
                     ])));
+
+                if (!string.IsNullOrWhiteSpace(mcpServerUri))
+                {
+                    var mcpTool = ResponseTool.CreateMcpTool(
+                        serverLabel: mcpServerLabel ?? "zava-claims-mcp",
+                        serverUri: new Uri(mcpServerUri),
+                        toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.NeverRequireApproval));
+                    agentDef.Tools.Add(mcpTool);
+                }
 
                 if (extraTools != null)
                 {
@@ -82,6 +93,8 @@ public class ClaimsAgent : BaseAgent
             tools.Add($"Azure AI Search — index '{searchIndexName}'");
         if (!string.IsNullOrWhiteSpace(bingConnectionId))
             tools.Add("Bing Grounding (web)");
+        if (!string.IsNullOrWhiteSpace(mcpServerUri))
+            tools.Add($"MCP server '{mcpServerLabel ?? "zava-claims-mcp"}' at {mcpServerUri}");
         if (extraTools != null && extraTools.Count > 0)
             tools.Add($"MCP tool surface ({extraTools.Count} tool{(extraTools.Count == 1 ? "" : "s")})");
         ConfiguredTools = tools;

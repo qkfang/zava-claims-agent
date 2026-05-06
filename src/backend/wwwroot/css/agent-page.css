@@ -270,6 +270,97 @@
 }
 .demo p:last-child { margin-bottom: 0; }
 
+/* "Scenario" — scripted claim journey with one step per AI agent. */
+.scenario-steps {
+    list-style: none;
+    counter-reset: scenario-step;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+.scenario-step {
+    position: relative;
+    border: 1px solid rgba(120, 150, 200, 0.22);
+    border-radius: 12px;
+    padding: 0.95rem 1.1rem 1rem 1.1rem;
+    background: rgba(15, 22, 38, 0.55);
+    overflow: hidden;
+}
+.scenario-step::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent, #ffb347);
+}
+.scenario-step-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    margin-bottom: 0.45rem;
+}
+.scenario-step-num {
+    flex: 0 0 auto;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--accent, #ffb347);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-top: 0.1rem;
+}
+.scenario-step-title { display: flex; flex-direction: column; min-width: 0; }
+.scenario-step-title h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+.scenario-step-agent {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
+    color: rgba(238, 242, 247, 0.78);
+    font-size: 0.85rem;
+}
+.scenario-step-agent-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+.scenario-step-summary {
+    margin: 0 0 0.55rem 0;
+    color: rgba(238, 242, 247, 0.88);
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+.scenario-step-actions-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 600;
+    margin: 0.4rem 0 0.3rem 0;
+}
+.scenario-step-actions {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: rgba(238, 242, 247, 0.86);
+}
+.scenario-step-actions li {
+    margin-bottom: 0.3rem;
+    line-height: 1.5;
+    font-size: 0.92rem;
+}
+.scenario-step-actions li::marker { color: var(--accent, #ffb347); }
+
 .other-agents {
     display: flex;
     flex-wrap: wrap;

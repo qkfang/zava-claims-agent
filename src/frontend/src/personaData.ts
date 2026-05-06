@@ -41,6 +41,12 @@ export interface StaffPersona {
   ambient: string[];
   /** True for staff that participate in the active claim pipeline. */
   active_in_pipeline: boolean;
+  /**
+   * Id of the matching agent walkthrough page in the companion `src/backend`
+   * Blazor site. Mirrors an Id in `src/backend/Models/AgentCatalog.cs` and is
+   * used to deep-link the profile card to `/agents/{app_agent_id}`.
+   */
+  app_agent_id: string;
 }
 
 // Order matches docs/scenario-N-*.md and scenarioNumbers.ts:
@@ -92,6 +98,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "I’ll lodge this now and send you a checklist of what we need to assess it.",
     ambient: ["Awaiting next claim"],
     active_in_pipeline: true,
+    app_agent_id: "claims-intake",
   },
   {
     id: "assessor-1",
@@ -113,6 +120,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Based on the policy, the damage appears covered, but we still need the repair report.",
     ambient: ["Awaiting next claim"],
     active_in_pipeline: true,
+    app_agent_id: "claims-assessment",
   },
   {
     id: "loss-1",
@@ -139,6 +147,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Calling contractor",
     ],
     active_in_pipeline: false,
+    app_agent_id: "loss-adjuster",
   },
   {
     id: "fraud-1",
@@ -165,6 +174,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Reviewing documents",
     ],
     active_in_pipeline: false,
+    app_agent_id: "fraud-investigation",
   },
   {
     id: "supplier-1",
@@ -191,6 +201,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Updating supplier status",
     ],
     active_in_pipeline: false,
+    app_agent_id: "supplier-coordinator",
   },
   {
     id: "settlement-1",
@@ -210,6 +221,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Once we deduct the excess, your settlement comes to $4,820 — paid into your nominated account.",
     ambient: ["Awaiting next claim"],
     active_in_pipeline: true,
+    app_agent_id: "settlement",
   },
   {
     id: "comms-1",
@@ -231,6 +243,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "I’ll send you an update today and walk you through what happens next.",
     ambient: ["Awaiting next claim"],
     active_in_pipeline: true,
+    app_agent_id: "customer-communications",
   },
   {
     id: "lead-1",
@@ -256,6 +269,7 @@ export const STAFF_PERSONAS: StaffPersona[] = [
       "Approving high-value claim",
     ],
     active_in_pipeline: false,
+    app_agent_id: "team-leader",
   },
 ];
 

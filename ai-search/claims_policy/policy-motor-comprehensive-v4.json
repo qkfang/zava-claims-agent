@@ -1,0 +1,13 @@
+{
+  "id": "policy-motor-comprehensive-v4",
+  "policyName": "Zava Motor Comprehensive (PDS v4.1)",
+  "productLine": "motor",
+  "version": "4.1",
+  "summary": "Comprehensive motor cover for private passenger vehicles. Repairs at any licensed repairer with optional 'choice-of-repairer' add-on; otherwise Zava preferred-repairer network. Hire-car after a not-at-fault accident included; broader hire-car add-on extends to at-fault events for up to 21 days.",
+  "coverage": "Insured events: collision & impact; theft and attempted theft; malicious damage; fire; storm, hail & flood; windscreen and window glass; legal liability for damage to other people's property up to $20m. Choice between agreed-value and market-value sum insured. New-for-old replacement on vehicles under 3 years and under 40,000km when written off. No-claim-bonus protection add-on preserves the customer's NCB after one at-fault claim per period.",
+  "exclusions": "Driving under the influence of alcohol or drugs; driving without a valid licence; use as a rideshare or commercial vehicle unless declared; intentional or reckless damage; mechanical or electrical breakdown unrelated to an insured event; tyre damage from wear and tear; loss while unattended with keys in the ignition.",
+  "evidenceRequired": ["Driver's licence number and validity", "Police report number for theft, malicious damage or any third-party injury", "Photos of all damage", "Repairer quote (or two quotes if customer-selected non-panel repairer)", "Dash-cam footage where available", "Third-party details (rego, name, contact, insurer)"],
+  "owner": "Motor Product Team",
+  "tags": ["motor", "comprehensive", "hire-car", "preferred-repairer", "PDS"],
+  "lastUpdated": "2026-02-01T00:00:00Z"
+}

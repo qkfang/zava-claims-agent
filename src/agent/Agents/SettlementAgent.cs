@@ -88,7 +88,7 @@ public class SettlementAgent : ClaimsAgent
         string? bingConnectionId = null,
         ILogger? logger = null,
         IList<ResponseTool>? extraTools = null)
-        : base(aiProjectClient, AgentId, "Seth", "Settlement Officer", "Settlement", "\u001b[35m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger, extraTools)
+        : base(aiProjectClient, AgentId, "Seth", "Settlement Officer", "Settlement", "\u001b[35m", deploymentName, Instructions, searchConnectionId, searchIndexName, bingConnectionId, logger, mcpServerUri: null, mcpServerLabel: null, extraTools: extraTools)
     {
     }
 }

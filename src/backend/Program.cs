@@ -30,23 +30,47 @@ var agentOptions = new ClaimsAgentOptions
     SearchConnectionId = builder.Configuration["AZURE_AI_SEARCH_CONNECTION_ID"],
     SearchIndexName = builder.Configuration["AZURE_AI_SEARCH_INDEX_NAME"],
     BingConnectionId = builder.Configuration["AZURE_BING_CONNECTION_ID"],
+    AppMcpUrl = builder.Configuration["APP_MCP_URL"] ?? "http://localhost:5000",
 };
 builder.Services.AddSingleton(agentOptions);
 builder.Services.AddSingleton<ClaimsAgentFactory>();
+
+// HttpClient factory for MCP tools (e.g. fetching quote documents from URLs).
+builder.Services.AddHttpClient();
+
+// MCP server for the in-process tool surface used by Foundry agents. The
+// loss-adjuster agent always uses this server (analyzeQuote / compareQuotes /
+// generateClaimExcel). The notice intelligence flow conditionally adds its
+// own AgentDiMcpTools below when its Azure resources are configured.
+var mcpBuilder = builder.Services.AddMcpServer()
+    .WithHttpTransport(options => { options.Stateless = true; })
+    .WithTools<LossAdjusterMcpTools>()
+    .WithTools<SettlementMcpTools>();
+builder.Services.AddCors();
 
 // In-memory store of claim cases minted by the Claims Intake demo's
 // "Try It Out" tab. Lets later agents in the demo flow look the case up
 // by claim number.
 builder.Services.AddSingleton<IntakeClaimStore>();
+builder.Services.AddSingleton<TeamLeaderGroupChatService>();
 
-// ── MCP server bring-up ─────────────────────────────────────────────────────
-// The MCP server is enabled whenever the Foundry agent is configured. It
-// always exposes the Settlement payment-flow tools (used by the Settlement
-// Agent to automate cross-checks, raise approvals to Microsoft Teams, and
-// release payments). When the optional notice-intelligence resources are
-// also configured, the AgentDi tools are registered on the same server.
-var mcpEnabled = !string.IsNullOrWhiteSpace(agentOptions.ProjectEndpoint)
-    && !string.IsNullOrWhiteSpace(agentOptions.ModelDeploymentName);
+// Settlement payment-flow services (always registered). The Settlement
+// MCP tools and the /settlement/* HTTP endpoints depend on these.
+// TeamsNotificationService degrades gracefully when TEAMS_WEBHOOK_URL is
+// not configured (logs the payload instead of posting).
+builder.Services.AddSingleton<PaymentApprovalStore>();
+builder.Services.AddSingleton<TeamsNotificationService>();
+
+// Fraud Investigation document-authenticity demo: loads the static sample
+// manifest from wwwroot/fraud/samples/manifest.json and tracks per-claim
+// case-document attachments. Always registered — falls back to manifest
+// expectations when Content Understanding isn't configured.
+builder.Services.AddSingleton<FraudCaseDocumentStore>();
+builder.Services.AddSingleton<FraudDocumentVerifier>(sp => new FraudDocumentVerifier(
+    sp.GetRequiredService<FraudCaseDocumentStore>(),
+    sp.GetRequiredService<IConfiguration>(),
+    sp.GetRequiredService<ILogger<FraudDocumentVerifier>>(),
+    sp.GetService<ContentUnderstandingService>()));
 
 // ── Notice intelligence integration (ported from demo-foundry-document-intelligence/agentdi)
 // Only enabled when the required Azure resources are configured. When enabled,
@@ -55,19 +79,10 @@ var mcpEnabled = !string.IsNullOrWhiteSpace(agentOptions.ProjectEndpoint)
 // scenario pages under wwwroot/notice/.
 var docIntelligenceEndpoint = builder.Configuration["AZURE_DOC_INTELLIGENCE_ENDPOINT"];
 var storageAccountName = builder.Configuration["AZURE_STORAGE_ACCOUNT_NAME"];
-var noticeEnabled = mcpEnabled
+var noticeEnabled = !string.IsNullOrWhiteSpace(agentOptions.ProjectEndpoint)
+    && !string.IsNullOrWhiteSpace(agentOptions.ModelDeploymentName)
     && !string.IsNullOrWhiteSpace(docIntelligenceEndpoint)
     && !string.IsNullOrWhiteSpace(storageAccountName);
-
-// Settlement payment-flow services are always registered (they have no
-// external infra requirements beyond optional SMTP / Teams webhook config
-// which they degrade gracefully without).
-builder.Services.AddHttpClient();
-builder.Services.AddSingleton<PaymentApprovalStore>();
-builder.Services.AddSingleton<TeamsNotificationService>();
-// NotificationService is shared with the notice flow but is harmless when
-// SMTP isn't configured (it just logs); register it once at the top level.
-builder.Services.AddSingleton<NotificationService>();
 
 Azure.Identity.DefaultAzureCredential? noticeCredential = null;
 if (noticeEnabled)
@@ -94,19 +109,10 @@ if (noticeEnabled)
         foundryEndpoint, noticeCredential, cuGpt41Deployment, cuGpt41MiniDeployment, cuEmbeddingDeployment,
         sp.GetRequiredService<ILogger<ContentUnderstandingService>>()));
 
+    builder.Services.AddSingleton<NotificationService>();
     builder.Services.AddSingleton<PendingApprovalStore>();
-}
 
-if (mcpEnabled)
-{
-    var mcpBuilder = builder.Services.AddMcpServer()
-        .WithHttpTransport(options => { options.Stateless = true; })
-        .WithTools<SettlementMcpTools>();
-
-    if (noticeEnabled)
-        mcpBuilder.WithTools<AgentDiMcpTools>();
-
-    builder.Services.AddCors();
+    mcpBuilder.WithTools<AgentDiMcpTools>();
 }
 
 var app = builder.Build();
@@ -119,31 +125,38 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseAntiforgery();
 
-if (mcpEnabled)
-{
-    app.UseCors(policy => policy
-        .AllowAnyOrigin()
-        .AllowAnyMethod()
-        .AllowAnyHeader());
+// CORS + MCP Accept-header normalisation are always enabled because the MCP
+// server is always registered (loss-adjuster tools). Notice intelligence
+// optionally adds more tools to the same server below.
+app.UseCors(policy => policy
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
 
-    // Normalize Accept header for MCP requests from Foundry agent server
-    app.Use(async (context, next) =>
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/mcp"))
     {
-        if (context.Request.Path.StartsWithSegments("/mcp"))
+        var accept = context.Request.Headers.Accept.ToString();
+        if (string.IsNullOrEmpty(accept) || !accept.Contains("text/event-stream"))
         {
-            var accept = context.Request.Headers.Accept.ToString();
-            if (string.IsNullOrEmpty(accept) || !accept.Contains("text/event-stream"))
-            {
-                context.Request.Headers.Accept = "application/json, text/event-stream";
-            }
+            context.Request.Headers.Accept = "application/json, text/event-stream";
         }
-        await next();
-    });
-}
+    }
+    await next();
+});
+
+// Serve dynamically-generated loss-adjuster output files (Excel workbooks
+// produced by the generateClaimExcel MCP tool) from wwwroot/loss-adjuster/output/.
+app.UseStaticFiles();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Enable WebSocket support for the Voice Live proxy that powers the
+// Customer Communications agent's voice chat tab.
+app.UseWebSockets();
 
 // ── Markdown rendering endpoint (used by per-agent pages to format agent output) ──
 app.MapMarkdownEndpoints();
@@ -211,7 +224,44 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
 
     app.MapIntakeEndpoints(intakeStore, intakeFactory, intakeLogger);
     app.MapLossAdjusterEndpoints(intakeStore, intakeFactory, intakeLogger);
+    app.MapTeamLeaderEndpoints(intakeStore, intakeFactory, intakeLogger);
+
+    var groupChatService = app.Services.GetRequiredService<TeamLeaderGroupChatService>();
+    app.MapTeamLeaderGroupChatEndpoints(groupChatService, intakeLogger);
 }
+
+// ── MCP server endpoint (always on; loss-adjuster MCP tools live here, and
+//    the optional notice intelligence flow adds AgentDiMcpTools alongside) ─
+app.MapMcp("/mcp");
+
+// ── Loss Adjuster output download endpoint ──
+//    Streams .xlsx files written by the generateClaimExcel MCP tool.
+app.MapGet("/loss-adjuster/download/{fileName}", (string fileName, IWebHostEnvironment env) =>
+{
+    if (string.IsNullOrWhiteSpace(fileName) ||
+        fileName.Contains("..") ||
+        fileName.Contains('/') ||
+        fileName.Contains('\\'))
+    {
+        return Results.BadRequest(new { error = "Invalid file name." });
+    }
+
+    var dir = Path.Combine(env.WebRootPath ?? "wwwroot", "loss-adjuster", "output");
+    var path = Path.Combine(dir, fileName);
+    var fullDir = Path.GetFullPath(dir);
+    var fullPath = Path.GetFullPath(path);
+    if (!fullPath.StartsWith(fullDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) &&
+        !fullPath.Equals(fullDir, StringComparison.OrdinalIgnoreCase))
+    {
+        return Results.BadRequest(new { error = "Invalid file path." });
+    }
+    if (!File.Exists(fullPath)) return Results.NotFound();
+
+    return Results.File(
+        fullPath,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        fileName);
+});
 
 // ── Claims Assessment demo endpoints (Try It Out tab on /agents/claims-assessment) ──
 {
@@ -234,7 +284,9 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     var fraudLogger = app.Services.GetRequiredService<ILogger<Program>>();
     var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
     var fraudFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
-    app.MapFraudEndpoints(intakeStore, fraudFactory, fraudLogger);
+    var fraudDocStore = app.Services.GetRequiredService<FraudCaseDocumentStore>();
+    var fraudVerifier = app.Services.GetRequiredService<FraudDocumentVerifier>();
+    app.MapFraudEndpoints(intakeStore, fraudFactory, fraudDocStore, fraudVerifier, fraudLogger);
 }
 
 // ── Customer Communications demo endpoints (Try It Out tab on
@@ -244,6 +296,11 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     var intakeStore = app.Services.GetRequiredService<IntakeClaimStore>();
     var commsFactory = app.Services.GetRequiredService<ClaimsAgentFactory>();
     app.MapCommunicationsEndpoints(intakeStore, commsFactory, commsLogger);
+
+    // Voice Live (real-time speech-to-speech) proxy + config for the
+    // Customer Communications voice chat tab.
+    var commsLoggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+    app.MapCommunicationsVoiceLiveEndpoints(agentOptions, commsFactory, commsLoggerFactory);
 }
 
 // ── Supplier Coordination demo endpoints (Try It Out tab on
@@ -260,12 +317,6 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
 {
     var metadataOptions = app.Services.GetRequiredService<ClaimsAgentOptions>();
     app.MapAgentMetadataEndpoints(metadataOptions);
-}
-
-// ── MCP transport mapping (settlement payment-flow tools + optional agentdi tools) ──
-if (mcpEnabled)
-{
-    app.MapMcp("/mcp");
 }
 
 // ── Notice intelligence endpoints (agentdi port) ─────────────────────────────

@@ -1,0 +1,13 @@
+{
+  "id": "policy-travel-international-v2",
+  "policyName": "Zava Travel International (PDS v2.5)",
+  "productLine": "travel",
+  "version": "2.5",
+  "summary": "International travel cover for trips up to 365 days. Includes overseas medical, lost or delayed luggage, trip cancellation, rental-vehicle excess, and 24/7 emergency assistance hotline. Available as single-trip or annual multi-trip.",
+  "coverage": "Overseas medical & hospital expenses: unlimited reasonable & necessary costs (excluding pre-existing conditions unless approved). Cancellation: up to sum insured selected ($2k-$30k) for events outside the customer's control. Luggage & personal effects: $5,000 per insured person, $1,000 single-item sub-limit, $250 excess. Travel delay: $250 per 6 hours, max $2,000. Rental-vehicle excess buy-down: up to $6,000. Personal liability: $2.5m.",
+  "exclusions": "Pre-existing medical conditions unless declared and approved, undeclared high-risk activities (mountaineering above 3,000m, professional sports, motor racing), travel against DFAT 'Do Not Travel' advisories, claims directly arising from intoxication, loss of cash above $250, valuables left in unattended vehicles, items not reported to the airline carrier within 24 hours.",
+  "evidenceRequired": ["Travel itinerary and proof of departure/return", "Property Irregularity Report (PIR) from airline for lost luggage", "Receipts for items >$250", "Medical reports & invoices for medical claims", "Police report for theft of cash, passport, or valuables", "Rental-vehicle agreement and excess invoice"],
+  "owner": "Travel Product Team",
+  "tags": ["travel", "luggage", "medical", "cancellation", "PIR", "PDS"],
+  "lastUpdated": "2026-03-15T00:00:00Z"
+}

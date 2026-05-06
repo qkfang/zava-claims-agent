@@ -55,6 +55,9 @@ public class ClaimsAgentFactory
         var search = _options.SearchConnectionId;
         var index = _options.SearchIndexName;
         var bing = _options.BingConnectionId;
+        var mcpUri = string.IsNullOrWhiteSpace(_options.AppMcpUrl)
+            ? null
+            : $"{_options.AppMcpUrl!.TrimEnd('/')}/mcp";
 
         return role.ToLowerInvariant() switch
         {
@@ -63,7 +66,7 @@ public class ClaimsAgentFactory
             "assessment" or "claims-assessment"
                 => new ClaimsAssessmentAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<ClaimsAssessmentAgent>()),
             "loss-adjuster" or "loss-adjusting"
-                => new LossAdjusterAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<LossAdjusterAgent>()),
+                => new LossAdjusterAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<LossAdjusterAgent>(), mcpUri),
             "fraud" or "fraud-investigation"
                 => new FraudInvestigationAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<FraudInvestigationAgent>()),
             "supplier" or "supplier-coordination"
