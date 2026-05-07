@@ -73,10 +73,29 @@
     color: rgba(255, 255, 255, 0.45);
     padding: 1.1rem 1.25rem 0.45rem 1.25rem;
     font-weight: 600;
+    /* Render as a full-width clickable header so users can expand/collapse the section. */
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.15s ease;
+}
+
+.nav-section-label:hover {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.nav-section-label:focus-visible {
+    outline: 2px solid rgba(255, 179, 71, 0.45);
+    outline-offset: -2px;
+    border-radius: 4px;
 }
 
 /* Collapsible groups in the side nav. The "AI Agents" and "Scenarios" sections
-   auto-expand and collapse based on the current route — see NavMenu.razor. */
+   auto-expand based on the current route and can be toggled by clicking their title. */
 .nav-section .nav-section-body {
     display: none;
 }

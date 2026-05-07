@@ -106,11 +106,34 @@ public static class CommunicationsVoiceLiveProxy
                 return;
             }
 
+            // Classic Foundry Agent Service integration uses three query
+            // parameters on the WebSocket URL:
+            //
+            //   agent-id            — the agent name (the value passed to
+            //                         CreateAgentVersion).
+            //   agent-project-name  — the Foundry project that owns the
+            //                         agent.
+            //   agent-access-token  — bearer token that Voice Live uses on
+            //                         the caller's behalf to fetch the
+            //                         agent definition. Without this token
+            //                         Voice Live emits an "error" event
+            //                         "Failed to initialize AI agent,
+            //                         check connection string and the
+            //                         identity permissions" and closes
+            //                         the socket (close code 1006 on the
+            //                         browser side).
+            //
+            // The Authorization header authenticates *us* to the Voice Live
+            // resource; the agent-access-token authorises Voice Live to
+            // call Foundry. They are the same token here because the
+            // server-side identity has both Cognitive Services User (on
+            // Voice Live) and Azure AI User (on the Foundry project).
             var voiceLiveUri = new Uri(
                 $"wss://{host}/voice-live/realtime" +
                 $"?api-version={VoiceLiveApiVersion}" +
-                $"&agent_id={Uri.EscapeDataString(CommunicationsAgentId)}" +
-                $"&agent-project-name={Uri.EscapeDataString(project!)}");
+                $"&agent-id={Uri.EscapeDataString(CommunicationsAgentId)}" +
+                $"&agent-project-name={Uri.EscapeDataString(project!)}" +
+                $"&agent-access-token={Uri.EscapeDataString(accessToken)}");
 
             using var azure = new ClientWebSocket();
             azure.Options.SetRequestHeader("Authorization", $"Bearer {accessToken}");
@@ -120,7 +143,11 @@ public static class CommunicationsVoiceLiveProxy
 
             try
             {
-                logger.LogInformation("Voice Live connecting to {Uri}", voiceLiveUri);
+                // Don't log the agent-access-token query parameter.
+                var safeUri = voiceLiveUri.ToString();
+                var idx = safeUri.IndexOf("agent-access-token=", StringComparison.Ordinal);
+                if (idx > 0) safeUri = safeUri.Substring(0, idx) + "agent-access-token=***";
+                logger.LogInformation("Voice Live connecting to {Uri}", safeUri);
                 await azure.ConnectAsync(voiceLiveUri, ctx.RequestAborted);
             }
             catch (Exception ex)

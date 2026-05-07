@@ -485,6 +485,13 @@
 .engage-tab-panel { display: none; }
 .engage-tab-panel.active { display: block; }
 
+/* Cap the streamed Agent Narrative body so it never grows past 200px;
+   overflow scrolls within the panel. Applies to all agent pages. */
+.engage-narrative-body {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
 .engage-info-block {
     background: rgba(10, 16, 28, 0.7);
     border: 1px solid rgba(120, 150, 200, 0.18);

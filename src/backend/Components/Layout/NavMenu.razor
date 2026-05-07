@@ -23,7 +23,12 @@
         </div>
 
         <div class="nav-section @(IsAgentsOpen ? "open" : "")">
-            <div class="nav-section-label">AI Agents</div>
+            <button type="button"
+                    class="nav-section-label"
+                    aria-expanded="@(IsAgentsOpen ? "true" : "false")"
+                    @onclick="ToggleAgents">
+                AI Agents
+            </button>
             <div class="nav-section-body">
                 @foreach (var agent in AgentCatalog.All)
                 {
@@ -37,7 +42,12 @@
         </div>
 
         <div class="nav-section @(IsScenariosOpen ? "open" : "")">
-            <div class="nav-section-label">Scenarios</div>
+            <button type="button"
+                    class="nav-section-label"
+                    aria-expanded="@(IsScenariosOpen ? "true" : "false")"
+                    @onclick="ToggleScenarios">
+                Scenarios
+            </button>
             <div class="nav-section-body">
                 @foreach (var scenario in ScenarioCatalog.All)
                 {
@@ -66,25 +76,40 @@
 
     protected override void OnInitialized()
     {
-        UpdateOpenSections(Nav.Uri);
+        ApplyRouteDefaults(Nav.Uri);
         Nav.LocationChanged += OnLocationChanged;
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        UpdateOpenSections(e.Location);
+        ApplyRouteDefaults(e.Location);
         StateHasChanged();
     }
 
-    private void UpdateOpenSections(string uri)
+    private void ApplyRouteDefaults(string uri)
     {
         var path = Nav.ToBaseRelativePath(uri).TrimStart('/');
-        // Only one section is open at a time, mirroring the user's current item.
-        // Default: AI Agents open when on the home page or any other route.
-        IsScenariosOpen = path.StartsWith("scenarios/", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("scenarios", StringComparison.OrdinalIgnoreCase);
-        IsAgentsOpen = !IsScenariosOpen;
+        // Auto-open the section matching the current route so the active item is visible.
+        // The user can still toggle either section independently after navigation.
+        if (path.StartsWith("scenarios", StringComparison.OrdinalIgnoreCase))
+        {
+            IsScenariosOpen = true;
+        }
+        else if (path.StartsWith("agents", StringComparison.OrdinalIgnoreCase))
+        {
+            IsAgentsOpen = true;
+        }
+        else
+        {
+            // Default landing: show AI Agents expanded, Scenarios collapsed.
+            IsAgentsOpen = true;
+            IsScenariosOpen = false;
+        }
     }
+
+    private void ToggleAgents() => IsAgentsOpen = !IsAgentsOpen;
+
+    private void ToggleScenarios() => IsScenariosOpen = !IsScenariosOpen;
 
     public void Dispose()
     {

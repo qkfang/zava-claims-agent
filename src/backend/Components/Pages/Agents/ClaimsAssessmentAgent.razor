@@ -138,7 +138,15 @@
             <button id="assessment-process-btn" type="button">Process with Claims Assessment Agent</button>
             <div id="assessment-process-status" class="assessment-status" hidden></div>
 
-            <!-- Step 3a — visual policy + checklist -->
+            <div id="assessment-result" class="assessment-result" hidden>
+                <div class="assessment-result-head">
+                    <span class="assessment-result-pill" id="assessment-result-pill"></span>
+                    <span class="assessment-result-title">Assessment recommendation</span>
+                </div>
+                <div id="assessment-result-body" class="agent-md"></div>
+            </div>
+
+            <!-- Step 3a — visual policy + checklist (decided by the agent's output) -->
             <div id="assessment-validation" class="assessment-validation" hidden>
                 <div class="assessment-validation-grid">
                     <div class="assessment-policy-card" id="assessment-policy-card"></div>
@@ -156,14 +164,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div id="assessment-result" class="assessment-result" hidden>
-                <div class="assessment-result-head">
-                    <span class="assessment-result-pill" id="assessment-result-pill"></span>
-                    <span class="assessment-result-title">Assessment recommendation</span>
-                </div>
-                <div id="assessment-result-body" class="agent-md"></div>
             </div>
 
             <div class="engage-tabs-scope" data-engage-role="claims-assessment">

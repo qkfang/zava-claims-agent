@@ -232,11 +232,6 @@
                     <div class="settlement-notes-label">Settlement letter draft</div>
                     <div id="settlement-letter" class="agent-md"></div>
                 </div>
-
-                <div class="settlement-notes" id="settlement-agent-notes" hidden>
-                    <div class="settlement-notes-label">Agent narrative</div>
-                    <div id="settlement-agent-notes-body" class="agent-md"></div>
-                </div>
             </div>
 
             <div class="engage-tabs-scope" data-engage-role="settlement">
@@ -712,8 +707,6 @@
         const approvalPill = $('#settlement-approval-pill');
         const approvalReason = $('#settlement-approval-reason');
         const letterEl = $('#settlement-letter');
-        const agentNotesEl = $('#settlement-agent-notes');
-        const agentNotesBody = $('#settlement-agent-notes-body');
         const engageScope = $('.engage-tabs-scope');
         const teamsCard = $('#settlement-teams-card');
         const teamsPill = $('#settlement-teams-pill');
@@ -866,9 +859,6 @@
                     url: '/settlement/process',
                     body: payload,
                     onDelta: (_chunk, fullText) => {
-                        agentNotesEl.hidden = false;
-                        agentNotesBody.classList.add('agent-md-streaming');
-                        agentNotesBody.textContent = fullText;
                         if (window.engageTabsStreamNarrative) {
                             window.engageTabsStreamNarrative(engageScope, fullText);
                         }
@@ -902,14 +892,6 @@
                 approvalReason.textContent = data.humanApprovalReason || '';
 
                 window.zcRenderMarkdown(letterEl, data.settlementLetter || '');
-
-                if (data.agentNotes) {
-                    agentNotesEl.hidden = false;
-                    agentNotesBody.classList.remove('agent-md-streaming');
-                    window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
-                } else {
-                    agentNotesEl.hidden = true;
-                }
 
                 renderTeamsCard(data.paymentApproval);
 

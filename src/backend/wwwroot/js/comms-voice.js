@@ -375,7 +375,9 @@
                         setStatus('Ready. Keep talking, or press the mic to end the call.');
                         break;
                     case 'error': {
-                        const msg = (evt.error && (evt.error.message || evt.error.code)) || 'Voice Live error';
+                        const err = evt.error || {};
+                        const msg = err.message || err.code || 'Voice Live error';
+                        try { console.error('Voice Live error event', evt); } catch (_) {}
                         setStatus('Voice Live error: ' + msg, true);
                         break;
                     }
@@ -424,7 +426,13 @@
                                 silence_duration_ms: 500,
                                 threshold: 0.5
                             },
-                            input_audio_transcription: { model: 'whisper-1' },
+                            // When using a Foundry agent (agent_id query param)
+                            // the only supported transcription model is
+                            // 'azure-speech'. 'whisper-1' is reserved for the
+                            // gpt-realtime / gpt-realtime-mini multimodal
+                            // models and will cause Voice Live to reject the
+                            // session and close the socket.
+                            input_audio_transcription: { model: 'azure-speech' },
                             voice: {
                                 name: 'en-US-Ava:DragonHDLatestNeural',
                                 type: 'azure-standard'
@@ -473,13 +481,21 @@
                     } catch (_) { /* ignore */ }
                 };
 
-                ws.onerror = () => {
+                ws.onerror = (e) => {
+                    try { console.error('Voice Live WebSocket error', e); } catch (_) {}
                     setStatus('Voice Live connection error. Please retry.', true);
                 };
 
-                ws.onclose = () => {
+                ws.onclose = (e) => {
+                    try { console.warn('Voice Live WebSocket closed', { code: e && e.code, reason: e && e.reason, wasClean: e && e.wasClean }); } catch (_) {}
                     teardown();
-                    setStatus('Call ended.');
+                    const code = e && e.code;
+                    const reason = (e && e.reason) ? (' — ' + e.reason) : '';
+                    if (code && code !== 1000 && code !== 1005) {
+                        setStatus('Call ended (code ' + code + ')' + reason, true);
+                    } else {
+                        setStatus('Call ended.');
+                    }
                 };
             }
 
