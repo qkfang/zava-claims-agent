@@ -14,6 +14,7 @@
         const refreshBtn = $('#adjuster-refresh-btn');
         const emptyEl = $('#adjuster-empty');
         const cardEl = $('#adjuster-claim-card');
+        const step2El = $('#adjuster-step-2');
         const processBtn = $('#adjuster-process-btn');
         const processStatus = $('#adjuster-process-status');
         const engageScope = $('.engage-tabs-scope');
@@ -28,6 +29,7 @@
             selectedClaim = claim;
             if (!claim) {
                 cardEl.hidden = true;
+                if (step2El) step2El.hidden = true;
                 processBtn.disabled = true;
                 return;
             }
@@ -41,6 +43,8 @@
             $('#adjuster-claim-loss').textContent     = claim.estimatedLoss || '—';
             $('#adjuster-claim-urgency').textContent  = claim.urgency || '—';
             cardEl.hidden = false;
+            // Reveal step 2 (engage agent) now that a claim is picked.
+            if (step2El) step2El.hidden = false;
             processBtn.disabled = false;
         }
 
@@ -48,6 +52,7 @@
             selectEl.innerHTML = '<option value="">— Loading… —</option>';
             emptyEl.hidden = true;
             cardEl.hidden = true;
+            if (step2El) step2El.hidden = true;
             processBtn.disabled = true;
             processStatus.hidden = true;
 

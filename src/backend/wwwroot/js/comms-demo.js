@@ -11,6 +11,7 @@
         const selectEl = $('#comms-claim-select');
         const refreshBtn = $('#comms-refresh-btn');
         const summaryEl = $('#comms-claim-summary');
+        const step2El = $('#comms-step-2');
         const processBtn = $('#comms-process-btn');
         const processStatus = $('#comms-process-status');
         const resultsEl = $('#comms-results');
@@ -41,6 +42,7 @@
             selectEl.disabled = true;
             selectEl.innerHTML = '<option value="">Loading claims…</option>';
             summaryEl.hidden = true;
+            if (step2El) step2El.hidden = true;
             processBtn.disabled = true;
             resultsEl.hidden = true;
             try {
@@ -67,6 +69,7 @@
             if (!claimNumber) {
                 selectedClaim = null;
                 summaryEl.hidden = true;
+                if (step2El) step2El.hidden = true;
                 processBtn.disabled = true;
                 return;
             }
@@ -81,9 +84,12 @@
                 $('#comms-cust-incident').textContent = `${selectedClaim.incidentDate || '—'} · ${selectedClaim.incidentLocation || '—'} · ${selectedClaim.incidentDescription || ''}`;
                 $('#comms-cust-pref').textContent = selectedClaim.preferredContact || '—';
                 summaryEl.hidden = false;
+                // Reveal step 2 (engage agent) now that a claim is picked.
+                if (step2El) step2El.hidden = false;
                 processBtn.disabled = false;
             } catch (err) {
                 summaryEl.hidden = true;
+                if (step2El) step2El.hidden = true;
                 processBtn.disabled = true;
                 processStatus.hidden = false;
                 processStatus.className = 'comms-status error';

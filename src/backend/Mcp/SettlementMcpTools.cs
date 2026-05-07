@@ -25,13 +25,13 @@ public class SettlementMcpTools
 {
     private readonly IntakeClaimStore _claimStore;
     private readonly PaymentApprovalStore _paymentStore;
-    private readonly TeamsNotificationService _teams;
+    private readonly TeamsMcpTools _teams;
     private readonly ILogger<SettlementMcpTools> _logger;
 
     public SettlementMcpTools(
         IntakeClaimStore claimStore,
         PaymentApprovalStore paymentStore,
-        TeamsNotificationService teams,
+        TeamsMcpTools teams,
         ILogger<SettlementMcpTools> logger)
     {
         _claimStore = claimStore;
@@ -185,7 +185,7 @@ public class SettlementMcpTools
             Status = PaymentApprovalStatus.Pending
         });
 
-        var teamsResult = await _teams.SendPaymentApprovalAsync(new PaymentApprovalRequest(
+        var teamsResult = await _teams.SendApprovalCardCoreAsync(new TeamsApprovalCardRequest(
             ApprovalId: stored.ApprovalId,
             ClaimNumber: stored.ClaimNumber,
             CustomerName: stored.CustomerName,

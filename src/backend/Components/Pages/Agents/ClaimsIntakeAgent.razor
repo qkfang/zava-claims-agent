@@ -117,7 +117,7 @@
         </div>
 
         <!-- Step 2 — engage the agent -->
-        <div class="intake-step" data-step="2">
+        <div class="intake-step" data-step="2" id="intake-step-2" hidden>
             <div class="intake-step-head">
                 <span class="intake-step-num">2</span>
                 <h3>Engage Claims Intake Agent</h3>
@@ -128,10 +128,6 @@
             </p>
             <button id="intake-process-btn" type="button" disabled>Process with Claims Intake Agent</button>
             <div id="intake-process-status" class="intake-status" hidden></div>
-            <div id="intake-agent-notes" class="intake-notes" hidden>
-                <div class="intake-notes-label">Agent narrative</div>
-                <div id="intake-agent-notes-body" class="agent-md"></div>
-            </div>
 
             <div class="engage-tabs-scope" data-engage-role="claims-intake">
                 <div class="engage-tabs" role="tablist">
@@ -180,7 +176,7 @@
         </div>
 
         <!-- Step 3 + 4 — mock intake form + urgency assessment -->
-        <div class="intake-step" data-step="3">
+        <div class="intake-step" data-step="3" id="intake-step-3" hidden>
             <div class="intake-step-head">
                 <span class="intake-step-num">3</span>
                 <h3>Review the auto-filled intake form</h3>
@@ -219,7 +215,7 @@
                             <span class="intake-step-num inline">5</span>
                             Submit claim
                         </button>
-                    </div>mo
+                    </div>
                 </form>
             </div>
         </div>

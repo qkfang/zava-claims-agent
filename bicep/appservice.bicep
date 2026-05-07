@@ -169,6 +169,10 @@ resource backendApp 'Microsoft.Web/sites@2023-12-01' = {
           name: 'AZURE_BING_CONNECTION_ID'
           value: bingConnectionId
         }
+        {
+          name: 'APP_MCP_URL'
+          value: 'https://${backendAppName}.azurewebsites.net'
+        }
       ])
     }
   }

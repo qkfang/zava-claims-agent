@@ -254,10 +254,8 @@
                 teamsLinkEl.textContent = '(none)';
             }
             const sentText = approval.teamsSent
-                ? `Adaptive Card posted to ${escapeHtml(approval.teamsChannel || 'Teams')}.`
-                : (approval.teamsConfigured
-                    ? `Teams send failed: ${escapeHtml(approval.teamsMessage || 'unknown error')}.`
-                    : 'Teams webhook not configured (set TEAMS_WEBHOOK_URL); approval card was logged only.');
+                ? `Adaptive Card posted to ${escapeHtml(approval.teamsChannel || 'Teams')} via teams_sendApprovalCard.`
+                : `Teams send failed: ${escapeHtml(approval.teamsMessage || 'unknown error')}.`;
             teamsMsg.innerHTML = sentText + ' Approve below to simulate the Teams approver clicking <strong>Approve</strong>.';
             updateTeamsPill(approval.status || 'pending', approval.teamsSent);
             teamsStatus.hidden = true;

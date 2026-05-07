@@ -77,13 +77,14 @@
             </p>
             <p>
                 When the cross-checks complete, the agent calls
-                <code>settlement_requestPaymentApproval</code> which posts an Adaptive Card
-                to a Microsoft Teams channel via an Incoming Webhook
-                (<code>TEAMS_WEBHOOK_URL</code>). The card shows the customer, policy,
-                payable amount and payee, and links back to this page for review. The
-                approver clicks Approve in Teams (or here in the demo) before the agent
-                will call <code>settlement_releasePayment</code> — that tool refuses to
-                run while the approval is still pending or has been rejected.
+                <code>settlement_requestPaymentApproval</code> which mints an approval
+                id and then invokes the dedicated
+                <code>teams_sendApprovalCard</code> MCP tool to deliver an Adaptive Card
+                to the configured Microsoft Teams channel. The card shows the customer,
+                policy, payable amount and payee, and links back to this page for review.
+                The approver clicks Approve in Teams (or here in the demo) before the
+                agent will call <code>settlement_releasePayment</code> — that tool
+                refuses to run while the approval is still pending or has been rejected.
             </p>
         </div>
     </section>
@@ -936,10 +937,8 @@
                 teamsLinkEl.textContent = '(none)';
             }
             const sentText = approval.teamsSent
-                ? `Adaptive Card posted to ${escapeHtml(approval.teamsChannel || 'Teams')}.`
-                : (approval.teamsConfigured
-                    ? `Teams send failed: ${escapeHtml(approval.teamsMessage || 'unknown error')}.`
-                    : 'Teams webhook not configured (set TEAMS_WEBHOOK_URL); approval card was logged only.');
+                ? `Adaptive Card posted to ${escapeHtml(approval.teamsChannel || 'Teams')} via teams_sendApprovalCard.`
+                : `Teams send failed: ${escapeHtml(approval.teamsMessage || 'unknown error')}.`;
             teamsMsg.innerHTML = sentText + ' Approve below to simulate the Teams approver clicking <strong>Approve</strong>.';
             updateTeamsPill(approval.status || 'pending', approval.teamsSent);
             teamsStatus.hidden = true;

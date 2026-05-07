@@ -48,11 +48,14 @@ builder.Services.AddHttpClient();
 //   - SettlementMcpTools (settlement_* payment-flow tools — payee validation,
 //     invoice match, authority check, calculation, Teams approval request,
 //     and gated release)
+//   - TeamsMcpTools (teams_sendApprovalCard — owns the Microsoft Teams
+//     Adaptive Card delivery for the payment-approval flow)
 builder.Services.AddMcpServer()
     .WithHttpTransport(options => { options.Stateless = true; })
     .WithTools<LossAdjusterMcpTools>()
     .WithTools<ZavaClaims.App.Mcp.SupplierMcpTools>()
-    .WithTools<SettlementMcpTools>();
+    .WithTools<SettlementMcpTools>()
+    .WithTools<ZavaClaims.App.Mcp.TeamsMcpTools>();
 builder.Services.AddCors();
 
 // In-memory store of claim cases minted by the Claims Intake demo's
@@ -63,10 +66,11 @@ builder.Services.AddSingleton<TeamLeaderGroupChatService>();
 
 // Settlement payment-flow services (always registered). The Settlement
 // MCP tools and the /settlement/* HTTP endpoints depend on these.
-// TeamsNotificationService degrades gracefully when TEAMS_WEBHOOK_URL is
-// not configured (logs the payload instead of posting).
+// TeamsMcpTools owns the teams_sendApprovalCard MCP tool and is also
+// invoked in-process by SettlementMcpTools and the /settlement/process
+// API for the deterministic demo fallback path.
 builder.Services.AddSingleton<PaymentApprovalStore>();
-builder.Services.AddSingleton<TeamsNotificationService>();
+builder.Services.AddSingleton<ZavaClaims.App.Mcp.TeamsMcpTools>();
 
 // Fraud Investigation document-authenticity demo: loads the static sample
 // manifest from wwwroot/fraud/samples/manifest.json and tracks per-claim

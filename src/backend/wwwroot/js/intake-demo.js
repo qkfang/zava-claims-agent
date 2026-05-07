@@ -16,10 +16,10 @@
         const $ = sel => root.querySelector(sel);
         const samplesEl = $('#intake-samples');
         const previewEl = $('#intake-preview');
+        const step2El = $('#intake-step-2');
+        const step3El = $('#intake-step-3');
         const processBtn = $('#intake-process-btn');
         const processStatus = $('#intake-process-status');
-        const agentNotesEl = $('#intake-agent-notes');
-        const agentNotesBody = $('#intake-agent-notes-body');
         const engageScope = $('.engage-tabs-scope');
         const formWrap = $('#intake-form-wrap');
         const form = $('#intake-form');
@@ -66,9 +66,10 @@
             });
             processed = null;
             processStatus.hidden = true;
-            agentNotesEl.hidden = true;
             formWrap.hidden = true;
             urgencyEl.hidden = true;
+            // Step 3 only re-appears once the agent has processed the sample.
+            if (step3El) step3El.hidden = true;
             receipt.hidden = true;
 
             try {
@@ -82,6 +83,8 @@
                 $('#intake-form-name').textContent = s.formFileName;
                 $('#intake-form-body').textContent = s.formDocumentText;
                 previewEl.hidden = false;
+                // Reveal step 2 (engage agent) now that a sample is picked.
+                if (step2El) step2El.hidden = false;
                 processBtn.disabled = false;
             } catch (err) {
                 previewEl.hidden = true;
@@ -98,9 +101,10 @@
             processStatus.hidden = false;
             processStatus.className = 'intake-status';
             processStatus.innerHTML = '<span class="spinner"></span>Engaging Claims Intake Agent…';
-            agentNotesEl.hidden = true;
             formWrap.hidden = true;
             urgencyEl.hidden = true;
+            // Step 3 only appears once the agent run completes successfully.
+            if (step3El) step3El.hidden = true;
             receipt.hidden = true;
 
             try {
@@ -108,11 +112,8 @@
                     url: '/intake/process',
                     body: { sampleId: selectedSampleId },
                     onDelta: (_chunk, fullText) => {
-                        // Render incoming agent text live as plain preformatted
-                        // text; markdown rendering is applied once the run is done.
-                        agentNotesEl.hidden = false;
-                        agentNotesBody.classList.add('agent-md-streaming');
-                        agentNotesBody.textContent = fullText;
+                        // Stream incoming agent text into the Engage Agent
+                        // "Agent Narrative" tab so it accumulates live.
                         if (window.engageTabsStreamNarrative) {
                             window.engageTabsStreamNarrative(engageScope, fullText);
                         }
@@ -128,13 +129,6 @@
                 processStatus.textContent = data.agentConfigured
                     ? 'Claims Intake Agent processed the email and form.'
                     : 'Processed (Foundry agent not configured — using deterministic demo extraction).';
-                if (data.agentNotes) {
-                    agentNotesEl.hidden = false;
-                    agentNotesBody.classList.remove('agent-md-streaming');
-                    window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
-                } else {
-                    agentNotesEl.hidden = true;
-                }
 
                 const f = data.fields || {};
                 form.customerName.value         = f.customerName || '';
@@ -147,6 +141,9 @@
                 form.incidentDescription.value  = f.incidentDescription || '';
                 form.estimatedLoss.value        = f.estimatedLoss || '';
                 form.preferredContact.value     = f.preferredContact || '';
+                // Reveal step 3 (form review + urgency + submit) now that the
+                // agent has finished processing.
+                if (step3El) step3El.hidden = false;
                 formWrap.hidden = false;
 
                 const level = (data.urgency || 'Medium').toString();
@@ -212,9 +209,11 @@
             previewEl.hidden = true;
             processBtn.disabled = true;
             processStatus.hidden = true;
-            agentNotesEl.hidden = true;
             formWrap.hidden = true;
             urgencyEl.hidden = true;
+            // Re-hide steps 2 + 3 so the demo restarts at step 1 only.
+            if (step2El) step2El.hidden = true;
+            if (step3El) step3El.hidden = true;
             receipt.hidden = true;
             form.reset();
             samplesEl.scrollIntoView({ behavior: 'smooth', block: 'center' });

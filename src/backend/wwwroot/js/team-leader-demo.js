@@ -14,6 +14,7 @@
         const refreshBtn = $('#leader-refresh-btn');
         const emptyEl = $('#leader-empty');
         const cardEl = $('#leader-claim-card');
+        const step2El = $('#leader-step-2');
         const processBtn = $('#leader-process-btn');
         const processStatus = $('#leader-process-status');
         const reportEl = $('#leader-report');
@@ -30,6 +31,7 @@
             selectedClaim = claim;
             if (!claim) {
                 cardEl.hidden = true;
+                if (step2El) step2El.hidden = true;
                 processBtn.disabled = true;
                 return;
             }
@@ -43,6 +45,8 @@
             $('#leader-claim-loss').textContent     = claim.estimatedLoss || '—';
             $('#leader-claim-urgency').textContent  = claim.urgency || '—';
             cardEl.hidden = false;
+            // Reveal step 2 (engage agent) now that a claim is picked.
+            if (step2El) step2El.hidden = false;
             processBtn.disabled = false;
         }
 
@@ -50,6 +54,7 @@
             selectEl.innerHTML = '<option value="">— Loading… —</option>';
             emptyEl.hidden = true;
             cardEl.hidden = true;
+            if (step2El) step2El.hidden = true;
             processBtn.disabled = true;
             reportEl.hidden = true;
             processStatus.hidden = true;
@@ -171,6 +176,7 @@
             const refreshBtn = $('#gc-refresh-btn');
             const emptyEl    = $('#gc-empty');
             const cardEl     = $('#gc-claim-card');
+            const step2El    = $('#gc-step-2');
             const startBtn   = $('#gc-start-btn');
             const statusEl   = $('#gc-status');
             const rosterEl   = $('#gc-roster');
@@ -189,6 +195,7 @@
                 selectedClaim = claim;
                 if (!claim) {
                     cardEl.hidden = true;
+                    if (step2El) step2El.hidden = true;
                     startBtn.disabled = true;
                     return;
                 }
@@ -199,6 +206,8 @@
                 $('#gc-claim-date').textContent     = claim.incidentDate || '—';
                 $('#gc-claim-desc').textContent     = claim.incidentDescription || '—';
                 cardEl.hidden = false;
+                // Reveal step 2 (start group chat) now that a claim is picked.
+                if (step2El) step2El.hidden = false;
                 startBtn.disabled = false;
             }
 
@@ -206,6 +215,7 @@
                 selectEl.innerHTML = '<option value="">— Loading… —</option>';
                 emptyEl.hidden = true;
                 cardEl.hidden = true;
+                if (step2El) step2El.hidden = true;
                 startBtn.disabled = true;
                 statusEl.hidden = true;
                 try {

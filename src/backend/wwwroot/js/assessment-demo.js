@@ -17,6 +17,7 @@
         const processStep = $('#assessment-process-step');
         const processBtn = $('#assessment-process-btn');
         const processStatus = $('#assessment-process-status');
+        const outputStep = $('#assessment-output-step');
         const validationEl = $('#assessment-validation');
         const policyCard = $('#assessment-policy-card');
         const checklistEl = $('#assessment-checklist');
@@ -43,6 +44,7 @@
                     emptyEl.hidden = false;
                     cardStep.hidden = true;
                     processStep.hidden = true;
+                    outputStep.hidden = true;
                     return;
                 }
                 select.innerHTML =
@@ -58,6 +60,7 @@
         async function selectClaim(claimNumber) {
             currentClaim = null;
             validationEl.hidden = true;
+            outputStep.hidden = true;
             processStatus.hidden = true;
             if (!claimNumber) {
                 cardStep.hidden = true;
@@ -76,6 +79,7 @@
             } catch (err) {
                 cardStep.hidden = true;
                 processStep.hidden = true;
+                outputStep.hidden = true;
                 emptyEl.hidden = false;
                 emptyEl.textContent = 'Failed to load claim: ' + err.message;
             }
@@ -185,8 +189,10 @@
                 renderPolicy(policy);
                 renderChecklist(report);
                 validationEl.hidden = false;
+                outputStep.hidden = false;
             } catch (err) {
                 validationEl.hidden = true;
+                outputStep.hidden = true;
             }
         }
 
@@ -197,6 +203,7 @@
             processStatus.className = 'assessment-status';
             processStatus.innerHTML = '<span class="spinner"></span>Engaging Claims Assessment Agent…';
             validationEl.hidden = true;
+            outputStep.hidden = true;
 
             // Render the visual policy + checklist in parallel with the agent
             // call so the user sees the validation immediately.

@@ -13,6 +13,7 @@
         const select = $('#supplier-claim-select');
         const refreshBtn = $('#supplier-refresh-btn');
         const summaryEl = $('#supplier-claim-summary');
+        const step2El = $('#supplier-step-2');
         const processBtn = $('#supplier-process-btn');
         const processStatus = $('#supplier-process-status');
         const engageScope = $('.engage-tabs-scope');
@@ -42,6 +43,7 @@
         async function loadClaims() {
             select.innerHTML = '<option value="">Loading…</option>';
             summaryEl.hidden = true;
+            if (step2El) step2El.hidden = true;
             processBtn.disabled = true;
             resetDownstream();
             try {
@@ -68,6 +70,7 @@
             resetDownstream();
             if (!claimNumber) {
                 summaryEl.hidden = true;
+                if (step2El) step2El.hidden = true;
                 processBtn.disabled = true;
                 return;
             }
@@ -85,9 +88,12 @@
                     <div><span class="k">Estimated loss</span>${escapeHtml(c.estimatedLoss)}</div>
                     <div><span class="k">Urgency</span>${escapeHtml(c.urgency)}</div>`;
                 summaryEl.hidden = false;
+                // Reveal step 2 (engage agent) now that a claim is picked.
+                if (step2El) step2El.hidden = false;
                 processBtn.disabled = false;
             } catch (err) {
                 summaryEl.hidden = true;
+                if (step2El) step2El.hidden = true;
                 processBtn.disabled = true;
                 processStatus.hidden = false;
                 processStatus.className = 'supplier-status error';
