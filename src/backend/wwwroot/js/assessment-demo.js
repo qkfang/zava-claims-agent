@@ -44,7 +44,7 @@
                     emptyEl.hidden = false;
                     cardStep.hidden = true;
                     processStep.hidden = true;
-                    outputStep.hidden = true;
+                    if (outputStep) outputStep.hidden = true;
                     return;
                 }
                 select.innerHTML =
@@ -60,7 +60,7 @@
         async function selectClaim(claimNumber) {
             currentClaim = null;
             validationEl.hidden = true;
-            outputStep.hidden = true;
+            if (outputStep) outputStep.hidden = true;
             processStatus.hidden = true;
             if (!claimNumber) {
                 cardStep.hidden = true;
@@ -79,7 +79,7 @@
             } catch (err) {
                 cardStep.hidden = true;
                 processStep.hidden = true;
-                outputStep.hidden = true;
+                if (outputStep) outputStep.hidden = true;
                 emptyEl.hidden = false;
                 emptyEl.textContent = 'Failed to load claim: ' + err.message;
             }
@@ -176,23 +176,29 @@
                 </li>`).join('');
         }
 
-        async function loadValidation(claim) {
+        async function loadValidation(claim, agentReport) {
             if (!claim) return;
             try {
-                const [policyRes, checklistRes] = await Promise.all([
-                    fetch(`/assessment/policy/${encodeURIComponent(claim.policyNumber)}`),
-                    fetch(`/assessment/checklist/${encodeURIComponent(claim.claimNumber)}`)
-                ]);
+                // Always pull the policy document so the left card can render
+                // the wording the agent matched against. The checklist is
+                // taken from the agent's own JSON output when available, and
+                // falls back to the deterministic backend report otherwise.
+                const policyRes = await fetch(`/assessment/policy/${encodeURIComponent(claim.policyNumber)}`);
                 const policy = policyRes.ok ? await policyRes.json() : null;
-                if (!checklistRes.ok) throw new Error('HTTP ' + checklistRes.status);
-                const report = await checklistRes.json();
+
+                let report = agentReport;
+                if (!report) {
+                    const checklistRes = await fetch(`/assessment/checklist/${encodeURIComponent(claim.claimNumber)}`);
+                    if (!checklistRes.ok) throw new Error('HTTP ' + checklistRes.status);
+                    report = await checklistRes.json();
+                }
                 renderPolicy(policy);
                 renderChecklist(report);
                 validationEl.hidden = false;
-                outputStep.hidden = false;
+                if (outputStep) outputStep.hidden = false;
             } catch (err) {
                 validationEl.hidden = true;
-                outputStep.hidden = true;
+                if (outputStep) outputStep.hidden = true;
             }
         }
 
@@ -202,12 +208,10 @@
             processStatus.hidden = false;
             processStatus.className = 'assessment-status';
             processStatus.innerHTML = '<span class="spinner"></span>Engaging Claims Assessment Agent…';
+            // Hide Step 4 until the agent finishes — it is populated from the
+            // agent's own JSON checklist response below.
             validationEl.hidden = true;
-            outputStep.hidden = true;
-
-            // Render the visual policy + checklist in parallel with the agent
-            // call so the user sees the validation immediately.
-            const validationPromise = loadValidation(currentClaim);
+            if (outputStep) outputStep.hidden = true;
 
             try {
                 const data = await window.zcAgentStream({
@@ -234,12 +238,16 @@
                 if (window.engageTabsRender) {
                     window.engageTabsRender(engageScope, data);
                 }
+
+                // Step 4 — render the policy doc + the agent's own checklist
+                // results now that Step 3 has completed. Falls back to the
+                // deterministic backend checklist when the agent didn't
+                // produce a parseable JSON block (or wasn't configured).
+                await loadValidation(currentClaim, data && data.agentChecklistReport);
             } catch (err) {
                 processStatus.className = 'assessment-status error';
                 processStatus.textContent = 'Failed to process: ' + err.message;
             } finally {
-                // Make sure the visual checklist resolves even if the agent call failed.
-                await validationPromise;
                 processBtn.disabled = false;
             }
         }

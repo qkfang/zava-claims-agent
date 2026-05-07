@@ -36,10 +36,41 @@ public class ClaimsAssessmentAgent : ClaimsAgent
         1. **Coverage Recommendation** — Approve / Partial Approve / Decline / Need More Info.
         2. **Reasoning** — cite policy clause(s) and evidence relied upon.
         3. **Missing Information** — bullet list, or "None".
-        4. **Plain-English Explanation** — 2–4 sentences for the customer.
-        5. **Human Approval Required** — Yes/No, with reason.
+        4. **Policy Validation Checklist Review** — one bullet per checklist
+           item supplied in the prompt, stating pass / fail / info and why.
+        5. **Plain-English Explanation** — 2–4 sentences for the customer.
+        6. **Human Approval Required** — Yes/No, with reason.
 
-        Keep responses under 700 words.
+        Then, AT THE VERY END of your reply, emit a fenced JSON code block
+        (```json … ```) that mirrors your Policy Validation Checklist Review
+        in machine-readable form so the UI can render it. The JSON MUST match
+        this schema exactly — no extra fields, no commentary inside the block:
+
+        ```json
+        {
+          "recommendation": "Approve | PartialApprove | Decline | NeedMoreInfo",
+          "recommendationLabel": "Approve",
+          "recommendationReason": "1-2 sentence summary of why.",
+          "settlementPosition": "Plain-English settlement position, e.g. 'Pay AUD 4,300 less AUD 700 excess.'",
+          "items": [
+            {
+              "id": "<id from the prompt's checklist>",
+              "label": "<short label from the prompt's checklist>",
+              "status": "pass | fail | info",
+              "finding": "1-2 sentence finding for this item.",
+              "clauseRef": "<policy clause id, e.g. MC1>"
+            }
+          ]
+        }
+        ```
+
+        Include one entry in `items` for EVERY checklist item supplied in the
+        prompt, preserving the same `id` and `clauseRef` values. Use lowercase
+        `pass`, `fail`, or `info` for status. Keep `recommendation` as one of
+        the four PascalCase values listed above.
+
+        Keep responses under 700 words (the JSON block is excluded from that
+        budget).
         """;
 
     public ClaimsAssessmentAgent(AIProjectClient aiProjectClient, string deploymentName, string? searchConnectionId = null, string? searchIndexName = null, string? bingConnectionId = null, ILogger? logger = null)

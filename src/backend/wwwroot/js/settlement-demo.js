@@ -100,10 +100,21 @@
                 const previous = select.value;
                 select.innerHTML = '<option value="">— Select a Claim ID —</option>' +
                     claims.map(c => `<option value="${escapeHtml(c.claimNumber)}">${escapeHtml(c.claimNumber)} — ${escapeHtml(c.customerName)} (${escapeHtml(c.claimType)})</option>`).join('');
-                if (previous && claims.some(c => c.claimNumber === previous)) {
-                    select.value = previous;
-                }
                 emptyEl.hidden = claims.length > 0;
+
+                // Default to the previously chosen claim if it still exists,
+                // otherwise auto-pick the first one so Steps 2 and 3 are
+                // populated immediately when the panel opens.
+                let target = '';
+                if (previous && claims.some(c => c.claimNumber === previous)) {
+                    target = previous;
+                } else if (claims.length > 0) {
+                    target = claims[0].claimNumber;
+                }
+                if (target) {
+                    select.value = target;
+                    await selectClaim(target);
+                }
             } catch (err) {
                 emptyEl.hidden = false;
                 emptyEl.textContent = 'Failed to load claims: ' + err.message;

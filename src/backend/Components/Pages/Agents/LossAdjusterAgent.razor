@@ -96,11 +96,11 @@
             <code>/loss-adjuster/*</code> endpoints in this app.
         </p>
 
-        <!-- Step 1 — pick a Claim ID -->
+        <!-- Step 1 — pick a claim -->
         <div class="adjuster-step" data-step="1">
             <div class="adjuster-step-head">
                 <span class="adjuster-step-num">1</span>
-                <h3>Pick a Claim ID</h3>
+                <h3>Pick a claim</h3>
             </div>
             <p class="muted">
                 Lara works from the queue of claims already lodged by Iris's
@@ -119,7 +119,16 @@
                 <a href="/agents/claims-intake">Claims Intake Try It Out</a>
                 tab first to lodge a claim, then come back here.
             </p>
-            <div class="adjuster-claim-card" id="adjuster-claim-card" hidden>
+        </div>
+
+        <!-- Step 2 — review the claim case -->
+        <div class="adjuster-step" data-step="2" id="adjuster-claim-card-step" hidden>
+            <div class="adjuster-step-head">
+                <span class="adjuster-step-num">2</span>
+                <h3>Review the claim case</h3>
+            </div>
+            <p class="muted">Captured by Iris on intake. Lara's agent will work this case in the field.</p>
+            <div class="adjuster-claim-card" id="adjuster-claim-card">
                 <div class="adjuster-claim-num" id="adjuster-claim-num"></div>
                 <div class="adjuster-claim-grid">
                     <div><span class="k">Customer</span><span id="adjuster-claim-customer"></span></div>
@@ -134,10 +143,10 @@
             </div>
         </div>
 
-        <!-- Step 2 — engage the agent -->
-        <div class="adjuster-step" data-step="2" id="adjuster-step-2" hidden>
+        <!-- Step 3 — engage the agent -->
+        <div class="adjuster-step" data-step="3" id="adjuster-process-step" hidden>
             <div class="adjuster-step-head">
-                <span class="adjuster-step-num">2</span>
+                <span class="adjuster-step-num">3</span>
                 <h3>Engage Loss Adjuster Agent</h3>
             </div>
             <p class="muted">
@@ -192,6 +201,49 @@
                         <div class="json-viewer engage-output-body"><div class="engage-empty">Engage the agent to see the full raw response.</div></div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Step 4 — chat with the agent + references -->
+        <div class="adjuster-step" data-step="4" id="adjuster-chat-step" hidden>
+            <div class="adjuster-step-head">
+                <span class="adjuster-step-num">4</span>
+                <h3>Chat with Loss Adjuster Agent</h3>
+            </div>
+            <p class="muted">
+                Ask Lara's agent follow-up questions about the loss, the
+                inspection brief, the supplier quotes, or anything else on the
+                claim. The conversation continues from the initial report,
+                so the agent keeps full context.
+            </p>
+
+            <div class="adjuster-chat-layout">
+                <div class="adjuster-chat-col">
+                    <div class="adjuster-chat-messages" id="adjuster-chat-messages" role="log" aria-live="polite">
+                        <div class="adjuster-chat-empty">No follow-up messages yet. Ask a question below.</div>
+                    </div>
+                    <form class="adjuster-chat-form" id="adjuster-chat-form" autocomplete="off">
+                        <input type="text" id="adjuster-chat-input"
+                               placeholder="Ask a follow-up question (e.g. 'Which quote line items look inflated?')"
+                               aria-label="Follow-up question to the Loss Adjuster Agent" />
+                        <button type="submit" id="adjuster-chat-send" disabled>Send</button>
+                    </form>
+                    <div id="adjuster-chat-status" class="adjuster-status" hidden></div>
+                </div>
+
+                <aside class="adjuster-refs-col" aria-label="Bing search and document references">
+                    <div class="adjuster-refs-head">
+                        <h4>References</h4>
+                        <span class="adjuster-refs-count" id="adjuster-refs-count">0</span>
+                    </div>
+                    <p class="adjuster-refs-help">
+                        Bing search results and document citations the agent
+                        used to ground its answers. Updated after every reply.
+                    </p>
+                    <div class="adjuster-refs-list" id="adjuster-refs-list">
+                        <div class="adjuster-refs-empty">References from the agent will appear here.</div>
+                    </div>
+                </aside>
             </div>
         </div>
     </section>
@@ -313,5 +365,194 @@
         animation: adjuster-spin 0.7s linear infinite;
     }
     @@keyframes adjuster-spin { to { transform: rotate(360deg); } }
+
+    /* ----- Step 4: Chat with the Loss Adjuster Agent + references ------- */
+    .adjuster-chat-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 0.9rem;
+        margin-top: 0.6rem;
+    }
+    @@media (max-width: 980px) {
+        .adjuster-chat-layout { grid-template-columns: 1fr; }
+    }
+
+    .adjuster-chat-col { display: flex; flex-direction: column; min-width: 0; }
+
+    .adjuster-chat-messages {
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 10px;
+        padding: 0.7rem 0.85rem;
+        max-height: 420px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+    .adjuster-chat-empty {
+        color: var(--zava-muted, #97a3b6);
+        font-size: 0.85rem;
+        text-align: center;
+        padding: 1.2rem 0.5rem;
+    }
+    .adjuster-chat-msg {
+        display: flex;
+        flex-direction: column;
+        max-width: 88%;
+    }
+    .adjuster-chat-msg-user { align-self: flex-end; align-items: flex-end; }
+    .adjuster-chat-msg-assistant { align-self: flex-start; align-items: flex-start; }
+    .adjuster-chat-bubble {
+        padding: 0.55rem 0.8rem;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        line-height: 1.45;
+        word-wrap: break-word;
+    }
+    .adjuster-chat-msg-user .adjuster-chat-bubble {
+        background: color-mix(in srgb, var(--adjuster-accent) 26%, rgba(20, 28, 46, 0.9));
+        color: #fff;
+        border: 1px solid color-mix(in srgb, var(--adjuster-accent) 50%, transparent);
+        border-bottom-right-radius: 4px;
+        white-space: pre-wrap;
+    }
+    .adjuster-chat-msg-assistant .adjuster-chat-bubble {
+        background: rgba(15, 22, 38, 0.95);
+        color: var(--zava-text, #e8eef9);
+        border: 1px solid rgba(120, 150, 200, 0.22);
+        border-bottom-left-radius: 4px;
+    }
+    .adjuster-chat-msg-assistant .adjuster-chat-bubble .agent-md {
+        font-size: 0.9rem;
+    }
+    .adjuster-chat-meta {
+        font-size: 0.7rem;
+        color: var(--zava-muted, #97a3b6);
+        margin-top: 0.2rem;
+    }
+
+    .adjuster-chat-form {
+        display: flex;
+        gap: 0.4rem;
+        margin-top: 0.55rem;
+    }
+    .adjuster-chat-form input[type="text"] {
+        flex: 1;
+        background: rgba(10, 16, 28, 0.7);
+        border: 1px solid rgba(120, 150, 200, 0.32);
+        border-radius: 8px;
+        color: #fff;
+        padding: 0.55rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    .adjuster-chat-form input[type="text"]:focus {
+        outline: none;
+        border-color: var(--adjuster-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--adjuster-accent) 25%, transparent);
+    }
+    #adjuster-chat-send {
+        background: var(--adjuster-accent);
+        color: #1a1100;
+        border: none;
+        border-radius: 8px;
+        padding: 0.55rem 1.05rem;
+        font-size: 0.88rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    #adjuster-chat-send:hover:not(:disabled) { filter: brightness(1.08); }
+    #adjuster-chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ----- References panel (Bing + document citations) ----------------- */
+    .adjuster-refs-col {
+        background: rgba(10, 16, 28, 0.6);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-radius: 10px;
+        padding: 0.75rem 0.85rem;
+        align-self: start;
+        max-height: 480px;
+        overflow-y: auto;
+    }
+    .adjuster-refs-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.35rem;
+    }
+    .adjuster-refs-head h4 {
+        margin: 0;
+        font-size: 0.92rem;
+        color: #fff;
+    }
+    .adjuster-refs-count {
+        font-size: 0.72rem;
+        font-weight: 700;
+        background: color-mix(in srgb, var(--adjuster-accent) 22%, rgba(20, 28, 46, 0.9));
+        color: var(--adjuster-accent);
+        border: 1px solid color-mix(in srgb, var(--adjuster-accent) 45%, transparent);
+        padding: 1px 8px;
+        border-radius: 999px;
+    }
+    .adjuster-refs-help {
+        font-size: 0.78rem;
+        color: var(--zava-muted, #97a3b6);
+        margin: 0 0 0.55rem 0;
+        line-height: 1.4;
+    }
+    .adjuster-refs-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+    }
+    .adjuster-refs-empty {
+        color: var(--zava-muted, #97a3b6);
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 0.8rem 0.4rem;
+    }
+    .adjuster-ref-card {
+        background: rgba(15, 22, 38, 0.85);
+        border: 1px solid rgba(120, 150, 200, 0.18);
+        border-left: 3px solid var(--adjuster-accent);
+        border-radius: 6px;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.82rem;
+        line-height: 1.4;
+    }
+    .adjuster-ref-kind {
+        display: inline-block;
+        font-size: 0.66rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 1px 6px;
+        border-radius: 4px;
+        margin-bottom: 0.2rem;
+    }
+    .adjuster-ref-kind-bing {
+        color: #8ab4f8;
+        background: rgba(138, 180, 248, 0.12);
+        border: 1px solid rgba(138, 180, 248, 0.3);
+    }
+    .adjuster-ref-kind-doc {
+        color: var(--adjuster-accent);
+        background: color-mix(in srgb, var(--adjuster-accent) 15%, transparent);
+        border: 1px solid color-mix(in srgb, var(--adjuster-accent) 35%, transparent);
+    }
+    .adjuster-ref-card a {
+        color: var(--adjuster-accent);
+        text-decoration: none;
+        font-weight: 600;
+        word-break: break-word;
+    }
+    .adjuster-ref-card a:hover { text-decoration: underline; }
+    .adjuster-ref-url {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--zava-muted, #97a3b6);
+        margin-top: 0.15rem;
+        word-break: break-all;
+    }
 </style>
 

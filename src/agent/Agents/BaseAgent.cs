@@ -305,6 +305,87 @@ public abstract class BaseAgent
         yield return new AgentStreamingCompleted(trace);
     }
 
+    /// <summary>
+    /// Streams a follow-up turn off <paramref name="previousResponseId"/>, mirroring
+    /// <see cref="ChatWithTraceAsync(string, string)"/> but yielding incremental
+    /// <see cref="AgentStreamingDelta"/> events as the model produces output and a
+    /// final <see cref="AgentStreamingCompleted"/> with the full trace. Used by the
+    /// "Chat with the agent" follow-up panel on the agent pages so users can ask
+    /// further questions in the same conversation as the initial /process call.
+    /// </summary>
+    public async IAsyncEnumerable<AgentStreamingEvent> ChatStreamingTraceAsync(
+        string previousResponseId,
+        string message,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(previousResponseId))
+            throw new ArgumentException("previousResponseId is required", nameof(previousResponseId));
+
+        var sw = Stopwatch.StartNew();
+
+        CreateResponseOptions nextOptions = new()
+        {
+            PreviousResponseId = previousResponseId,
+            InputItems = { ResponseItem.CreateUserMessageItem(message) }
+        };
+
+        ResponseResult? completedResponse = null;
+        var allOutputItems = new List<ResponseItem>();
+        var textBuilder = new StringBuilder();
+
+        while (true)
+        {
+            var pendingApprovals = new List<string>();
+            completedResponse = null;
+
+            await foreach (var update in _responseClient
+                .CreateResponseStreamingAsync(nextOptions, cancellationToken)
+                .WithCancellation(cancellationToken))
+            {
+                if (update is StreamingResponseOutputTextDeltaUpdate delta)
+                {
+                    textBuilder.Append(delta.Delta);
+                    yield return new AgentStreamingDelta(delta.Delta);
+                }
+                else if (update is StreamingResponseOutputItemDoneUpdate itemDone)
+                {
+                    allOutputItems.Add(itemDone.Item);
+                    if (itemDone.Item is McpToolCallApprovalRequestItem mcpCall)
+                    {
+                        _logger.LogInformation("Auto-approving MCP tool call on {ServerLabel} (chat turn)", mcpCall.ServerLabel);
+                        pendingApprovals.Add(mcpCall.Id);
+                    }
+                }
+                else if (update is StreamingResponseCompletedUpdate done)
+                {
+                    completedResponse = done.Response;
+                }
+            }
+
+            if (pendingApprovals.Count == 0)
+                break;
+
+            nextOptions = new CreateResponseOptions { PreviousResponseId = completedResponse!.Id };
+            foreach (var id in pendingApprovals)
+                nextOptions.InputItems.Add(ResponseItem.CreateMcpApprovalResponseItem(id, approved: true));
+        }
+
+        sw.Stop();
+        _logger.LogInformation("Agent {AgentId} chat streaming completed in {Duration}ms", _agentId, sw.ElapsedMilliseconds);
+
+        var citations = ExtractCitations(completedResponse);
+        var rawItems = SerializeOutputItems(allOutputItems);
+        var trace = new AgentTraceResult(
+            Input: message,
+            Text: textBuilder.ToString(),
+            Citations: citations,
+            OutputItems: rawItems,
+            ResponseId: completedResponse?.Id,
+            DurationMs: sw.ElapsedMilliseconds);
+
+        yield return new AgentStreamingCompleted(trace);
+    }
+
     public async IAsyncEnumerable<string> RunStreamingAsync(string message, [EnumeratorCancellation] CancellationToken cancellationToken = default, List<SearchCitation>? citationsOutput = null, string? conversationId = null)
     {
         var sw = Stopwatch.StartNew();

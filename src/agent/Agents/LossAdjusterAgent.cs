@@ -50,9 +50,6 @@ public class LossAdjusterAgent : ClaimsAgent
           .xlsx workbook for the case. Include the returned download URL in
           your "Recommendation for Assessor" section as a markdown link, e.g.
           `[Download workbook](<downloadUrl>)`.
-        - **extractDoc_DI(documentUrl)** — use Azure AI Document Intelligence
-          when the brief points at a scanned contractor report or photo and
-          you need raw OCR text rather than a structured quote.
 
         Skip any tool that has no relevant input; do not invent URLs.
 

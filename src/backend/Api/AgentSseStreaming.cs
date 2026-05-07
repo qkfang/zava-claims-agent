@@ -106,6 +106,66 @@ internal static class AgentSseStreaming
         await WriteEventAsync(response, "done", envelope, ct);
     }
 
+    /// <summary>
+    /// Same as <see cref="StreamAsync"/> but resumes a previous Foundry agent
+    /// conversation by chaining off <paramref name="previousResponseId"/> via
+    /// <see cref="ZavaClaims.Agents.BaseAgent.ChatStreamingTraceAsync"/>. Used by
+    /// the "Chat with the agent" follow-up panels on each agent page.
+    /// </summary>
+    public static async Task StreamChatAsync(
+        HttpContext httpContext,
+        ClaimsAgent? agent,
+        string previousResponseId,
+        string message,
+        Func<AgentTraceResult?, string?, object> buildEnvelope,
+        ILogger logger,
+        string agentLabel)
+    {
+        var response = httpContext.Response;
+        response.StatusCode = StatusCodes.Status200OK;
+        response.Headers.ContentType = "text/event-stream";
+        response.Headers.CacheControl = "no-cache";
+        response.Headers["X-Accel-Buffering"] = "no";
+
+        var ct = httpContext.RequestAborted;
+
+        AgentTraceResult? trace = null;
+        string? agentError = null;
+
+        if (agent is not null)
+        {
+            try
+            {
+                await foreach (var ev in agent.ChatStreamingTraceAsync(previousResponseId, message, ct))
+                {
+                    switch (ev)
+                    {
+                        case AgentStreamingDelta delta:
+                            if (!string.IsNullOrEmpty(delta.Text))
+                                await WriteEventAsync(response, "delta", new { text = delta.Text }, ct);
+                            break;
+                        case AgentStreamingCompleted completed:
+                            trace = completed.Trace;
+                            break;
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "{AgentLabel} chat streaming invocation failed", agentLabel);
+                agentError = ex.Message;
+                await WriteEventAsync(response, "error", new { message = ex.Message }, ct);
+            }
+        }
+
+        var envelope = buildEnvelope(trace, agentError);
+        await WriteEventAsync(response, "done", envelope, ct);
+    }
+
     private static async Task WriteEventAsync(HttpResponse response, string eventName, object payload, CancellationToken ct)
     {
         if (ct.IsCancellationRequested) return;

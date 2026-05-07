@@ -4,6 +4,7 @@ using ZavaClaims.App.Services;
 namespace ZavaClaims.App.Api;
 
 record LossAdjusterProcessRequest(string ClaimNumber);
+record LossAdjusterChatRequest(string PreviousResponseId, string Message);
 
 /// <summary>
 /// HTTP endpoints that back the "Try It Out" tab on the Loss Adjuster agent
@@ -129,6 +130,9 @@ public static class LossAdjusterApi
                     agentError,
                     agentConfigured = agentFactory.IsConfigured,
                     agentInput = trace?.Input,
+                    // Surface previousResponseId so the page can chain follow-up
+                    // chat turns into the same Foundry conversation.
+                    previousResponseId = trace?.ResponseId,
                     agentRawOutput = trace is null ? null : new
                     {
                         text = trace.Text,
@@ -164,6 +168,82 @@ public static class LossAdjusterApi
             }
 
             return Results.Ok(BuildEnvelope(traceResult, agentInvocationError));
+        });
+
+        // Continue the Loss Adjuster conversation. Takes the previousResponseId
+        // returned from the initial /loss-adjuster/process call (or the most
+        // recent /loss-adjuster/chat turn) plus a free-form follow-up question
+        // from the user, and streams the agent's reply back over SSE in the
+        // same envelope shape as /process. This powers the "Chat with the
+        // agent" follow-up panel on the Loss Adjuster page so end users can
+        // ask follow-up questions and have a discussion with the agent in the
+        // same Foundry conversation, with citations / tool calls preserved.
+        app.MapPost("/loss-adjuster/chat", async (HttpContext httpContext, LossAdjusterChatRequest request) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.PreviousResponseId))
+                return Results.BadRequest(new { error = "previousResponseId is required" });
+            if (string.IsNullOrWhiteSpace(request.Message))
+                return Results.BadRequest(new { error = "message is required" });
+
+            logger.LogInformation("Loss Adjuster chat: previousResponseId={ResponseId}",
+                Sanitize(request.PreviousResponseId));
+
+            object BuildChatEnvelope(AgentTraceResult? trace, string? agentError)
+            {
+                var notes = trace?.Text ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(notes))
+                {
+                    notes = !agentFactory.IsConfigured
+                        ? "_Foundry agent is not configured in this environment, so the live loss-adjuster chat is unavailable._"
+                        : !string.IsNullOrWhiteSpace(agentError)
+                            ? $"_The Loss Adjuster Agent did not return a follow-up reply ({agentError})._"
+                            : "_The Loss Adjuster Agent completed without producing follow-up text._";
+                }
+
+                return new
+                {
+                    agentNotes = notes,
+                    agentError,
+                    agentConfigured = agentFactory.IsConfigured,
+                    agentInput = trace?.Input,
+                    previousResponseId = trace?.ResponseId ?? request.PreviousResponseId,
+                    agentRawOutput = trace is null ? null : new
+                    {
+                        text = trace.Text,
+                        citations = trace.Citations,
+                        outputItems = trace.OutputItems,
+                        responseId = trace.ResponseId,
+                        durationMs = trace.DurationMs
+                    }
+                };
+            }
+
+            if (AgentSseStreaming.WantsEventStream(httpContext))
+            {
+                var streamingAgent = agentFactory.IsConfigured ? agentFactory.Create("loss-adjuster") : null;
+                await AgentSseStreaming.StreamChatAsync(
+                    httpContext, streamingAgent, request.PreviousResponseId, request.Message,
+                    BuildChatEnvelope, logger, "Loss Adjuster Agent");
+                return Results.Empty;
+            }
+
+            AgentTraceResult? chatTrace = null;
+            string? chatError = null;
+            if (agentFactory.IsConfigured)
+            {
+                try
+                {
+                    var agent = agentFactory.Create("loss-adjuster");
+                    chatTrace = await agent.ChatWithTraceAsync(request.PreviousResponseId, request.Message);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Loss Adjuster Agent chat invocation failed");
+                    chatError = ex.Message;
+                }
+            }
+
+            return Results.Ok(BuildChatEnvelope(chatTrace, chatError));
         });
     }
 

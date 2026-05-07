@@ -12,8 +12,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Chat services (ported from forex-trading-agent/src/research-analytics).
+// ChatService backs the Account page's "Ask AI" document-query chatbot
+// (/api/chat/ask). The floating "Zava Claims Assistant" widget and its
+// /chatkit endpoint have been removed.
 builder.Services.AddHttpClient<ChatService>();
-builder.Services.AddSingleton<ChatKitStore>();
 
 // Bind claims-agent configuration (Foundry endpoint, model deployment, search /
 // Bing connections) and register a singleton factory that the Blazor app uses
@@ -169,10 +171,6 @@ app.UseWebSockets();
 
 // ── Markdown rendering endpoint (used by per-agent pages to format agent output) ──
 app.MapMarkdownEndpoints();
-
-// ── Floating-chatbot endpoint (ChatKit SSE protocol) ─────────────────────────
-app.MapPost("/chatkit", (HttpContext ctx, ChatKitStore store, ChatService chatService) =>
-    ChatKitHandler.HandleAsync(ctx, store, chatService));
 
 // ── Document-query chatbot endpoint (advanced chat with references) ──────────
 app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>

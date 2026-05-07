@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ZavaClaims.Agents;
 using ZavaClaims.App.Models;
 using ZavaClaims.App.Services;
@@ -115,7 +116,7 @@ public static class AssessmentApi
             // directly (rather than only summarising at a high level).
             var checklistReport = PolicyDocumentCatalog.BuildReport(claim);
             var checklistBlock = string.Join("\n", checklistReport.Items.Select(i =>
-                $"- [{i.ClauseRef}] {i.Label} — preliminary status: {i.Status} — {i.Finding}"));
+                $"- id={i.Id} | clause={i.ClauseRef} | {i.Label} — preliminary status: {i.Status} — {i.Finding}"));
 
             var prompt =
                 "CLAIM CASE FOR ASSESSMENT\n" +
@@ -144,11 +145,28 @@ public static class AssessmentApi
                 "policy clause. Then identify coverage and exclusions, list any missing " +
                 "information, and recommend approve / partial / decline in your standard " +
                 "output format. Add a section titled \"Policy Validation Checklist Review\" " +
-                "with one bullet per checklist item before the Plain-English Explanation.";
+                "with one bullet per checklist item before the Plain-English Explanation, " +
+                "and at the very end of your reply emit the fenced ```json``` block " +
+                "described in your system instructions, containing one entry in `items` " +
+                "for every checklist id supplied above (preserve the id and clauseRef).";
 
             object BuildEnvelope(AgentTraceResult? trace, string? agentError)
             {
-                var notes = trace?.Text;
+                var rawText = trace?.Text;
+
+                // Try to extract the structured checklist report the agent
+                // is instructed to emit, so Step 4 in the UI can render the
+                // agent's own validation results. Fall back to the
+                // deterministic per-claim report when the agent isn't
+                // configured or didn't produce a parseable JSON block.
+                var agentChecklistReport = TryExtractAgentChecklist(rawText)
+                    ?? ChecklistReportFromBuilt(checklistReport);
+
+                // Strip the trailing fenced ```json``` block from the
+                // narrative tab so the operator sees a clean prose write-up;
+                // the structured data is exposed via agentChecklistReport
+                // and the unmodified text is still in agentRawOutput.text.
+                var notes = StripTrailingJsonFence(rawText);
                 if (string.IsNullOrWhiteSpace(notes))
                     notes = BuildFallbackAssessment(claim);
 
@@ -159,6 +177,7 @@ public static class AssessmentApi
                     agentConfigured = agentFactory.IsConfigured,
                     agentError,
                     agentInput = trace?.Input,
+                    agentChecklistReport,
                     agentRawOutput = trace is null ? null : new
                     {
                         text = trace.Text,
@@ -216,4 +235,151 @@ public static class AssessmentApi
 
     private static string Sanitize(string value) =>
         value.Replace('\r', ' ').Replace('\n', ' ');
+
+    /// <summary>
+    /// Project the deterministic <see cref="AssessmentReport"/> into the same
+    /// JSON shape the Claims Assessment Agent is asked to emit, so the UI can
+    /// render Step 4 from a single field regardless of whether the agent
+    /// produced the result or we fell back to the built-in catalogue.
+    /// </summary>
+    private static object ChecklistReportFromBuilt(AssessmentReport report) => new
+    {
+        recommendation = report.Recommendation.ToString(),
+        recommendationLabel = report.RecommendationLabel,
+        recommendationReason = report.RecommendationReason,
+        settlementPosition = report.SettlementPosition,
+        items = report.Items.Select(i => new
+        {
+            id = i.Id,
+            label = i.Label,
+            status = i.Status.ToString().ToLowerInvariant(),
+            finding = i.Finding,
+            clauseRef = i.ClauseRef,
+        }).ToArray(),
+    };
+
+    /// <summary>
+    /// Locate a fenced <c>```json … ```</c> block inside the agent's reply
+    /// and parse it as the structured checklist report described in the
+    /// agent system prompt. Returns null when no parseable block is found.
+    /// </summary>
+    private static object? TryExtractAgentChecklist(string? agentText)
+    {
+        if (string.IsNullOrWhiteSpace(agentText)) return null;
+
+        // Walk the text and consider every fenced ```json block; take the
+        // last one that parses successfully — the agent is instructed to
+        // place the JSON at the end of its reply.
+        const string fence = "```";
+        object? parsed = null;
+        var search = 0;
+        while (search < agentText.Length)
+        {
+            var openIdx = agentText.IndexOf(fence, search, StringComparison.Ordinal);
+            if (openIdx < 0) break;
+
+            var langStart = openIdx + fence.Length;
+            var langEnd = agentText.IndexOf('\n', langStart);
+            if (langEnd < 0) break;
+
+            var lang = agentText.Substring(langStart, langEnd - langStart).Trim();
+            var bodyStart = langEnd + 1;
+            var closeIdx = agentText.IndexOf(fence, bodyStart, StringComparison.Ordinal);
+            if (closeIdx < 0) break;
+
+            if (string.Equals(lang, "json", StringComparison.OrdinalIgnoreCase))
+            {
+                var body = agentText.Substring(bodyStart, closeIdx - bodyStart).Trim();
+                var maybe = TryParseChecklistJson(body);
+                if (maybe is not null) parsed = maybe;
+            }
+
+            search = closeIdx + fence.Length;
+        }
+
+        // Fallback — some models drop the fence; try slicing from the first
+        // '{' to the last '}' and parse that as JSON.
+        if (parsed is null)
+        {
+            var firstBrace = agentText.IndexOf('{');
+            var lastBrace = agentText.LastIndexOf('}');
+            if (firstBrace >= 0 && lastBrace > firstBrace)
+            {
+                var slice = agentText.Substring(firstBrace, lastBrace - firstBrace + 1);
+                parsed = TryParseChecklistJson(slice);
+            }
+        }
+
+        return parsed;
+    }
+
+    private static object? TryParseChecklistJson(string body)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return null;
+            if (!root.TryGetProperty("items", out var itemsEl) || itemsEl.ValueKind != JsonValueKind.Array)
+                return null;
+
+            string? Str(JsonElement el, string name) =>
+                el.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+
+            var items = new List<object>();
+            foreach (var it in itemsEl.EnumerateArray())
+            {
+                if (it.ValueKind != JsonValueKind.Object) continue;
+                var status = (Str(it, "status") ?? "info").ToLowerInvariant();
+                if (status is not ("pass" or "fail" or "info")) status = "info";
+                items.Add(new
+                {
+                    id = Str(it, "id") ?? string.Empty,
+                    label = Str(it, "label") ?? string.Empty,
+                    status,
+                    finding = Str(it, "finding") ?? string.Empty,
+                    clauseRef = Str(it, "clauseRef") ?? string.Empty,
+                });
+            }
+
+            return new
+            {
+                recommendation = Str(root, "recommendation") ?? "NeedMoreInfo",
+                recommendationLabel = Str(root, "recommendationLabel") ?? "Need More Info",
+                recommendationReason = Str(root, "recommendationReason") ?? string.Empty,
+                settlementPosition = Str(root, "settlementPosition") ?? string.Empty,
+                items = items.ToArray(),
+            };
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Remove a trailing fenced <c>```json … ```</c> block from the agent's
+    /// reply so the narrative tab shows only the prose write-up; the
+    /// structured checklist is exposed separately via
+    /// <c>agentChecklistReport</c>.
+    /// </summary>
+    private static string? StripTrailingJsonFence(string? agentText)
+    {
+        if (string.IsNullOrWhiteSpace(agentText)) return agentText;
+
+        var trimmed = agentText.TrimEnd();
+        if (!trimmed.EndsWith("```", StringComparison.Ordinal)) return agentText;
+
+        var bodyEnd = trimmed.Length - 3;
+        var openIdx = trimmed.LastIndexOf("```", bodyEnd - 1, StringComparison.Ordinal);
+        if (openIdx < 0) return agentText;
+
+        var langStart = openIdx + 3;
+        var langEnd = trimmed.IndexOf('\n', langStart);
+        if (langEnd < 0 || langEnd > bodyEnd) return agentText;
+        var lang = trimmed.Substring(langStart, langEnd - langStart).Trim();
+        if (!string.Equals(lang, "json", StringComparison.OrdinalIgnoreCase)) return agentText;
+
+        return trimmed.Substring(0, openIdx).TrimEnd();
+    }
 }
