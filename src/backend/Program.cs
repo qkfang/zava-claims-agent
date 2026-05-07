@@ -1,7 +1,4 @@
 using System.Text.Json;
-using Azure.AI.Projects;
-using OpenAI.Responses;
-using ZavaClaims.Agents;
 using ZavaClaims.App.Api;
 using ZavaClaims.App.Components;
 using ZavaClaims.App.Mcp;
@@ -51,9 +48,7 @@ builder.Services.AddHttpClient();
 //   - SettlementMcpTools (settlement_* payment-flow tools — payee validation,
 //     invoice match, authority check, calculation, Teams approval request,
 //     and gated release)
-// The notice intelligence flow conditionally adds AgentDiMcpTools below when
-// its Azure resources are configured.
-var mcpBuilder = builder.Services.AddMcpServer()
+builder.Services.AddMcpServer()
     .WithHttpTransport(options => { options.Stateless = true; })
     .WithTools<LossAdjusterMcpTools>()
     .WithTools<ZavaClaims.App.Mcp.SupplierMcpTools>()
@@ -81,57 +76,12 @@ builder.Services.AddSingleton<FraudCaseDocumentStore>();
 builder.Services.AddSingleton<FraudDocumentVerifier>(sp => new FraudDocumentVerifier(
     sp.GetRequiredService<FraudCaseDocumentStore>(),
     sp.GetRequiredService<IConfiguration>(),
-    sp.GetRequiredService<ILogger<FraudDocumentVerifier>>(),
-    sp.GetService<ContentUnderstandingService>()));
+    sp.GetRequiredService<ILogger<FraudDocumentVerifier>>()));
 
 // Quote-request PDF generator used by both the deterministic
 // /supplier/process flow and the SupplierMcpTools MCP tool surface so the
 // Supplier Coordinator agent can produce a downloadable PDF for the demo.
 builder.Services.AddSingleton<QuoteRequestPdfService>();
-
-// ── Notice intelligence integration (ported from demo-foundry-document-intelligence/agentdi)
-// Only enabled when the required Azure resources are configured. When enabled,
-// it exposes the four agentdi agents (Extract DI/CU, Notification, Correspondence)
-// over /notice/* HTTP endpoints, an MCP tool surface at /mcp, and the static
-// scenario pages under wwwroot/notice/.
-var docIntelligenceEndpoint = builder.Configuration["AZURE_DOC_INTELLIGENCE_ENDPOINT"];
-var storageAccountName = builder.Configuration["AZURE_STORAGE_ACCOUNT_NAME"];
-var noticeEnabled = !string.IsNullOrWhiteSpace(agentOptions.ProjectEndpoint)
-    && !string.IsNullOrWhiteSpace(agentOptions.ModelDeploymentName)
-    && !string.IsNullOrWhiteSpace(docIntelligenceEndpoint)
-    && !string.IsNullOrWhiteSpace(storageAccountName);
-
-Azure.Identity.DefaultAzureCredential? noticeCredential = null;
-if (noticeEnabled)
-{
-    var foundryEndpoint = builder.Configuration["AZURE_AI_FOUNDRY_ENDPOINT"]
-        ?? new Uri(agentOptions.ProjectEndpoint!).GetLeftPart(UriPartial.Authority);
-
-    noticeCredential = new Azure.Identity.DefaultAzureCredential(new Azure.Identity.DefaultAzureCredentialOptions
-    {
-        TenantId = agentOptions.TenantId,
-        ExcludeVisualStudioCredential = true,
-        ExcludeVisualStudioCodeCredential = true,
-        ExcludeSharedTokenCacheCredential = true
-    });
-
-    builder.Services.AddSingleton(sp => new DocIntelligenceService(
-        docIntelligenceEndpoint!, noticeCredential, sp.GetRequiredService<ILogger<DocIntelligenceService>>()));
-    builder.Services.AddSingleton(sp => new BlobStorageService(
-        storageAccountName!, noticeCredential, sp.GetRequiredService<ILogger<BlobStorageService>>()));
-
-    var cuGpt41Deployment = builder.Configuration["AZURE_CU_GPT41_DEPLOYMENT"] ?? "gpt-4.1";
-    var cuGpt41MiniDeployment = builder.Configuration["AZURE_CU_GPT41_MINI_DEPLOYMENT"] ?? "gpt-4.1-mini";
-    var cuEmbeddingDeployment = builder.Configuration["AZURE_CU_EMBEDDING_DEPLOYMENT"] ?? "text-embedding-3-large";
-    builder.Services.AddSingleton(sp => new ContentUnderstandingService(
-        foundryEndpoint, noticeCredential, cuGpt41Deployment, cuGpt41MiniDeployment, cuEmbeddingDeployment,
-        sp.GetRequiredService<ILogger<ContentUnderstandingService>>()));
-
-    builder.Services.AddSingleton<NotificationService>();
-    builder.Services.AddSingleton<PendingApprovalStore>();
-
-    mcpBuilder.WithTools<AgentDiMcpTools>();
-}
 
 var app = builder.Build();
 
@@ -144,8 +94,7 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseAntiforgery();
 
 // CORS + MCP Accept-header normalisation are always enabled because the MCP
-// server is always registered (loss-adjuster + supplier tools). Notice
-// intelligence optionally adds more tools to the same server below.
+// server hosts the loss-adjuster, supplier and settlement tool surfaces.
 app.UseCors(policy => policy
     .AllowAnyOrigin()
     .AllowAnyMethod()
@@ -167,9 +116,8 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// MCP server is registered unconditionally so SupplierMcpTools and
-// LossAdjusterMcpTools are always available; AgentDi tools join the same
-// /mcp endpoint when noticeEnabled.
+// MCP server is registered unconditionally so SupplierMcpTools,
+// LossAdjusterMcpTools and SettlementMcpTools are always available.
 app.MapMcp("/mcp");
 
 // In Development, force browsers to never cache static assets, Razor pages,
@@ -287,10 +235,6 @@ app.MapPost("/api/chat/ask", async (HttpContext ctx, ChatService chatService) =>
     app.MapTeamLeaderGroupChatEndpoints(groupChatService, intakeLogger);
 }
 
-// ── MCP server endpoint (always on; loss-adjuster MCP tools live here, and
-//    the optional notice intelligence flow adds AgentDiMcpTools alongside) ─
-app.MapMcp("/mcp");
-
 // ── Loss Adjuster output download endpoint ──
 //    Streams .xlsx files written by the generateClaimExcel MCP tool.
 app.MapGet("/loss-adjuster/download/{fileName}", (string fileName, IWebHostEnvironment env) =>
@@ -374,55 +318,6 @@ app.MapGet("/loss-adjuster/download/{fileName}", (string fileName, IWebHostEnvir
 {
     var metadataOptions = app.Services.GetRequiredService<ClaimsAgentOptions>();
     app.MapAgentMetadataEndpoints(metadataOptions);
-}
-
-// ── Notice intelligence endpoints (agentdi port) ─────────────────────────────
-if (noticeEnabled)
-{
-    var noticeLogger = app.Services.GetRequiredService<ILogger<Program>>();
-    var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-
-    var aiProjectClient = new AIProjectClient(new Uri(agentOptions.ProjectEndpoint!), noticeCredential!);
-    // APP_MCP_URL must be publicly reachable (devtunnel/ngrok) for Foundry
-    // to enumerate MCP tools. When unset, the notice agents run without
-    // the agentdi MCP tool surface rather than failing on a localhost URL.
-    var appMcpUrl = app.Configuration["APP_MCP_URL"];
-    ResponseTool[] noApprovalTools = Array.Empty<ResponseTool>();
-    ResponseTool[] approvalTools = Array.Empty<ResponseTool>();
-    if (!string.IsNullOrWhiteSpace(appMcpUrl))
-    {
-        var mcpUriBase = appMcpUrl.TrimEnd('/');
-        var appMcpTool = ResponseTool.CreateMcpTool(
-            serverLabel: "agentdi-mcp",
-            serverUri: new Uri($"{mcpUriBase}/mcp"),
-            toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.NeverRequireApproval));
-        var appMcpToolWithApproval = ResponseTool.CreateMcpTool(
-            serverLabel: "agentdi-mcp",
-            serverUri: new Uri($"{mcpUriBase}/mcp"),
-            toolCallApprovalPolicy: new McpToolCallApprovalPolicy(GlobalMcpToolCallApprovalPolicy.AlwaysRequireApproval));
-        noApprovalTools = new[] { appMcpTool };
-        approvalTools = new[] { appMcpToolWithApproval };
-    }
-    else
-    {
-        app.Logger.LogWarning("APP_MCP_URL is not configured; notice intelligence agents will run without the agentdi MCP tool surface. Set APP_MCP_URL to a publicly reachable tunnel URL (devtunnel/ngrok) to enable it.");
-    }
-
-    var deployment = agentOptions.ModelDeploymentName!;
-    var notificationAgent = new CtAgNotification(aiProjectClient, deployment, noApprovalTools, loggerFactory.CreateLogger<CtAgNotification>());
-    var correspondenceAgent = new CtAgCorrespondence(aiProjectClient, deployment, approvalTools, loggerFactory.CreateLogger<CtAgCorrespondence>());
-    var extractDiAgent = new CtAgExtractDI(aiProjectClient, deployment, noApprovalTools, loggerFactory.CreateLogger<CtAgExtractDI>());
-    var extractCuAgent = new CtAgExtractCU(aiProjectClient, deployment, loggerFactory.CreateLogger<CtAgExtractCU>());
-
-    var docService = app.Services.GetRequiredService<DocIntelligenceService>();
-    var cuService = app.Services.GetRequiredService<ContentUnderstandingService>();
-    await cuService.InitializeAsync();
-    var blobStorage = app.Services.GetRequiredService<BlobStorageService>();
-    var notificationService = app.Services.GetRequiredService<NotificationService>();
-    var approvalStore = app.Services.GetRequiredService<PendingApprovalStore>();
-
-    app.MapNoticeEndpoints(notificationAgent, correspondenceAgent, extractDiAgent, extractCuAgent,
-        docService, cuService, blobStorage, notificationService, approvalStore, noticeLogger);
 }
 
 app.Run();

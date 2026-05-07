@@ -73,15 +73,17 @@
     color: rgba(255, 255, 255, 0.45);
     padding: 1.1rem 1.25rem 0.45rem 1.25rem;
     font-weight: 600;
-    /* Render as a full-width clickable header so users can expand/collapse the section. */
+    /* Render the <summary> as a full-width clickable header. */
     display: block;
-    width: 100%;
-    text-align: left;
-    background: transparent;
-    border: 0;
     cursor: pointer;
-    font-family: inherit;
+    user-select: none;
+    list-style: none;        /* Firefox */
     transition: color 0.15s ease;
+}
+
+/* Hide the default disclosure triangle on WebKit/Blink so our own chevron shows. */
+.nav-section-label::-webkit-details-marker {
+    display: none;
 }
 
 .nav-section-label:hover {
@@ -95,12 +97,13 @@
 }
 
 /* Collapsible groups in the side nav. The "AI Agents" and "Scenarios" sections
-   auto-expand based on the current route and can be toggled by clicking their title. */
+   use native <details>/<summary>: the `open` attribute is seeded from the
+   current route, and the browser toggles it on click. */
 .nav-section .nav-section-body {
     display: none;
 }
 
-.nav-section.open .nav-section-body {
+.nav-section[open] .nav-section-body {
     display: block;
 }
 
@@ -113,7 +116,7 @@
     transition: transform 0.15s ease;
 }
 
-.nav-section.open .nav-section-label::after {
+.nav-section[open] .nav-section-label::after {
     transform: rotate(0deg);
     color: rgba(255, 255, 255, 0.55);
 }

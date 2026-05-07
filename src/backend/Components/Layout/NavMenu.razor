@@ -22,13 +22,12 @@
             </NavLink>
         </div>
 
-        <div class="nav-section @(IsAgentsOpen ? "open" : "")">
-            <button type="button"
-                    class="nav-section-label"
-                    aria-expanded="@(IsAgentsOpen ? "true" : "false")"
-                    @onclick="ToggleAgents">
-                AI Agents
-            </button>
+        @* Native <details>/<summary> gives us click-to-toggle without needing
+           InteractiveServer rendering. The `open` attribute is seeded from the
+           current route so the user's active section is expanded by default,
+           and the browser then handles open/close on click. *@
+        <details class="nav-section" open="@IsAgentsOpen">
+            <summary class="nav-section-label">AI Agents</summary>
             <div class="nav-section-body">
                 @foreach (var agent in AgentCatalog.All)
                 {
@@ -39,15 +38,10 @@
                     </div>
                 }
             </div>
-        </div>
+        </details>
 
-        <div class="nav-section @(IsScenariosOpen ? "open" : "")">
-            <button type="button"
-                    class="nav-section-label"
-                    aria-expanded="@(IsScenariosOpen ? "true" : "false")"
-                    @onclick="ToggleScenarios">
-                Scenarios
-            </button>
+        <details class="nav-section" open="@IsScenariosOpen">
+            <summary class="nav-section-label">Scenarios</summary>
             <div class="nav-section-body">
                 @foreach (var scenario in ScenarioCatalog.All)
                 {
@@ -58,7 +52,7 @@
                     </div>
                 }
             </div>
-        </div>
+        </details>
     </nav>
 
     <div class="trust-footer" aria-label="Security and trust">
@@ -90,14 +84,17 @@
     {
         var path = Nav.ToBaseRelativePath(uri).TrimStart('/');
         // Auto-open the section matching the current route so the active item is visible.
-        // The user can still toggle either section independently after navigation.
+        // After the page renders, the user can independently expand/collapse either
+        // section via the native <details> click handling.
         if (path.StartsWith("scenarios", StringComparison.OrdinalIgnoreCase))
         {
             IsScenariosOpen = true;
+            IsAgentsOpen = false;
         }
         else if (path.StartsWith("agents", StringComparison.OrdinalIgnoreCase))
         {
             IsAgentsOpen = true;
+            IsScenariosOpen = false;
         }
         else
         {
@@ -106,10 +103,6 @@
             IsScenariosOpen = false;
         }
     }
-
-    private void ToggleAgents() => IsAgentsOpen = !IsAgentsOpen;
-
-    private void ToggleScenarios() => IsScenariosOpen = !IsScenariosOpen;
 
     public void Dispose()
     {
