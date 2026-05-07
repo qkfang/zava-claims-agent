@@ -132,8 +132,14 @@ public class QuoteRequestPdfService
         section.PageSetup.PageFormat = PageFormat.A4;
         section.PageSetup.LeftMargin = Unit.FromPoint(36);
         section.PageSetup.RightMargin = Unit.FromPoint(36);
-        section.PageSetup.TopMargin = Unit.FromPoint(36);
-        section.PageSetup.BottomMargin = Unit.FromPoint(36);
+        // The header has a two-line masthead + an accent rule below it
+        // (~55pt tall). Give it enough headroom so the body doesn't render
+        // on top of the header text. HeaderDistance is the gap from the
+        // top of the page to the top of the header itself.
+        section.PageSetup.TopMargin = Unit.FromPoint(110);
+        section.PageSetup.BottomMargin = Unit.FromPoint(50);
+        section.PageSetup.HeaderDistance = Unit.FromPoint(28);
+        section.PageSetup.FooterDistance = Unit.FromPoint(20);
 
         BuildHeader(section, safeClaim, id);
         BuildFooter(section);
