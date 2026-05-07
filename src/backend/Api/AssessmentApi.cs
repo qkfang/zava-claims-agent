@@ -110,6 +110,13 @@ public static class AssessmentApi
 
             logger.LogInformation("Assessment process: claimNumber={ClaimNumber}", Sanitize(claim.ClaimNumber));
 
+            // Build a concise rendering of the policy validation checklist so
+            // the agent's narrative can address each clause-level check
+            // directly (rather than only summarising at a high level).
+            var checklistReport = PolicyDocumentCatalog.BuildReport(claim);
+            var checklistBlock = string.Join("\n", checklistReport.Items.Select(i =>
+                $"- [{i.ClauseRef}] {i.Label} — preliminary status: {i.Status} — {i.Finding}"));
+
             var prompt =
                 "CLAIM CASE FOR ASSESSMENT\n" +
                 "=========================\n" +
@@ -127,10 +134,17 @@ public static class AssessmentApi
                 "INCIDENT DESCRIPTION\n" +
                 "--------------------\n" +
                 claim.IncidentDescription + "\n\n" +
+                "POLICY VALIDATION CHECKLIST (per-clause checks for this claim)\n" +
+                "--------------------------------------------------------------\n" +
+                checklistBlock + "\n\n" +
                 "Please review this claim against the relevant Zava Insurance policy " +
-                "wording for the customer's policy, identify coverage and exclusions, " +
-                "list any missing information, and recommend approve / partial / decline " +
-                "in your standard output format.";
+                "wording for the customer's policy and assess EACH item in the Policy " +
+                "Validation Checklist above. For every checklist item, confirm whether " +
+                "it passes, fails, or needs more information, and cite the supporting " +
+                "policy clause. Then identify coverage and exclusions, list any missing " +
+                "information, and recommend approve / partial / decline in your standard " +
+                "output format. Add a section titled \"Policy Validation Checklist Review\" " +
+                "with one bullet per checklist item before the Plain-English Explanation.";
 
             object BuildEnvelope(AgentTraceResult? trace, string? agentError)
             {

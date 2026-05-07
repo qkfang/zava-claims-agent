@@ -138,34 +138,9 @@
             <button id="assessment-process-btn" type="button">Process with Claims Assessment Agent</button>
             <div id="assessment-process-status" class="assessment-status" hidden></div>
 
-            <div id="assessment-result" class="assessment-result" hidden>
-                <div class="assessment-result-head">
-                    <span class="assessment-result-pill" id="assessment-result-pill"></span>
-                    <span class="assessment-result-title">Assessment recommendation</span>
-                </div>
-                <div id="assessment-result-body" class="agent-md"></div>
-            </div>
-
-            <!-- Step 3a — visual policy + checklist (decided by the agent's output) -->
-            <div id="assessment-validation" class="assessment-validation" hidden>
-                <div class="assessment-validation-grid">
-                    <div class="assessment-policy-card" id="assessment-policy-card"></div>
-                    <div class="assessment-checklist-card">
-                        <div class="assessment-checklist-head">
-                            <span class="assessment-result-pill" id="assessment-checklist-pill"></span>
-                            <span class="assessment-result-title">Policy validation checklist</span>
-                        </div>
-                        <ul class="assessment-checklist" id="assessment-checklist"></ul>
-                        <div class="assessment-decision">
-                            <h4>Reason for decision</h4>
-                            <p id="assessment-decision-reason"></p>
-                            <h4>Settlement position</h4>
-                            <p id="assessment-decision-settlement"></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            <!-- Agent run output — narrative + supporting tabs come first so the
+                 reader sees the agent's recommendation before the per-clause
+                 policy + checklist breakdown that backs it. -->
             <div class="engage-tabs-scope" data-engage-role="claims-assessment">
                 <div class="engage-tabs" role="tablist">
                     <button type="button" class="engage-tab-btn active" data-engage-tab="narrative">Agent Narrative</button>
@@ -207,6 +182,27 @@
                     <div class="engage-info-block">
                         <h4>Raw agent output (text, citations, every output item including tool / function calls)</h4>
                         <div class="json-viewer engage-output-body"><div class="engage-empty">Engage the agent to see the full raw response.</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3a — visual policy + checklist (the per-clause backing
+                 for the agent's narrative recommendation above). -->
+            <div id="assessment-validation" class="assessment-validation" hidden>
+                <div class="assessment-validation-grid">
+                    <div class="assessment-policy-card" id="assessment-policy-card"></div>
+                    <div class="assessment-checklist-card">
+                        <div class="assessment-checklist-head">
+                            <span class="assessment-result-pill" id="assessment-checklist-pill"></span>
+                            <span class="assessment-result-title">Policy validation checklist</span>
+                        </div>
+                        <ul class="assessment-checklist" id="assessment-checklist"></ul>
+                        <div class="assessment-decision">
+                            <h4>Reason for decision</h4>
+                            <p id="assessment-decision-reason"></p>
+                            <h4>Settlement position</h4>
+                            <p id="assessment-decision-settlement"></p>
+                        </div>
                     </div>
                 </div>
             </div>

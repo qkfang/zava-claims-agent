@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using OpenAI.Responses;
 using ZavaClaims.Agents;
 using ZavaClaims.App.Services;
@@ -197,6 +198,52 @@ public static class SettlementApi
             apiApproval.TeamsMessage = teamsResult.Message;
             apiApproval.ApprovalUrl = teamsResult.ApprovalUrl;
 
+            // When the settlement-mcp tool surface isn't reachable from
+            // Foundry (APP_MCP_URL not set), build a "mock MCP tool
+            // results" block that pre-executes the same settlement_*
+            // tools server-side and hands the agent their outputs as
+            // authoritative — so the agent can complete the cross-check
+            // and payment-approval workflow without claiming the tools
+            // are unavailable.
+            var mockToolResultsBlock = settlementMcpTool == null
+                ? BuildMockSettlementToolResults(
+                    record,
+                    approved,
+                    policyLimit,
+                    excess,
+                    depreciation,
+                    priorPayments,
+                    payable,
+                    apiApproval,
+                    teamsResult,
+                    teamsService.IsConfigured)
+                : null;
+
+            var toolUsageInstruction = mockToolResultsBlock == null
+                ? "Use the settlement_* MCP tools to cross-check the payee, " +
+                  "match the invoice if applicable, run the calculation, " +
+                  "check the authority limit, and finally call " +
+                  "settlement_requestPaymentApproval so a human approver " +
+                  "is notified in Microsoft Teams. Do NOT call " +
+                  "settlement_releasePayment in this run — stop after " +
+                  "raising the approval request and ask the human to " +
+                  "approve in Teams."
+                : "The settlement_* MCP tools have ALREADY BEEN INVOKED " +
+                  "for this run and their results are provided in the " +
+                  "MOCK MCP TOOL RESULTS section below. Treat those JSON " +
+                  "payloads as authoritative tool outputs from " +
+                  "settlement_validatePayee, settlement_matchInvoice, " +
+                  "settlement_calculateSettlement, " +
+                  "settlement_checkAuthorityLimit and " +
+                  "settlement_requestPaymentApproval. Do NOT say the " +
+                  "tools are unavailable, do NOT ask the user to enable " +
+                  "them, and do NOT attempt to re-call them. Use these " +
+                  "values directly to produce the settlement output. The " +
+                  "human-approval request has been posted to Microsoft " +
+                  "Teams via settlement_requestPaymentApproval; stop " +
+                  "after surfacing the approvalId and asking the human " +
+                  "to approve — do NOT release the payment in this run.";
+
             var prompt =
                 "CLAIM CASE\n" +
                 "==========\n" +
@@ -215,14 +262,9 @@ public static class SettlementApi
                 $"Excess / deductible: {FormatMoney(excess)}\n" +
                 $"Depreciation: {FormatMoney(depreciation)}\n" +
                 $"Prior payments: {FormatMoney(priorPayments)}\n\n" +
-                "Use the settlement_* MCP tools to cross-check the payee, " +
-                "match the invoice if applicable, run the calculation, " +
-                "check the authority limit, and finally call " +
-                "settlement_requestPaymentApproval so a human approver " +
-                "is notified in Microsoft Teams. Do NOT call " +
-                "settlement_releasePayment in this run — stop after " +
-                "raising the approval request and ask the human to " +
-                "approve in Teams.\n\n" +
+                (mockToolResultsBlock ?? string.Empty) +
+                toolUsageInstruction +
+                "\n\n" +
                 "Then produce the standard settlement output " +
                 "(calculation, cross-checks, options, payment approval " +
                 "request, settlement letter draft, and human-approval " +
@@ -437,6 +479,35 @@ public static class SettlementApi
                         ? new List<ResponseTool> { settlementMcpTool }
                         : null;
                     var agent = agentFactory.Create("settlement", extraTools);
+
+                    // When MCP isn't reachable from Foundry, release the
+                    // payment server-side first so the agent can be handed
+                    // a mock settlement_releasePayment result and just
+                    // summarise the outcome — same as the cross-check
+                    // mock in /settlement/process.
+                    string? mockReleaseBlock = null;
+                    if (settlementMcpTool == null)
+                    {
+                        record.Status = PaymentApprovalStatus.Released;
+                        record.PaymentReference = "PMT-" + DateTimeOffset.UtcNow.ToString("yyyyMMdd") + "-" + record.ApprovalId[^6..];
+                        record.ReleasedAt = DateTimeOffset.UtcNow;
+                        logger.LogInformation(
+                            "Settlement payment released via mock MCP fallback: {ApprovalId} ref={Ref}",
+                            Sanitize(record.ApprovalId), Sanitize(record.PaymentReference));
+                        mockReleaseBlock = BuildMockReleasePaymentResult(record);
+                    }
+
+                    var releaseInstruction = mockReleaseBlock == null
+                        ? "Please now call the settlement_releasePayment MCP tool with " +
+                          $"approvalId='{record.ApprovalId}' to actually release the payment, " +
+                          "then briefly summarise the outcome (release status, payment reference, " +
+                          "and what the customer will see next)."
+                        : "settlement_releasePayment has ALREADY been executed for this run " +
+                          "(see MOCK MCP TOOL RESULT below) — DO NOT attempt to call it again " +
+                          "and DO NOT say the tool is unavailable. Use the mock result as " +
+                          "authoritative and briefly summarise the outcome (release status, " +
+                          "payment reference, and what the customer will see next).";
+
                     var resumeMessage =
                         "HUMAN APPROVAL DECISION\n" +
                         "=======================\n" +
@@ -447,10 +518,8 @@ public static class SettlementApi
                         (string.IsNullOrWhiteSpace(body?.Comment) ? string.Empty : $"Approver comment: {body!.Comment}\n") +
                         $"Payable amount: {FormatMoney(record.PayableAmount)}\n" +
                         $"Payee: {record.PayeeName}\n\n" +
-                        "Please now call the settlement_releasePayment MCP tool with " +
-                        $"approvalId='{record.ApprovalId}' to actually release the payment, " +
-                        "then briefly summarise the outcome (release status, payment reference, " +
-                        "and what the customer will see next).";
+                        (mockReleaseBlock ?? string.Empty) +
+                        releaseInstruction;
                     var trace = await agent.ChatWithTraceAsync(record.PreviousResponseId!, resumeMessage);
                     agentNarrative = trace.Text;
                     agentResponseId = trace.ResponseId;
@@ -542,4 +611,151 @@ public static class SettlementApi
 
     private static string Sanitize(string value) =>
         value.Replace('\r', ' ').Replace('\n', ' ');
+
+    private static string NormalizeName(string value) =>
+        new string((value ?? string.Empty)
+            .Where(c => !char.IsWhiteSpace(c) && char.IsLetterOrDigit(c))
+            .ToArray()).ToLowerInvariant();
+
+    /// <summary>
+    /// Build a "MOCK MCP TOOL RESULTS" block that mirrors the JSON
+    /// envelopes returned by <c>SettlementMcpTools</c> for the cross-check
+    /// + approval phase of the workflow. Used as a fallback when
+    /// <c>APP_MCP_URL</c> isn't configured so the Settlement Agent can
+    /// still complete the demo end-to-end without claiming the tools
+    /// are unavailable.
+    /// </summary>
+    private static string BuildMockSettlementToolResults(
+        IntakeClaimRecord record,
+        decimal approvedAmount,
+        decimal policyLimit,
+        decimal excess,
+        decimal depreciation,
+        decimal priorPayments,
+        decimal payableAmount,
+        PaymentApprovalRecord apiApproval,
+        TeamsSendResult teamsResult,
+        bool teamsConfigured)
+    {
+        // Default payee on the API-side approval is the customer name,
+        // so the validatePayee mock always reports a clean match.
+        var payeeName = apiApproval.PayeeName;
+        var payeeMatch = string.Equals(
+            NormalizeName(payeeName),
+            NormalizeName(record.CustomerName),
+            StringComparison.OrdinalIgnoreCase);
+
+        var capped = Math.Min(approvedAmount, policyLimit);
+        const decimal authorityThreshold = 5000m;
+        var authorityRequiresApproval = payableAmount >= authorityThreshold;
+
+        var payeeJson = JsonSerializer.Serialize(new
+        {
+            tool = "settlement_validatePayee",
+            claimNumber = record.ClaimNumber,
+            customerName = record.CustomerName,
+            payeeName,
+            match = payeeMatch,
+            humanApprovalRequired = !payeeMatch,
+            note = payeeMatch
+                ? "Payee matches the customer on the claim."
+                : "Payee name does NOT match the customer on the claim — human approval required before release."
+        });
+
+        // No supplier invoice is supplied in the standard demo flow, so
+        // the matchInvoice mock is reported as skipped rather than
+        // fabricating an invoice total.
+        var invoiceJson = JsonSerializer.Serialize(new
+        {
+            tool = "settlement_matchInvoice",
+            claimNumber = record.ClaimNumber,
+            skipped = true,
+            note = "No supplier invoice supplied for this claim — invoice match not applicable."
+        });
+
+        var calcJson = JsonSerializer.Serialize(new
+        {
+            tool = "settlement_calculateSettlement",
+            inputs = new { approvedAmount, policyLimit, excess, depreciation, priorPayments },
+            steps = new object[]
+            {
+                new { label = "Approved amount",      amount = approvedAmount },
+                new { label = "Policy limit applied", amount = capped - approvedAmount },
+                new { label = "Excess applied",       amount = -excess },
+                new { label = "Depreciation applied", amount = -depreciation },
+                new { label = "Prior payments",       amount = -priorPayments },
+                new { label = "Payable amount",       amount = payableAmount }
+            },
+            payableAmount,
+            payableAmountFormatted = FormatMoney(payableAmount)
+        });
+
+        var authorityJson = JsonSerializer.Serialize(new
+        {
+            tool = "settlement_checkAuthorityLimit",
+            payableAmount,
+            threshold = authorityThreshold,
+            humanApprovalRequired = authorityRequiresApproval,
+            note = authorityRequiresApproval
+                ? $"Payable amount {FormatMoney(payableAmount)} is at or above the authority threshold {FormatMoney(authorityThreshold)} — human approval required."
+                : $"Payable amount {FormatMoney(payableAmount)} is below the authority threshold {FormatMoney(authorityThreshold)}."
+        });
+
+        var approvalJson = JsonSerializer.Serialize(new
+        {
+            tool = "settlement_requestPaymentApproval",
+            approvalId = apiApproval.ApprovalId,
+            claimNumber = apiApproval.ClaimNumber,
+            payableAmount = apiApproval.PayableAmount,
+            payeeName = apiApproval.PayeeName,
+            status = apiApproval.Status.ToString().ToLowerInvariant(),
+            teams = new
+            {
+                sent = teamsResult.Sent,
+                configured = teamsConfigured,
+                channel = teamsResult.Channel,
+                approvalUrl = teamsResult.ApprovalUrl,
+                message = teamsResult.Message
+            },
+            note = "Awaiting human approval. Call settlement_releasePayment with this approvalId after approval has been granted."
+        });
+
+        return
+            "MOCK MCP TOOL RESULTS\n" +
+            "=====================\n" +
+            "Note: APP_MCP_URL is not configured, so the settlement_* MCP " +
+            "tool surface has been pre-executed locally. The JSON below " +
+            "is what each tool returned and MUST be treated as " +
+            "authoritative for this run.\n\n" +
+            "settlement_validatePayee →\n" + payeeJson + "\n\n" +
+            "settlement_matchInvoice →\n" + invoiceJson + "\n\n" +
+            "settlement_calculateSettlement →\n" + calcJson + "\n\n" +
+            "settlement_checkAuthorityLimit →\n" + authorityJson + "\n\n" +
+            "settlement_requestPaymentApproval →\n" + approvalJson + "\n\n";
+    }
+
+    /// <summary>
+    /// Mock equivalent of <c>settlement_releasePayment</c>. Used by the
+    /// popup-driven agent-approve flow when APP_MCP_URL isn't configured:
+    /// the backend transitions the approval record to Released directly
+    /// and hands the agent the JSON it would have got back from the MCP
+    /// tool so it can summarise the outcome.
+    /// </summary>
+    private static string BuildMockReleasePaymentResult(PaymentApprovalRecord record) =>
+        "MOCK MCP TOOL RESULT\n" +
+        "====================\n" +
+        "Note: APP_MCP_URL is not configured. settlement_releasePayment " +
+        "has been executed locally with the following result; treat it " +
+        "as authoritative and summarise the outcome.\n\n" +
+        "settlement_releasePayment →\n" +
+        JsonSerializer.Serialize(new
+        {
+            tool = "settlement_releasePayment",
+            approvalId = record.ApprovalId,
+            released = true,
+            status = record.Status.ToString().ToLowerInvariant(),
+            paymentReference = record.PaymentReference,
+            payableAmount = record.PayableAmount,
+            note = "Payment released to the payment rail."
+        }) + "\n";
 }

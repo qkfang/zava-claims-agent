@@ -17,9 +17,6 @@
         const processStep = $('#assessment-process-step');
         const processBtn = $('#assessment-process-btn');
         const processStatus = $('#assessment-process-status');
-        const resultEl = $('#assessment-result');
-        const resultBody = $('#assessment-result-body');
-        const resultPill = $('#assessment-result-pill');
         const validationEl = $('#assessment-validation');
         const policyCard = $('#assessment-policy-card');
         const checklistEl = $('#assessment-checklist');
@@ -60,7 +57,6 @@
 
         async function selectClaim(claimNumber) {
             currentClaim = null;
-            resultEl.hidden = true;
             validationEl.hidden = true;
             processStatus.hidden = true;
             if (!claimNumber) {
@@ -101,18 +97,6 @@
                 <div class="row"><div class="k">Preferred contact</div><div class="v">${escapeHtml(c.preferredContact)}</div></div>
                 <div class="row span-2"><div class="k">Intake urgency</div><div class="v"><span class="urg-pill ${urgClass}">${escapeHtml(c.urgency)}</span> &nbsp;${escapeHtml(c.urgencyReason)}</div></div>
             `;
-        }
-
-        function classifyRecommendation(text) {
-            const t = (text || '').toLowerCase();
-            const m = t.match(/coverage recommendation[^\n]*?\n?[^a-z]*([a-z ]+)/);
-            const head = (m && m[1]) ? m[1] : t.slice(0, 200);
-            if (head.includes('approve') && head.includes('partial')) return { cls: 'partial', label: 'Partial Approve' };
-            if (head.includes('partial')) return { cls: 'partial', label: 'Partial Approve' };
-            if (head.includes('decline')) return { cls: 'decline', label: 'Decline' };
-            if (head.includes('approve')) return { cls: 'approve', label: 'Approve' };
-            if (head.includes('more info') || head.includes('need')) return { cls: 'info', label: 'Need More Info' };
-            return { cls: 'info', label: 'Recommendation' };
         }
 
         function recommendationPillClass(rec) {
@@ -212,7 +196,6 @@
             processStatus.hidden = false;
             processStatus.className = 'assessment-status';
             processStatus.innerHTML = '<span class="spinner"></span>Engaging Claims Assessment Agent…';
-            resultEl.hidden = true;
             validationEl.hidden = true;
 
             // Render the visual policy + checklist in parallel with the agent
@@ -220,24 +203,13 @@
             const validationPromise = loadValidation(currentClaim);
 
             try {
-                let lastVerdict = null;
                 const data = await window.zcAgentStream({
                     url: '/assessment/process',
                     body: { claimNumber: currentClaim.claimNumber },
                     onDelta: (_chunk, fullText) => {
-                        // Show the agent's text live; markdown rendering is
-                        // applied once the run completes.
-                        resultEl.hidden = false;
-                        resultBody.classList.add('agent-md-streaming');
-                        resultBody.textContent = fullText;
+                        // Stream the live narrative into the engage tabs panel.
                         if (window.engageTabsStreamNarrative) {
                             window.engageTabsStreamNarrative(engageScope, fullText);
-                        }
-                        const verdict = classifyRecommendation(fullText);
-                        if (!lastVerdict || lastVerdict.cls !== verdict.cls) {
-                            lastVerdict = verdict;
-                            resultPill.textContent = verdict.label;
-                            resultPill.className = 'assessment-result-pill ' + verdict.cls;
                         }
                     },
                     onError: (msg) => {
@@ -251,14 +223,7 @@
                     ? 'Claims Assessment Agent reviewed the case against the policy.'
                     : 'Processed (Foundry agent not configured — using deterministic demo summary).';
 
-                const verdict = classifyRecommendation(data.agentNotes);
-                resultPill.textContent = verdict.label;
-                resultPill.className = 'assessment-result-pill ' + verdict.cls;
-                resultBody.classList.remove('agent-md-streaming');
-                window.zcRenderMarkdown(resultBody, data.agentNotes || '(no output)');
-                resultEl.hidden = false;
-
-                // Surface input + raw output in the Engage Agent sub-tabs.
+                // Surface narrative, input + raw output in the Engage Agent sub-tabs.
                 if (window.engageTabsRender) {
                     window.engageTabsRender(engageScope, data);
                 }
