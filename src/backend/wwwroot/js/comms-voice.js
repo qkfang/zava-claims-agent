@@ -352,6 +352,19 @@
                         if (!greetingSent && ws && ws.readyState === WebSocket.OPEN) {
                             greetingSent = true;
                             try {
+                                // Prime the conversation with a virtual
+                                // user prompt so Cara has something to
+                                // respond to. response.create on its own
+                                // (with no conversation items) returns a
+                                // completed response with zero audio.
+                                ws.send(JSON.stringify({
+                                    type: 'conversation.item.create',
+                                    item: {
+                                        type: 'message',
+                                        role: 'user',
+                                        content: [{ type: 'input_text', text: 'Please greet me as Cara from the Zava Claims customer communications team and ask how you can help today. Keep it short and warm.' }]
+                                    }
+                                }));
                                 ws.send(JSON.stringify({ type: 'response.create' }));
                             } catch (_) {}
                         }

@@ -30,8 +30,19 @@ namespace ZavaClaims.App.Api;
 /// </summary>
 public static class CommunicationsVoiceLiveProxy
 {
-    private const string VoiceLiveApiVersion = "2025-10-01";
-    private const string CommunicationsAgentId = "customer-communications-agent";
+    // Voice Live API version. The new Foundry Agent integration
+    // (the one that uses declarative agents like ours) is wired up via the
+    // 2026-01-01-preview surface; older preview versions only support the
+    // classic Agent Service `asst_xxx` flow.
+    private const string VoiceLiveApiVersion = "2026-01-01-preview";
+    // Voice Live attaches to a *voice-specific* Cara agent
+    // (CustomerCommunicationsVoiceAgent) whose instructions are
+    // conversational and explicitly forbid speaking the written
+    // "Channel / Customer Sentiment / Draft Message / Tone & Compliance /
+    // Approval Required" template. The standard customer-communications
+    // agent is still used for written-channel drafts.
+    private const string CommunicationsAgentId = "customer-communications-voice-agent";
+    private const string CommunicationsAgentRole = "communications-voice";
     private const string AzureAiScope = "https://ai.azure.com/.default";
     private const string CognitiveServicesScope = "https://cognitiveservices.azure.com/.default";
 
@@ -83,7 +94,7 @@ public static class CommunicationsVoiceLiveProxy
             try
             {
                 if (agentFactory.IsConfigured)
-                    _ = agentFactory.Create("communications");
+                    _ = agentFactory.Create(CommunicationsAgentRole);
             }
             catch (Exception ex)
             {
@@ -106,34 +117,26 @@ public static class CommunicationsVoiceLiveProxy
                 return;
             }
 
-            // Classic Foundry Agent Service integration uses three query
-            // parameters on the WebSocket URL:
+            // New Foundry Agent integration (matches the official
+            // azure-ai-voicelive SDK): the WebSocket URL carries
             //
-            //   agent-id            — the agent name (the value passed to
-            //                         CreateAgentVersion).
+            //   agent-name          — the agent name (the value passed to
+            //                         CreateAgentVersion in BaseAgent).
             //   agent-project-name  — the Foundry project that owns the
             //                         agent.
-            //   agent-access-token  — bearer token that Voice Live uses on
-            //                         the caller's behalf to fetch the
-            //                         agent definition. Without this token
-            //                         Voice Live emits an "error" event
-            //                         "Failed to initialize AI agent,
-            //                         check connection string and the
-            //                         identity permissions" and closes
-            //                         the socket (close code 1006 on the
-            //                         browser side).
             //
-            // The Authorization header authenticates *us* to the Voice Live
-            // resource; the agent-access-token authorises Voice Live to
-            // call Foundry. They are the same token here because the
-            // server-side identity has both Cognitive Services User (on
-            // Voice Live) and Azure AI User (on the Foundry project).
+            // Authentication is done purely via the Authorization: Bearer
+            // header on the upgrade request. The legacy classic flow
+            // additionally required `agent-id` + `agent-access-token`
+            // query parameters; that flow only works for classic
+            // `asst_xxx` agents from the Azure AI Agent Service. Our
+            // agents are declarative `agent.version` agents, so we use
+            // the new shape.
             var voiceLiveUri = new Uri(
                 $"wss://{host}/voice-live/realtime" +
                 $"?api-version={VoiceLiveApiVersion}" +
-                $"&agent-id={Uri.EscapeDataString(CommunicationsAgentId)}" +
-                $"&agent-project-name={Uri.EscapeDataString(project!)}" +
-                $"&agent-access-token={Uri.EscapeDataString(accessToken)}");
+                $"&agent-name={Uri.EscapeDataString(CommunicationsAgentId)}" +
+                $"&agent-project-name={Uri.EscapeDataString(project!)}");
 
             using var azure = new ClientWebSocket();
             azure.Options.SetRequestHeader("Authorization", $"Bearer {accessToken}");
@@ -143,11 +146,7 @@ public static class CommunicationsVoiceLiveProxy
 
             try
             {
-                // Don't log the agent-access-token query parameter.
-                var safeUri = voiceLiveUri.ToString();
-                var idx = safeUri.IndexOf("agent-access-token=", StringComparison.Ordinal);
-                if (idx > 0) safeUri = safeUri.Substring(0, idx) + "agent-access-token=***";
-                logger.LogInformation("Voice Live connecting to {Uri}", safeUri);
+                logger.LogInformation("Voice Live connecting to {Uri}", voiceLiveUri);
                 await azure.ConnectAsync(voiceLiveUri, ctx.RequestAborted);
             }
             catch (Exception ex)
@@ -231,7 +230,7 @@ public static class CommunicationsVoiceLiveProxy
                 catch (OperationCanceledException) { break; }
                 catch (WebSocketException ex)
                 {
-                    logger.LogDebug(ex, "Voice Live pump {Direction} receive ended", direction);
+                    logger.LogInformation(ex, "Voice Live pump {Direction} receive ended (WebSocketError={ErrorCode}, NativeError={NativeErrorCode})", direction, ex.WebSocketErrorCode, ex.ErrorCode);
                     break;
                 }
 

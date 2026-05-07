@@ -77,6 +77,8 @@ public class ClaimsAgentFactory
                 => new SettlementAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<SettlementAgent>(), extraTools),
             "communications" or "customer-communications"
                 => new CustomerCommunicationsAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<CustomerCommunicationsAgent>()),
+            "communications-voice" or "customer-communications-voice"
+                => new CustomerCommunicationsVoiceAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<CustomerCommunicationsVoiceAgent>()),
             "team-leader" or "leader"
                 => new TeamLeaderAgent(client, deployment, search, index, bing, _loggerFactory.CreateLogger<TeamLeaderAgent>()),
             _ => throw new ArgumentException($"Unknown claims agent role: '{role}'.", nameof(role))

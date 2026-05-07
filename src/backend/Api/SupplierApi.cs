@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ZavaClaims.Agents;
 using ZavaClaims.App.Services;
 
@@ -110,6 +111,51 @@ public static class SupplierApi
                 AppointmentOptions: match.AppointmentOptions));
             var quoteRequestPdfUrl = $"/supplier/quote-request/{pdfRecord.Id}.pdf";
 
+            // Pre-resolve the MCP tool calls in-process so the prompt can
+            // include their results inline. This means the Foundry agent
+            // can produce a complete narrative referencing the supplier
+            // directory and quote-request PDF even when APP_MCP_URL is
+            // not configured (i.e. no remote MCP transport wired). When
+            // APP_MCP_URL is configured the agent can still call the
+            // hosted SupplierMcpTools endpoints — these inline results
+            // are equivalent to those tool outputs.
+            var baseUrl = (app.Configuration["APP_BASE_URL"]
+                ?? app.Configuration["APP_MCP_URL"]
+                ?? "http://localhost:5212").TrimEnd('/');
+            var jsonOpts = new JsonSerializerOptions { WriteIndented = true };
+            var lookupSuppliersResult = JsonSerializer.Serialize(new
+            {
+                claimType = claim.ClaimType,
+                location = claim.IncidentLocation,
+                count = directory.Count,
+                suppliers = directory.Select(s => new
+                {
+                    name = s.Name,
+                    specialty = s.Specialty,
+                    location = s.Location,
+                    rating = s.Rating,
+                    slaDays = s.SlaDays,
+                    quoteAmount = s.QuoteAmount,
+                    quoteCurrency = s.QuoteCurrency,
+                    notes = s.Notes
+                }),
+                bestPrice = bestPrice is null ? null : new
+                {
+                    name = bestPrice.Name,
+                    quoteAmount = bestPrice.QuoteAmount,
+                    quoteCurrency = bestPrice.QuoteCurrency
+                }
+            }, jsonOpts);
+            var generateQuoteRequestPdfResult = JsonSerializer.Serialize(new
+            {
+                id = pdfRecord.Id,
+                fileName = pdfRecord.FileName,
+                byteLength = pdfRecord.Content.Length,
+                createdAt = pdfRecord.CreatedAt,
+                downloadUrl = $"{baseUrl}{quoteRequestPdfUrl}",
+                relativeUrl = quoteRequestPdfUrl
+            }, jsonOpts);
+
             var prompt =
                 "APPROVED CLAIM — READY FOR SUPPLIER COORDINATION\n" +
                 "================================================\n" +
@@ -127,16 +173,26 @@ public static class SupplierApi
                 "AVAILABLE SUPPLIERS (from Zava's approved network)\n" +
                 "==================================================\n" +
                 match.CandidatesText + "\n\n" +
+                "MCP TOOL RESULTS (pre-resolved for you in this session)\n" +
+                "=======================================================\n" +
+                "The following MCP tool calls have already been executed " +
+                "by the Supplier Coordination service on your behalf — " +
+                "you do NOT need to call them again. Use these results " +
+                "directly when composing your response.\n\n" +
+                "▶ lookupSuppliers(claimType, location) result:\n" +
+                lookupSuppliersResult + "\n\n" +
+                "▶ generateQuoteRequestPdf(...) result:\n" +
+                generateQuoteRequestPdfResult + "\n\n" +
                 "TASK\n" +
                 "====\n" +
-                "1. Call the lookupSuppliers MCP tool with this claim's " +
-                "type and location to retrieve indicative quotes for the " +
-                "approved supplier network and identify the best-priced " +
-                "supplier for the scope.\n" +
-                "2. Call the generateQuoteRequestPdf MCP tool with the " +
-                "claim and selected supplier details to produce a Zava " +
-                "quote-request PDF. Surface the resulting downloadUrl in " +
-                "your response so it can be downloaded.\n" +
+                "Using the pre-resolved MCP tool results above:\n" +
+                "1. Recommend the best-priced supplier from " +
+                "lookupSuppliers.suppliers (the cheapest suitable match — " +
+                "see lookupSuppliers.bestPrice for the pre-computed pick) " +
+                "and briefly justify the choice on price, rating and SLA.\n" +
+                "2. Surface the quote-request PDF download link " +
+                "(generateQuoteRequestPdf.downloadUrl) in your response so " +
+                "the operator can click to download it.\n" +
                 "3. Propose appointment options, dispatch the work order, " +
                 "and draft a short plain-English update for the customer.";
 

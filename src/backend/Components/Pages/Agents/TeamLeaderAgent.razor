@@ -136,9 +136,9 @@
                 <h3>Engage Team Leader Agent</h3>
             </div>
             <p class="muted">
-                The agent loads the selected claim's details and produces a
-                structured Team Leader briefing — workload summary, escalations,
-                approval queue, coaching insights, and recommended priorities.
+                Theo's team-leader agent reviews the claim from a leader's
+                perspective and produces a structured workload, escalation,
+                approval-queue, and coaching briefing.
             </p>
             <button id="leader-process-btn" type="button" disabled>Process with Team Leader Agent</button>
             <div id="leader-process-status" class="leader-status" hidden></div>
@@ -193,7 +193,7 @@
         <div class="leader-step leader-report" data-step="3" id="leader-report" hidden>
             <div class="leader-step-head">
                 <span class="leader-step-num">3</span>
-                <h3>Team Leader Briefing</h3>
+                    <h3>Team Leader Briefing</h3>
             </div>
             <div class="leader-notes-label">Agent narrative</div>
             <div id="leader-notes-body" class="agent-md"></div>
@@ -296,6 +296,7 @@
         padding: 0.95rem 1.1rem 1rem 1.1rem;
         margin-top: 0.9rem;
     }
+
     .leader-step-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; }
     .leader-step-head h3 { margin: 0; color: #fff; font-size: 1rem; }
     .leader-step-num {
