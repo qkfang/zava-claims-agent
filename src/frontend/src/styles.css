@@ -429,13 +429,18 @@ body.left-nav-hidden #log-panel { display: none; }
   cursor: not-allowed;
 }
 
-/* ----- Profile card ----- */
+/* ----- Profile card -----
+   Anchored to the right-side `#log-panel` (the "Activity" panel): the popup's
+   top aligns with the Activity panel's top edge and its right edge sits just
+   to the left of the Activity panel. Exact `top`/`right` are recalculated in
+   JS (see profileCard.ts > reposition). The values below are the fallback
+   used before JS runs / when the panel is hidden. */
 .profile-card {
   position: fixed;
+  top: 84px;
   right: 16px;
-  bottom: 70px;
   width: 340px;
-  max-height: calc(100vh - 240px);
+  max-height: calc(100vh - 160px);
   overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--panel-border);

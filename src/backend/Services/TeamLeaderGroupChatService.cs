@@ -72,7 +72,12 @@ public class GroupChatSession
 /// </summary>
 public class TeamLeaderGroupChatService
 {
-    private const int MaxIterations = 8;
+    // Hard cap on the number of group-chat turns. Each iteration of the
+    // orchestration loop is framed to the Team Leader (the group-chat
+    // manager) as one "turn" — at each turn Theo either picks a specialist
+    // to speak or concludes the discussion. The cap guarantees the chat
+    // ends even if Theo never elects to conclude on his own.
+    private const int MaxIterations = 20;
 
     private readonly IntakeClaimStore _claimStore;
     private readonly ClaimsAgentFactory _agentFactory;

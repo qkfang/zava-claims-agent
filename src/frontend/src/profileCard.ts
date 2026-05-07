@@ -44,6 +44,11 @@ export class ProfileCard {
         this.close();
       }
     });
+
+    // Keep the popup anchored to the activity panel as the viewport changes.
+    window.addEventListener("resize", () => {
+      if (this.isOpen()) this.reposition();
+    });
   }
 
   isOpen(): boolean {
@@ -56,6 +61,7 @@ export class ProfileCard {
     this.currentId = characterId;
     this.render(profile);
     this.el.classList.remove("hidden");
+    this.reposition();
     this.el.focus();
     if (this.refreshHandle === null) {
       this.refreshHandle = window.setInterval(() => this.refresh(), 1000);
@@ -81,6 +87,42 @@ export class ProfileCard {
       return;
     }
     this.render(profile);
+    this.reposition();
+  }
+
+  /**
+   * Anchor the popup to the right-side Activity (log) panel: the popup's top
+   * lines up with the Activity panel's top, and its right edge sits just to
+   * the left of the Activity panel's left edge so the two panels never
+   * overlap. Falls back to a sensible top-right position when the Activity
+   * panel is hidden.
+   */
+  private reposition(): void {
+    const logPanel = document.getElementById("log-panel");
+    const style = this.el.style;
+    const gap = 12;
+
+    // Always reset the left/bottom anchors — we drive top/right from JS.
+    style.left = "auto";
+    style.bottom = "auto";
+
+    const visible =
+      logPanel !== null &&
+      logPanel.offsetParent !== null &&
+      !logPanel.classList.contains("hidden");
+
+    if (visible && logPanel) {
+      const rect = logPanel.getBoundingClientRect();
+      style.top = `${Math.max(8, rect.top)}px`;
+      style.right = `${Math.max(8, window.innerWidth - rect.left + gap)}px`;
+      // Cap the popup height so it never exceeds the activity panel height.
+      const available = Math.max(200, rect.height);
+      style.maxHeight = `${available}px`;
+    } else {
+      style.top = "84px";
+      style.right = "16px";
+      style.maxHeight = "calc(100vh - 160px)";
+    }
   }
 
   private render(p: CharacterProfile): void {
@@ -148,9 +190,8 @@ export class ProfileCard {
 
     const agentLinkBlock =
       p.kind === "staff" && p.agentUrl
-        ? `<a class="profile-agent-link" href="${escape(p.agentUrl)}" target="_blank" rel="noopener noreferrer">
-            <span aria-hidden="true">↗</span>
-            Open agent walkthrough
+        ? `<a class="profile-agent-link" href="${escape(p.agentUrl)}" target="_blank" rel="noopener noreferrer" title="Open ${escape(p.role)} walkthrough in a new tab">
+            See how this team uses these agents <span aria-hidden="true">↗</span>
           </a>`
         : "";
 
