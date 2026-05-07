@@ -146,6 +146,7 @@
             <div class="engage-tabs-scope" data-engage-role="team-leader">
                 <div class="engage-tabs" role="tablist">
                     <button type="button" class="engage-tab-btn active" data-engage-tab="narrative">Agent Narrative</button>
+                    <button type="button" class="engage-tab-btn" data-engage-tab="reference">Reference</button>
                     <button type="button" class="engage-tab-btn" data-engage-tab="prompt">Agent Prompt &amp; Tools</button>
                     <button type="button" class="engage-tab-btn" data-engage-tab="input">Agent Input</button>
                     <button type="button" class="engage-tab-btn" data-engage-tab="output">Raw Output</button>
@@ -155,6 +156,13 @@
                     <div class="engage-info-block">
                         <h4>Agent narrative (streamed)</h4>
                         <div class="agent-md engage-narrative-body"><div class="engage-empty">Engage the agent to see the streamed narrative.</div></div>
+                    </div>
+                </div>
+
+                <div class="engage-tab-panel" data-engage-tab="reference">
+                    <div class="engage-info-block">
+                        <h4>Reference documents cited by the agent</h4>
+                        <div class="engage-references-body"><div class="engage-empty">Engage the agent to see the reference documents cited in its response.</div></div>
                     </div>
                 </div>
 
@@ -189,21 +197,6 @@
             </div>
         </div>
 
-        <!-- Step 3 — team leader briefing -->
-        <div class="leader-step leader-report" data-step="3" id="leader-report" hidden>
-            <div class="leader-step-head">
-                <span class="leader-step-num">3</span>
-                    <h3>Team Leader Briefing</h3>
-            </div>
-            <div class="leader-notes-label">Agent narrative</div>
-            <div id="leader-notes-body" class="agent-md"></div>
-            <p class="muted leader-handoff">
-                Held in memory for the rest of the demo. The team leader can
-                approve high-value items, reassign overloaded queues, or
-                escalate vulnerable-customer cases, with the agent's working
-                attached for the audit trail.
-            </p>
-        </div>
     </section>
     </div>
 
@@ -400,31 +393,6 @@
         animation: leader-spin 0.7s linear infinite;
     }
     @@keyframes leader-spin { to { transform: rotate(360deg); } }
-
-    .leader-report {
-        background: color-mix(in srgb, var(--leader-accent) 8%, rgba(15, 22, 38, 0.4));
-        border-color: color-mix(in srgb, var(--leader-accent) 35%, transparent);
-    }
-    .leader-notes-label {
-        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
-        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
-    }
-    .leader-report pre {
-        background: rgba(10, 16, 28, 0.7);
-        border: 1px solid rgba(120, 150, 200, 0.18);
-        border-radius: 8px;
-        padding: 0.8rem 0.95rem;
-        color: rgba(238, 242, 247, 0.92);
-        font-size: 0.85rem;
-        line-height: 1.55;
-        white-space: pre-wrap;
-        margin: 0;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        max-height: 480px;
-        overflow: auto;
-    }
-    .leader-handoff { margin-top: 0.7rem; }
-    .leader-handoff a { color: var(--leader-accent); }
 
     /* ── Group Chat panel ─────────────────────────────────────────────── */
     .groupchat-panel { --leader-accent: #14b8a6; }

@@ -17,8 +17,6 @@
         const step2El = $('#leader-step-2');
         const processBtn = $('#leader-process-btn');
         const processStatus = $('#leader-process-status');
-        const reportEl = $('#leader-report');
-        const notesBody = $('#leader-notes-body');
         const engageScope = $('.engage-tabs-scope');
 
         let selectedClaim = null;
@@ -56,7 +54,6 @@
             cardEl.hidden = true;
             if (step2El) step2El.hidden = true;
             processBtn.disabled = true;
-            reportEl.hidden = true;
             processStatus.hidden = true;
 
             try {
@@ -82,7 +79,6 @@
         }
 
         async function selectClaim(claimNumber) {
-            reportEl.hidden = true;
             processStatus.hidden = true;
             if (!claimNumber) {
                 setSelectedClaim(null);
@@ -107,16 +103,12 @@
             processStatus.hidden = false;
             processStatus.className = 'leader-status';
             processStatus.innerHTML = '<span class="spinner"></span>Engaging Team Leader Agent…';
-            reportEl.hidden = true;
 
             try {
                 const data = await window.zcAgentStream({
                     url: '/team-leader/process',
                     body: { claimNumber: selectedClaim.claimNumber },
                     onDelta: (_chunk, fullText) => {
-                        reportEl.hidden = false;
-                        notesBody.classList.add('agent-md-streaming');
-                        notesBody.textContent = fullText;
                         if (window.engageTabsStreamNarrative) {
                             window.engageTabsStreamNarrative(engageScope, fullText);
                         }
@@ -129,11 +121,7 @@
                 if (!data) throw new Error('No response from agent');
 
                 if (data.agentNotes) {
-                    notesBody.classList.remove('agent-md-streaming');
-                    window.zcRenderMarkdown(notesBody, data.agentNotes);
-                    reportEl.hidden = false;
                     processStatus.textContent = 'Team Leader Agent produced a report.';
-                    reportEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else if (!data.agentConfigured) {
                     processStatus.className = 'leader-status error';
                     processStatus.textContent =

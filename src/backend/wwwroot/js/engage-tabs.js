@@ -210,6 +210,57 @@
         }
     }
 
+    // Classify a citation entry into a UI category (web link vs document /
+    // search-index hit). Bing-grounded citations always have an http(s)
+    // URL; Azure AI Search / Document Intelligence hits either have no URL
+    // or a non-http identifier (file id / blob path).
+    function classifyReference(c) {
+        const url = (c && c.url) ? String(c.url) : '';
+        if (/^https?:\/\//i.test(url)) return 'web';
+        return 'doc';
+    }
+
+    // Render the citations from an agent trace into the "Reference" tab.
+    function renderReferences(target, citations) {
+        if (!target) return;
+        const list = Array.isArray(citations) ? citations : [];
+        // De-duplicate by url || title so the same reference quoted in
+        // multiple places doesn't bloat the list.
+        const seen = new Set();
+        const items = [];
+        for (const c of list) {
+            if (!c) continue;
+            const title = (c.title || '').toString();
+            const url = (c.url || '').toString();
+            const key = url || title;
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            items.push({ title, url, kind: classifyReference(c) });
+        }
+        if (items.length === 0) {
+            target.innerHTML = '<div class="engage-empty">No reference documents were cited in the agent response.</div>';
+            return;
+        }
+        target.innerHTML = '<ol class="engage-refs-list">' + items.map((r, i) => {
+            const kindLabel = r.kind === 'web' ? 'Web' : 'Document';
+            const kindClass = r.kind === 'web' ? 'engage-ref-kind-web' : 'engage-ref-kind-doc';
+            const titleText = r.title || r.url || ('Reference ' + (i + 1));
+            const titleHtml = r.url
+                ? '<a href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(titleText) + '</a>'
+                : '<span>' + escapeHtml(titleText) + '</span>';
+            const urlHtml = (r.url && r.url !== titleText)
+                ? '<div class="engage-ref-url">' + escapeHtml(r.url) + '</div>'
+                : '';
+            return '<li class="engage-ref-card">' +
+                '<span class="engage-ref-kind ' + kindClass + '">' + kindLabel + '</span>' +
+                '<div class="engage-ref-body">' +
+                    '<div class="engage-ref-title">' + titleHtml + '</div>' +
+                    urlHtml +
+                '</div>' +
+            '</li>';
+        }).join('') + '</ol>';
+    }
+
     // Public hook used by per-page scripts after they've called the
     // /process endpoint: stash the input + raw output payload into the
     // Engage Agent tabs so operators can inspect them.
@@ -218,6 +269,7 @@
         const inputEl = scope.querySelector('.engage-input-body');
         const outputEl = scope.querySelector('.engage-output-body');
         const narrativeEl = scope.querySelector('.engage-narrative-body');
+        const referencesEl = scope.querySelector('.engage-references-body');
         if (inputEl) {
             const input = payload && payload.agentInput;
             inputEl.textContent = input
@@ -243,6 +295,11 @@
             } else if (!narrativeEl.textContent.trim()) {
                 narrativeEl.innerHTML = '<div class="engage-empty">No narrative produced by the agent.</div>';
             }
+        }
+        if (referencesEl) {
+            const raw = payload && payload.agentRawOutput;
+            const citations = (raw && Array.isArray(raw.citations)) ? raw.citations : [];
+            renderReferences(referencesEl, citations);
         }
     };
 
