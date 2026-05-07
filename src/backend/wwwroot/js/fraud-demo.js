@@ -29,8 +29,6 @@
         const inconsistenciesEl = $('#fraud-inconsistencies');
         const actionsEl = $('#fraud-actions');
         const approvalEl = $('#fraud-approval');
-        const agentNotesEl = $('#fraud-agent-notes');
-        const agentNotesBody = $('#fraud-agent-notes-body');
         const docOutputEl = $('#fraud-doc-output');
         const docOutputHint = $('#fraud-doc-output-hint');
         const docCardsEl = $('#fraud-doc-cards');
@@ -344,9 +342,6 @@
                         documentIds: selectedDocumentIds(),
                     },
                     onDelta: (_chunk, fullText) => {
-                        agentNotesEl.hidden = false;
-                        agentNotesBody.classList.add('agent-md-streaming');
-                        agentNotesBody.textContent = fullText;
                         if (window.engageTabsStreamNarrative) {
                             window.engageTabsStreamNarrative(engageScope, fullText);
                         }
@@ -374,14 +369,6 @@
                 approvalEl.textContent = data.approvalRequired || 'Yes — fraud-related decisions always require human approval.';
 
                 renderDocCards(data.documents || [], !!data.contentUnderstandingConfigured);
-
-                if (data.agentNotes) {
-                    agentNotesEl.hidden = false;
-                    agentNotesBody.classList.remove('agent-md-streaming');
-                    window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
-                } else {
-                    agentNotesEl.hidden = true;
-                }
 
                 outputStep.hidden = false;
                 outputStep.scrollIntoView({ behavior: 'smooth', block: 'start' });

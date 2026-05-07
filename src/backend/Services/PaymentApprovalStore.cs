@@ -63,8 +63,7 @@ public class PaymentApprovalRecord
 
 /// <summary>
 /// Singleton in-memory store of payment-approval records prepared by the
-/// Settlement agent. Distinct from <see cref="PendingApprovalStore"/> which
-/// covers the notice-intelligence flow.
+/// Settlement agent.
 /// </summary>
 public class PaymentApprovalStore
 {

@@ -48,6 +48,7 @@
             let userTranscriptEl = null;
             let caraTranscriptEl = null;
             let caraSpeaking = false;
+            let greetingSent = false;
 
             function escapeHtml(s) {
                 return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -265,7 +266,15 @@
                     }
                 };
                 source.connect(scriptNode);
-                scriptNode.connect(micCtx.destination);
+                // ScriptProcessor only fires onaudioprocess while it's
+                // connected to the audio graph's destination. Route
+                // through a muted GainNode so we don't feed the mic back
+                // into the speakers (the model's own voice is handled by
+                // the playback context).
+                const muteSink = micCtx.createGain();
+                muteSink.gain.value = 0;
+                scriptNode.connect(muteSink);
+                muteSink.connect(micCtx.destination);
             }
 
             function stopCapture() {
@@ -329,10 +338,23 @@
             }
 
             function onServerEvent(evt) {
+                try { console.debug('Voice Live event', evt.type, evt); } catch (_) {}
                 switch (evt.type) {
                     case 'session.created':
                     case 'session.updated':
                         setStatus('Connected. Speak naturally — Cara is listening.');
+                        // Trigger a proactive greeting on the first
+                        // session.updated so the user immediately hears
+                        // Cara and we get end-to-end audio confirmation
+                        // even if local VAD has trouble detecting their
+                        // first utterance. Mirrors the official agent
+                        // quickstart pattern.
+                        if (!greetingSent && ws && ws.readyState === WebSocket.OPEN) {
+                            greetingSent = true;
+                            try {
+                                ws.send(JSON.stringify({ type: 'response.create' }));
+                            } catch (_) {}
+                        }
                         break;
                     case 'input_audio_buffer.speech_started':
                         flushPlayback();
@@ -407,11 +429,14 @@
 
                     // Configure the Voice Live session — PCM16 24 kHz both
                     // ways, server VAD, noise suppression / echo
-                    // cancellation, automatic input transcription so we
-                    // can show what the user said. The "instructions"
-                    // property is intentionally omitted: when using a
-                    // custom Foundry agent (Cara) the agent already has
-                    // its own instructions configured server-side.
+                    // cancellation. The "instructions" property is
+                    // intentionally omitted: when using a custom Foundry
+                    // agent (Cara) the agent already has its own
+                    // instructions configured server-side. We also do
+                    // NOT set input_audio_transcription here — the
+                    // Foundry agent runs its own transcription pipeline
+                    // and adding one client-side can cause the agent to
+                    // silently drop turns.
                     const sessionUpdate = {
                         type: 'session.update',
                         session: {
@@ -422,17 +447,11 @@
                             input_audio_noise_reduction: { type: 'azure_deep_noise_suppression' },
                             input_audio_echo_cancellation: { type: 'server_echo_cancellation' },
                             turn_detection: {
-                                type: 'azure_semantic_vad',
-                                silence_duration_ms: 500,
-                                threshold: 0.5
+                                type: 'server_vad',
+                                threshold: 0.5,
+                                prefix_padding_ms: 300,
+                                silence_duration_ms: 500
                             },
-                            // When using a Foundry agent (agent_id query param)
-                            // the only supported transcription model is
-                            // 'azure-speech'. 'whisper-1' is reserved for the
-                            // gpt-realtime / gpt-realtime-mini multimodal
-                            // models and will cause Voice Live to reject the
-                            // session and close the socket.
-                            input_audio_transcription: { model: 'azure-speech' },
                             voice: {
                                 name: 'en-US-Ava:DragonHDLatestNeural',
                                 type: 'azure-standard'
@@ -510,6 +529,7 @@
                 micLabel.textContent = 'Press to talk';
                 userTranscriptEl = null;
                 caraTranscriptEl = null;
+                greetingSent = false;
                 if (ws) {
                     try { ws.close(); } catch (_) {}
                     ws = null;

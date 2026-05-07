@@ -26,9 +26,8 @@ record IntakeSubmitRequest(
 /// page (<c>/agents/claims-intake</c>). These let the page:
 ///
 /// 1. List the four sample emails + attached Word claim forms.
-/// 2. Run the inbound message through the Claims Intake Agent (and the
-///    CtAgExtractCU extraction pattern) to produce intake-form fields and
-///    an urgency assessment.
+/// 2. Run the inbound message through the Claims Intake Agent to produce
+///    intake-form fields and an urgency assessment.
 /// 3. Submit the form, mint a random claim number, and remember it in the
 ///    in-memory <see cref="IntakeClaimStore"/> so downstream agents can
 ///    pick the case up by claim number.
@@ -86,9 +85,8 @@ public static class IntakeApi
         });
 
         // Engage the Claims Intake Agent. The agent receives the email body
-        // plus the (already-text-extracted) Word claim form — analogous to
-        // CtAgExtractCU which receives raw markdown from a document — and
-        // we return the canonical intake fields + urgency assessment.
+        // plus the (already-text-extracted) Word claim form, and we return
+        // the canonical intake fields + urgency assessment.
         //
         // For demo reliability, structured fields come from the catalogue
         // entry. When Foundry is configured, we also invoke the live
@@ -108,8 +106,7 @@ public static class IntakeApi
 
             logger.LogInformation("Intake process: sampleId={SampleId}", Sanitize(sample.Id));
 
-            // Mirrors how /notice/* drives CtAgExtractCU: feed the
-            // already-extracted document text directly to the agent.
+            // Feed the already-extracted document text directly to the agent.
             var combined =
                 "INBOUND CLAIM EMAIL\n" +
                 "===================\n" +

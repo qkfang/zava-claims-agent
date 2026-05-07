@@ -8,10 +8,9 @@ namespace ZavaClaims.App.Mcp;
 /// <summary>
 /// MCP tools that back the Supplier Coordinator agent. Exposes a supplier
 /// directory lookup (with indicative pricing) and a quote-request PDF
-/// generator. Tools are registered on the same MCP server as
-/// <see cref="AgentDiMcpTools"/> and surfaced under the <c>/mcp</c>
-/// endpoint, so a Foundry agent can call them via the MCP transport
-/// configured in <see cref="Program"/>.
+/// generator. Tools are surfaced under the <c>/mcp</c> endpoint, so a
+/// Foundry agent can call them via the MCP transport configured in
+/// <see cref="Program"/>.
 /// </summary>
 [McpServerToolType]
 public class SupplierMcpTools

@@ -29,20 +29,12 @@ public record FraudDocumentVerification(
 /// <summary>
 /// Authenticity verifier for the Fraud Investigation Try-It-Out tab.
 ///
-/// Pulls each requested sample document through Azure Content
-/// Understanding (when configured) using a fixed authenticity field
-/// schema, then runs a small deterministic rules layer over the extracted
-/// fields + the manifest's expected outcome to decide
-/// <c>legit | suspicious | fake</c> and explain why.
-///
-/// When CU isn't configured the verifier falls back to the manifest's
-/// <c>expected</c> field and synthesises the same shape of result so the
-/// demo still tells a complete story end-to-end.
+/// Runs a small deterministic rules layer over the manifest's expected
+/// outcome to decide <c>legit | suspicious | fake</c> and explain why.
 /// </summary>
 public class FraudDocumentVerifier
 {
     private readonly FraudCaseDocumentStore _samples;
-    private readonly ContentUnderstandingService? _cu;
     private readonly ILogger<FraudDocumentVerifier> _logger;
     private readonly IConfiguration _config;
 
@@ -54,60 +46,14 @@ public class FraudDocumentVerifier
     public FraudDocumentVerifier(
         FraudCaseDocumentStore samples,
         IConfiguration config,
-        ILogger<FraudDocumentVerifier> logger,
-        ContentUnderstandingService? cu = null)
+        ILogger<FraudDocumentVerifier> logger)
     {
         _samples = samples;
         _config = config;
         _logger = logger;
-        _cu = cu;
     }
 
-    public bool ContentUnderstandingConfigured => _cu is not null;
-
-    /// <summary>
-    /// Authenticity field schema sent to Content Understanding. Reused for
-    /// every kind of document — CU's natural-language descriptions cope
-    /// with the differences between IDs, receipts, and quotes.
-    /// </summary>
-    public static readonly IReadOnlyList<CuFieldSpec> AuthenticitySchema = new List<CuFieldSpec>
-    {
-        new("documentType",
-            "What kind of document is this — driver licence, passport, receipt, repair quote, or other? " +
-            "Use one of: 'driver-licence', 'passport', 'receipt', 'repair-quote', 'other'.",
-            "string", "classify"),
-        new("issuer",
-            "The issuing authority for an ID document, or the merchant / business name for a receipt or quote.",
-            "string", "extract"),
-        new("holderName",
-            "For ID documents, the full name of the person the document is issued to. Empty for receipts and quotes.",
-            "string", "extract"),
-        new("documentNumber",
-            "The licence number, passport number, receipt number, or quote number printed on the document.",
-            "string", "extract"),
-        new("issueDate",
-            "Date the document was issued, in ISO 8601 (YYYY-MM-DD) where possible.",
-            "date", "extract"),
-        new("expiryDate",
-            "Expiry / valid-until date for the document, in ISO 8601 (YYYY-MM-DD) where possible. Empty if not applicable.",
-            "date", "extract"),
-        new("totalAmount",
-            "Total monetary amount stated on the document (receipts and quotes only). Numeric, no currency symbol.",
-            "number", "extract"),
-        new("tamperIndicators",
-            "Describe any visible signs of editing, font mismatch, photo replacement, broken security features, " +
-            "misaligned text, retyped numbers, or other artefacts that suggest the document has been altered. " +
-            "Empty string if the document looks consistent.",
-            "string", "generate"),
-        new("securityFeaturesPresent",
-            "For ID documents only, do the expected security features (hologram, microprint, MRZ) appear " +
-            "intact and consistent? Answer 'yes', 'no', or 'n/a' for non-ID documents, with a one-sentence note.",
-            "string", "generate"),
-        new("consistencySummary",
-            "One or two sentences summarising whether the document's contents are internally consistent " +
-            "(dates plausible, totals add up, holder details coherent).",
-            "string", "generate"),
-    };
+    public bool ContentUnderstandingConfigured => false;
 
     public IReadOnlyList<string> CheckNames { get; } = new[]
     {
@@ -161,7 +107,7 @@ public class FraudDocumentVerifier
         return results;
     }
 
-    private async Task<FraudDocumentVerification> VerifyOneAsync(
+    private Task<FraudDocumentVerification> VerifyOneAsync(
         IntakeClaimRecord claim,
         FraudSampleDocument sample,
         string? appBaseUrl)
@@ -170,33 +116,14 @@ public class FraudDocumentVerifier
         string? cuMarkdown = null;
         string source = "manifest-fallback";
 
-        if (_cu is not null && !string.IsNullOrWhiteSpace(appBaseUrl))
-        {
-            try
-            {
-                var docUri = new Uri(new Uri(appBaseUrl), sample.Src);
-                var cuResult = await _cu.AnalyzeWithCustomFieldsAsync(docUri, AuthenticitySchema);
-                cuMarkdown = cuResult.Markdown;
-                foreach (var kv in cuResult.Fields)
-                {
-                    extracted[kv.Key] = kv.Value?.Value?.ToString();
-                }
-                source = "content-understanding";
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "CU analysis failed for {SampleId}; using manifest values", sample.Id);
-            }
-        }
-
-        // Whatever CU returned (possibly nothing), seed any missing fields
-        // from the manifest so the rules layer has something to work with.
+        // Seed fields from the manifest so the rules layer has something to
+        // work with.
         SeedFromManifest(extracted, sample);
 
         var checks = RunChecks(claim, sample, extracted);
         var (verdict, reasons) = ScoreVerdict(checks, sample);
 
-        return new FraudDocumentVerification(
+        return Task.FromResult(new FraudDocumentVerification(
             Id: sample.Id,
             Label: sample.Label,
             Kind: sample.Kind,
@@ -206,7 +133,7 @@ public class FraudDocumentVerifier
             Checks: checks,
             CuMarkdown: cuMarkdown,
             Source: source,
-            ExtractedFields: extracted);
+            ExtractedFields: extracted));
     }
 
     private FraudDocumentVerification BuildFallback(

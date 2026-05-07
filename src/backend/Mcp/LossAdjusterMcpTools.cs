@@ -24,9 +24,8 @@ namespace ZavaClaims.App.Mcp;
 ///   return a download URL. The Loss Adjuster page links to the file so a
 ///   human adjuster can open it, edit it, and attach it to the claim file.
 ///
-/// All three tools are exposed via the same MCP server the notice intelligence
-/// flow already uses, so the Loss Adjuster Foundry agent picks them up
-/// alongside the existing <c>extractDoc_DI</c> / <c>extractDoc_CU</c> tools.
+/// All three tools are exposed via the shared <c>/mcp</c> server so the
+/// Loss Adjuster Foundry agent picks them up over the MCP transport.
 /// </summary>
 [McpServerToolType]
 public class LossAdjusterMcpTools

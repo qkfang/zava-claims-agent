@@ -194,22 +194,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Step 3 — adjuster report -->
-        <div class="adjuster-step adjuster-report" data-step="3" id="adjuster-report" hidden>
-            <div class="adjuster-step-head">
-                <span class="adjuster-step-num">3</span>
-                <h3>Loss Adjuster Report</h3>
-            </div>
-            <div class="adjuster-notes-label">Agent narrative</div>
-            <div id="adjuster-notes-body" class="agent-md"></div>
-            <p class="muted adjuster-handoff">
-                Held in memory for the rest of the demo. The next agent
-                (<a href="/agents/claims-assessment">Claims Assessment</a>) can
-                confirm coverage and finalise the reserve, with human approval
-                for any large-loss findings or disputed cause.
-            </p>
-        </div>
     </section>
     </div>
 </div>
@@ -329,30 +313,5 @@
         animation: adjuster-spin 0.7s linear infinite;
     }
     @@keyframes adjuster-spin { to { transform: rotate(360deg); } }
-
-    .adjuster-report {
-        background: color-mix(in srgb, var(--adjuster-accent) 8%, rgba(15, 22, 38, 0.4));
-        border-color: color-mix(in srgb, var(--adjuster-accent) 35%, transparent);
-    }
-    .adjuster-notes-label {
-        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
-        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
-    }
-    .adjuster-report pre {
-        background: rgba(10, 16, 28, 0.7);
-        border: 1px solid rgba(120, 150, 200, 0.18);
-        border-radius: 8px;
-        padding: 0.8rem 0.95rem;
-        color: rgba(238, 242, 247, 0.92);
-        font-size: 0.85rem;
-        line-height: 1.55;
-        white-space: pre-wrap;
-        margin: 0;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        max-height: 480px;
-        overflow: auto;
-    }
-    .adjuster-handoff { margin-top: 0.7rem; }
-    .adjuster-handoff a { color: var(--adjuster-accent); }
 </style>
 

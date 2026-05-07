@@ -120,10 +120,6 @@
             </p>
             <button id="supplier-process-btn" type="button" disabled>Engage Supplier Coordinator Agent</button>
             <div id="supplier-process-status" class="supplier-status" hidden></div>
-            <div id="supplier-agent-notes" class="supplier-notes" hidden>
-                <div class="supplier-notes-label">Agent narrative</div>
-                <div id="supplier-agent-notes-body" class="agent-md"></div>
-            </div>
 
             <div class="engage-tabs-scope" data-engage-role="supplier">
                 <div class="engage-tabs" role="tablist">
@@ -341,26 +337,6 @@
         animation: supplier-spin 0.7s linear infinite;
     }
     @@keyframes supplier-spin { to { transform: rotate(360deg); } }
-
-    .supplier-notes {
-        margin-top: 0.7rem;
-        background: rgba(10, 16, 28, 0.7);
-        border: 1px solid rgba(120, 150, 200, 0.18);
-        border-radius: 8px;
-        padding: 0.7rem 0.85rem;
-    }
-    .supplier-notes-label {
-        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
-        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
-    }
-    .supplier-notes pre {
-        color: rgba(238, 242, 247, 0.86);
-        font-size: 0.82rem;
-        line-height: 1.5;
-        white-space: pre-wrap;
-        margin: 0;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    }
 
     .supplier-result-grid {
         display: grid;

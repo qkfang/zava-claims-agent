@@ -16,8 +16,6 @@
         const cardEl = $('#adjuster-claim-card');
         const processBtn = $('#adjuster-process-btn');
         const processStatus = $('#adjuster-process-status');
-        const reportEl = $('#adjuster-report');
-        const notesBody = $('#adjuster-notes-body');
         const engageScope = $('.engage-tabs-scope');
 
         let selectedClaim = null;
@@ -51,7 +49,6 @@
             emptyEl.hidden = true;
             cardEl.hidden = true;
             processBtn.disabled = true;
-            reportEl.hidden = true;
             processStatus.hidden = true;
 
             try {
@@ -77,7 +74,6 @@
         }
 
         async function selectClaim(claimNumber) {
-            reportEl.hidden = true;
             processStatus.hidden = true;
             if (!claimNumber) {
                 setSelectedClaim(null);
@@ -102,16 +98,12 @@
             processStatus.hidden = false;
             processStatus.className = 'adjuster-status';
             processStatus.innerHTML = '<span class="spinner"></span>Engaging Loss Adjuster Agent…';
-            reportEl.hidden = true;
 
             try {
                 const data = await window.zcAgentStream({
                     url: '/loss-adjuster/process',
                     body: { claimNumber: selectedClaim.claimNumber },
                     onDelta: (_chunk, fullText) => {
-                        reportEl.hidden = false;
-                        notesBody.classList.add('agent-md-streaming');
-                        notesBody.textContent = fullText;
                         if (window.engageTabsStreamNarrative) {
                             window.engageTabsStreamNarrative(engageScope, fullText);
                         }
@@ -124,11 +116,7 @@
                 if (!data) throw new Error('No response from agent');
 
                 if (data.agentNotes) {
-                    notesBody.classList.remove('agent-md-streaming');
-                    window.zcRenderMarkdown(notesBody, data.agentNotes);
-                    reportEl.hidden = false;
                     processStatus.textContent = 'Loss Adjuster Agent produced a report.';
-                    reportEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else if (!data.agentConfigured) {
                     processStatus.className = 'adjuster-status error';
                     processStatus.textContent =

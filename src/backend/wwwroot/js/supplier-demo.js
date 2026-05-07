@@ -15,8 +15,6 @@
         const summaryEl = $('#supplier-claim-summary');
         const processBtn = $('#supplier-process-btn');
         const processStatus = $('#supplier-process-status');
-        const agentNotesEl = $('#supplier-agent-notes');
-        const agentNotesBody = $('#supplier-agent-notes-body');
         const engageScope = $('.engage-tabs-scope');
         const resultEl = $('#supplier-result');
         const dispatchEl = $('#supplier-dispatch');
@@ -35,7 +33,6 @@
 
         function resetDownstream() {
             processStatus.hidden = true;
-            agentNotesEl.hidden = true;
             resultEl.hidden = true;
             dispatchEl.hidden = true;
             approvalEl.hidden = true;
@@ -105,7 +102,6 @@
             processStatus.hidden = false;
             processStatus.className = 'supplier-status';
             processStatus.innerHTML = '<span class="spinner"></span>Engaging Supplier Coordinator Agent…';
-            agentNotesEl.hidden = true;
             resultEl.hidden = true;
             dispatchEl.hidden = true;
             approvalEl.hidden = true;
@@ -116,9 +112,6 @@
                     url: '/supplier/process',
                     body: { claimNumber },
                     onDelta: (_chunk, fullText) => {
-                        agentNotesEl.hidden = false;
-                        agentNotesBody.classList.add('agent-md-streaming');
-                        agentNotesBody.textContent = fullText;
                         if (window.engageTabsStreamNarrative) {
                             window.engageTabsStreamNarrative(engageScope, fullText);
                         }
@@ -133,11 +126,6 @@
                 processStatus.textContent = data.agentConfigured
                     ? 'Supplier Coordinator Agent matched a supplier and dispatched a work order.'
                     : 'Processed (Foundry agent not configured — using deterministic demo match).';
-                if (data.agentNotes) {
-                    agentNotesEl.hidden = false;
-                    agentNotesBody.classList.remove('agent-md-streaming');
-                    window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
-                }
 
                 const r = data.recommendedSupplier || {};
                 $('#supplier-rec-name').textContent = r.name || '';
