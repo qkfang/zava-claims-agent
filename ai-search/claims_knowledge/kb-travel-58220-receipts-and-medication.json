@@ -1,0 +1,22 @@
+{
+  "id": "kb-travel-58220-receipts-and-medication",
+  "title": "TRVL-58220 — Receipts schedule & replacement medication (Grace Liu)",
+  "category": "Evidence",
+  "claimType": "travel",
+  "claimNumber": "",
+  "policyNumber": "TRVL-58220",
+  "content": "Evidence summary supporting the TRVL-58220 baggage claim. RECEIPTS SUPPLIED: (1) Replacement clothing — H&M Roma Termini, 2026-05-06, EUR 187.40 (~AUD 305) — receipt RM-7194; (2) Replacement clothing — UNIQLO Via Cola di Rienzo, 2026-05-07, EUR 142.80 (~AUD 235) — receipt UQ-3318; (3) Toiletries and cosmetics — Farmacia Piram, 2026-05-06, EUR 62.10 (~AUD 100) — receipt FP-9912; (4) Replacement prescription medication — atorvastatin 40mg + escitalopram 10mg, 30-day supply — Farmacia San Pietro, 2026-05-07, EUR 110.50 (~AUD 180) — receipt FSP-1187; doctor's letter dated 2026-05-07 from Dr. Marco Bianchi confirms regimen and lost-medication context (satisfies clause T4.1); (5) Replacement suitcase — Carpisa Stazione Termini, 2026-05-08, EUR 215.00 (~AUD 350) — receipt CT-441. RECEIPTS NOT AVAILABLE for: clothing and shoes purchased in Australia 1-3 years prior (~AUD 1,800), travel adapter and hairdryer (~AUD 220) — these items are unsupported by clause TC2 (proof of ownership). Photographs of two items (running shoes, evening dress) extracted from the customer's phone gallery dated April 2025 may partially substantiate ~AUD 410 of the undocumented contents. Aggregate well within the AUD 3,000 T2.1 limit; no single item exceeds the AUD 750 T2.1a sub-limit.",
+  "severity": "medium",
+  "department": "Claims Assessment",
+  "tags": [
+    "travel",
+    "TRVL-58220",
+    "receipts",
+    "T2.3",
+    "T4.1",
+    "TC2",
+    "evidence",
+    "partial"
+  ],
+  "lastUpdated": "2026-05-08T16:00:00Z"
+}

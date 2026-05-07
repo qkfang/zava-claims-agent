@@ -1,0 +1,37 @@
+{
+  "id": "policy-schedule-life-19042",
+  "policyName": "Zava Term Life — Level Cover Policy Schedule LIFE-19042 (Mei-Ling Chen)",
+  "productLine": "life",
+  "version": "2.3-LIFE-19042",
+  "summary": "Policy schedule and wording extract for LIFE-19042. Insured (deceased): Mei-Ling Chen, DOB 1958-07-12, in-force from 2009-03-01 with a planned expiry of 2034-02-28. Sum insured AUD 250,000 lump-sum death benefit, level premium structure. Premiums paid up to date through automatic monthly direct debit. Named beneficiary on the schedule: Robert Chen (son, DOB 1986-04-22), 100% allocation. No medical loading on the policy. The 13-month suicide exclusion (clause LX1) is well outside the 17-year in-force period and is not engaged. No excess applies to a life policy.",
+  "coverage": "ENTITLEMENT L1.1 Death benefit — single lump-sum payment to the named beneficiary upon the death of the insured during the term. Limit AUD 250,000 (sum insured). ENTITLEMENT L1.4 Worldwide cover — applies anywhere in the world, with no geographical restriction. ENTITLEMENT L1.6 Funeral advancement — an interim payment of up to AUD 25,000 paid within 5 business days of receipt of an interim hospital death certificate, the beneficiary's photo ID, and verified bank account details, to support immediate funeral costs. The advance is offset against the final L1.1 settlement. ENTITLEMENT L1.7 Premium waiver during claim assessment — premiums are waived during the claim assessment period.",
+  "exclusions": "EXCLUSION LX1 Suicide within 13 months — no benefit is payable where death is by suicide within 13 months of policy commencement or the most recent reinstatement. Not engaged on this policy (in-force 17 years). EXCLUSION LX2 Material non-disclosure — the insurer may decline or reduce the benefit where there has been material non-disclosure at underwriting; routine assessor check confirms the original 2009 application is on file with no flagged discrepancies. EXCLUSION LX3 Declared act of war (combatant) — not applicable.",
+  "evidenceRequired": [
+    "Final death certificate issued by the relevant Births, Deaths and Marriages registry — required to release the full L1.1 benefit (clause LC1)",
+    "Interim hospital death certificate — sufficient to OPEN the claim and to release the funeral advancement under L1.6",
+    "Certified photo identification of the beneficiary matching the named beneficiary on the schedule (clause LC2)",
+    "Verified bank account details for the beneficiary (clause LC3)",
+    "Coronial / autopsy report if death is non-natural or under investigation (not required where the cause of death on the certificate is natural)",
+    "Treating doctor's statement (terminal-illness advance claims only — not engaged here)"
+  ],
+  "owner": "Life Product Team",
+  "tags": [
+    "life",
+    "term",
+    "LIFE-19042",
+    "mei-ling-chen",
+    "robert-chen-beneficiary",
+    "L1.1",
+    "L1.4",
+    "L1.6",
+    "L1.7",
+    "LX1",
+    "LX2",
+    "LC1",
+    "LC2",
+    "LC3",
+    "funeral-advance",
+    "policy-schedule"
+  ],
+  "lastUpdated": "2026-04-01T00:00:00Z"
+}

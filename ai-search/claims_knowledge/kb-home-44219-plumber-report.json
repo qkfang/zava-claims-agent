@@ -1,0 +1,23 @@
+{
+  "id": "kb-home-44219-plumber-report",
+  "title": "HOME-44219 — Plumber report & make-safe invoice — Hawthorn 24/7 Plumbing (Michael Harris)",
+  "category": "Trade Report",
+  "claimType": "home",
+  "claimNumber": "",
+  "policyNumber": "HOME-44219",
+  "content": "Plumber report and make-safe invoice issued by Hawthorn 24/7 Plumbing (Plumbing Industry Commission Vic licence #PIC-44182) for the burst-pipe event at 18 Banksia Street, Hawthorn VIC 3122 on 2026-05-05. Attendance 04:55 — 06:10 (after-hours). Cause of failure confirmed as a fractured chrome-plated brass compression nut on the cold-water supply riser feeding the kitchen sink mixer. The failure is a sudden, single-event split — no evidence of a prior weep stain on the cabinet base; the carcass timber underneath shows clean, recent saturation rather than progressive rot. Plumber's professional opinion: this is a sudden accidental escape of liquid consistent with clause H1.3 and NOT a gradual leak (which would otherwise engage exclusion HX1). The original brass fitting is consistent with the 2008 build of the property and reached end of service life — replacement of the failed fitting itself is the customer's responsibility under exclusion HX2, but the resulting water damage IS covered. Make-safe scope completed: water supply isolated at the meter, tray pumped, residual water vacuumed, dehumidifier installed (left on site). MAKE-SAFE INVOICE INV-H247P-2026-05-05-118: after-hours call-out AUD 240 + 90 minutes labour AUD 360 + replacement compression nut AUD 35 + dehumidifier daily hire AUD 120 = AUD 755 ex-GST (AUD 830.50 inc GST). Within the AUD 5,000 H2.4 emergency make-safe limit; no pre-authorisation required.",
+  "severity": "medium",
+  "department": "Loss Adjusting",
+  "tags": [
+    "home",
+    "HOME-44219",
+    "plumber-report",
+    "make-safe",
+    "H1.3",
+    "H2.4",
+    "HX1",
+    "HX2",
+    "evidence"
+  ],
+  "lastUpdated": "2026-05-05T06:30:00Z"
+}

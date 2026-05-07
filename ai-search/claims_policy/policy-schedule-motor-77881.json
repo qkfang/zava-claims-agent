@@ -1,0 +1,37 @@
+{
+  "id": "policy-schedule-motor-77881",
+  "policyName": "Zava Comprehensive Motor — Policy Schedule MOTOR-77881 (Aisha Khan)",
+  "productLine": "motor",
+  "version": "4.1-MOTOR-77881",
+  "summary": "Policy schedule and wording extract for MOTOR-77881, held by Aisha Khan. Cover period 2025-09-01 to 2026-08-31. Insured vehicle: 2022 Toyota RAV4 GXL, registration 1AX-7DQ, agreed value AUD 24,500. Standard excess AUD 700 confirmed on this schedule. Hire-car-after-not-at-fault-collision benefit M2.2 is included as standard with no waiting period and a 14-day maximum. Choice-of-repairer add-on M1.4 is selected.",
+  "coverage": "ENTITLEMENT M1.1 Accidental damage to insured vehicle — covers repair or replacement of the insured vehicle following an accidental collision, including third-party at-fault collisions. Limit: up to agreed value AUD 24,500. ENTITLEMENT M1.4 Choice of repairer — customer may use a Zava-approved repairer or nominate their own subject to assessor approval; selected on this schedule. ENTITLEMENT M2.2 Hire car after a not-at-fault collision — provides a hire car of similar class while the insured vehicle is being repaired where the other party admits fault or is determined at fault by police. Sub-limit AUD 95/day, maximum 14 consecutive days, no waiting period (cover begins from the day the insured vehicle is unable to be driven). Booking is arranged by Zava through a panel hire-car supplier (Hertz, Europcar, or Thrifty). ENTITLEMENT M3.1 Third-party legal liability — covers the policyholder's liability for damage to other people's vehicles or property, up to AUD 20,000,000.",
+  "exclusions": "EXCLUSION MX1 Unlicensed driving — loss while the vehicle is being driven by an unlicensed driver is not covered. EXCLUSION MX2 Wear, tear and pre-existing damage — mechanical wear, tear, rust or pre-existing damage is not covered; rectification of unrelated pre-existing damage is the customer's responsibility.",
+  "evidenceRequired": [
+    "Driver's licence number and validity for the driver at the time of loss (clause MX1 check)",
+    "Police report or event number where police attended; otherwise written statement of facts",
+    "Photos of all damage including a clear shot of the licence plate and the point of impact",
+    "Other driver / third-party details: name, mobile, registration, insurer, and admission of fault if any",
+    "Formal repair assessment / itemised repairer quote confirming scope of damage and any latent damage (e.g. boot floor) — required before authorisation under M1.4",
+    "Dash-cam footage where available",
+    "Excess acknowledgement: customer must acknowledge the AUD 700 excess will be deducted from the settlement (clause MC2)"
+  ],
+  "owner": "Motor Product Team",
+  "tags": [
+    "motor",
+    "comprehensive",
+    "MOTOR-77881",
+    "aisha-khan",
+    "M1.1",
+    "M1.4",
+    "M2.2",
+    "M3.1",
+    "MX1",
+    "MX2",
+    "MC1",
+    "MC2",
+    "hire-car",
+    "excess-700",
+    "policy-schedule"
+  ],
+  "lastUpdated": "2025-09-01T00:00:00Z"
+}

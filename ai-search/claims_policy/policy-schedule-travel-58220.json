@@ -1,0 +1,35 @@
+{
+  "id": "policy-schedule-travel-58220",
+  "policyName": "Zava International Travel — Single Trip Policy Schedule TRVL-58220 (Grace Liu)",
+  "productLine": "travel",
+  "version": "2.5-TRVL-58220",
+  "summary": "Policy schedule and wording extract for TRVL-58220, held by Grace Liu. Cover period 2026-04-28 to 2026-05-26 inclusive (Australia → Singapore → Italy → Australia). Sums insured: AUD 3,000 baggage aggregate; AUD 250,000 medical; AUD 5,000 cancellation. Standard excess AUD 100 per claim confirmed on this schedule. Single-item sub-limit AUD 750 unless declared on the schedule (no items declared).",
+  "coverage": "ENTITLEMENT T2.1 Lost or delayed checked baggage — covers lost, stolen, or permanently delayed checked baggage declared lost by the carrier after 72 hours. Aggregate limit AUD 3,000 per insured person. ENTITLEMENT T2.1a Single-item sub-limit — any single item of luggage, clothing or personal effect is limited to AUD 750 unless declared and listed on the schedule. ENTITLEMENT T2.3 Replacement-essentials advance — reimburses essential clothing and toiletry purchases while the bag is delayed, before a permanent loss is declared, up to AUD 500. Receipts required. ENTITLEMENT T4.1 Replacement prescription medication — reimburses the cost of replacement prescription medication that was lost in checked baggage, up to AUD 500. Requires either a doctor's letter or original script. Not subject to the T2.1 baggage aggregate. ENTITLEMENT T3.1 Travel-disruption (delay) — AUD 250 per 6 hours of carrier-confirmed delay, max AUD 2,000. ENTITLEMENT T5.1 Personal liability — AUD 2,500,000.",
+  "exclusions": "EXCLUSION TX1 Cash, securities and travel documents — loss of cash, securities, passports or travel documents is not covered under baggage. EXCLUSION TX2 Items left unattended — items left unattended in a public place are not covered. EXCLUSION TX3 Pre-existing medical conditions — not covered unless declared and approved at issue. EXCLUSION TX4 DFAT 'Do Not Travel' destinations — claims arising from travel against active DFAT 'Do Not Travel' advisories are not covered.",
+  "evidenceRequired": [
+    "Property Irregularity Report (PIR) from the carrier confirming the bag was checked, lost, and (after 72 hours) declared unrecoverable — required by condition TC1",
+    "Boarding pass and travel itinerary",
+    "Receipts for replacement essentials purchased while the bag was delayed (clause T2.3)",
+    "Prescription / doctor's letter for replacement medication (clause T4.1)",
+    "Proof of ownership and value for items in the lost bag — receipts, bank or credit-card statements, or photographs (condition TC2)",
+    "Excess acknowledgement: AUD 100 per-claim excess will be deducted (Schedule)"
+  ],
+  "owner": "Travel Product Team",
+  "tags": [
+    "travel",
+    "international",
+    "TRVL-58220",
+    "grace-liu",
+    "T2.1",
+    "T2.1a",
+    "T2.3",
+    "T4.1",
+    "TX1",
+    "TX2",
+    "TC1",
+    "TC2",
+    "excess-100",
+    "policy-schedule"
+  ],
+  "lastUpdated": "2026-04-28T00:00:00Z"
+}

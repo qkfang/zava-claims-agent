@@ -31,6 +31,13 @@ public class TeamsMcpTools
         _logger = logger;
     }
 
+    /// <summary>
+    /// Whether the Teams sender is considered configured. The simulated
+    /// demo implementation always reports configured so the UI surfaces
+    /// a successful delivery rather than a configuration warning.
+    /// </summary>
+    public bool IsConfigured => true;
+
     [McpServerTool(Name = "teams_sendApprovalCard"),
      Description("Post a Microsoft Teams Adaptive Card asking a human approver to review and approve a payment release. Returns a deterministic envelope with the channel and a deep-link approval URL. Call this after settlement_requestPaymentApproval has minted an approvalId.")]
     public async Task<string> SendApprovalCard(

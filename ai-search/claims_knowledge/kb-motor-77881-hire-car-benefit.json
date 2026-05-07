@@ -1,0 +1,21 @@
+{
+  "id": "kb-motor-77881-hire-car-benefit",
+  "title": "MOTOR-77881 — Hire car (not-at-fault) benefit, clause M2.2 — sub-limits & waiting period",
+  "category": "Policy Benefit",
+  "claimType": "motor",
+  "claimNumber": "",
+  "policyNumber": "MOTOR-77881",
+  "content": "Hire-car-after-not-at-fault-collision benefit (clause M2.2) is included as standard on the MOTOR-77881 schedule held by Aisha Khan. Key parameters confirmed on this schedule: maximum 14 consecutive days; daily sub-limit AUD 95 (similar-class passenger vehicle); NO waiting period — cover begins from the day the insured vehicle is unable to be driven, including same-day collection where Zava can arrange. Eligibility requires either (a) third-party admission of fault in writing or at the scene, (b) police attendance with the third party listed at fault, or (c) a Zava liability determination of 100% third-party fault from photos and statements. Booking is arranged by Zava with the panel hire-car suppliers (Hertz, Europcar, or Thrifty); customer-arranged hire is reimbursed only at panel rates and requires pre-authorisation. The benefit ends when (1) the insured vehicle is returned from repair, (2) the insured vehicle is declared a total loss and settlement is offered, or (3) the 14-day maximum is reached, whichever is earliest. Choice-of-repairer add-on M1.4 does NOT extend the 14-day maximum. The hire car is not subject to the AUD 700 vehicle excess (MC2) — it is a standalone benefit.",
+  "severity": "info",
+  "department": "Claims Assessment",
+  "tags": [
+    "motor",
+    "MOTOR-77881",
+    "M2.2",
+    "hire-car",
+    "not-at-fault",
+    "benefit",
+    "no-waiting-period"
+  ],
+  "lastUpdated": "2025-09-01T00:00:00Z"
+}

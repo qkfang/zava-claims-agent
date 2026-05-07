@@ -15,6 +15,7 @@
         const processBtn = $('#comms-process-btn');
         const processStatus = $('#comms-process-status');
         const resultsEl = $('#comms-results');
+        const draftsEl = $('#comms-drafts');
         const stagePill = $('#comms-stage-pill');
         const summaryText = $('#comms-summary-text');
         const nextStepsEl = $('#comms-next-steps');
@@ -27,8 +28,6 @@
         const smsBody = $('#comms-sms-body');
         const portalHeading = $('#comms-portal-heading');
         const portalBody = $('#comms-portal-body');
-        const agentNotesEl = $('#comms-agent-notes');
-        const agentNotesBody = $('#comms-agent-notes-body');
         const engageScope = $('.engage-tabs-scope');
 
         let claims = [];
@@ -45,6 +44,7 @@
             if (step2El) step2El.hidden = true;
             processBtn.disabled = true;
             resultsEl.hidden = true;
+            if (draftsEl) draftsEl.hidden = true;
             try {
                 const res = await fetch('/communications/claims');
                 if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -65,6 +65,7 @@
 
         async function selectClaim(claimNumber) {
             resultsEl.hidden = true;
+            if (draftsEl) draftsEl.hidden = true;
             processStatus.hidden = true;
             if (!claimNumber) {
                 selectedClaim = null;
@@ -104,15 +105,13 @@
             processStatus.className = 'comms-status';
             processStatus.innerHTML = '<span class="spinner"></span>Cara is drafting customer updates…';
             resultsEl.hidden = true;
+            if (draftsEl) draftsEl.hidden = true;
 
             try {
                 const data = await window.zcAgentStream({
                     url: '/communications/process',
                     body: { claimNumber: selectedClaim.claimNumber },
                     onDelta: (_chunk, fullText) => {
-                        agentNotesEl.hidden = false;
-                        agentNotesBody.classList.add('agent-md-streaming');
-                        agentNotesBody.textContent = fullText;
                         if (window.engageTabsStreamNarrative) {
                             window.engageTabsStreamNarrative(engageScope, fullText);
                         }
@@ -149,15 +148,8 @@
                 portalHeading.textContent = (data.portal && data.portal.heading) || '';
                 window.zcRenderMarkdown(portalBody, (data.portal && data.portal.body) || '');
 
-                if (data.agentNotes) {
-                    agentNotesEl.hidden = false;
-                    agentNotesBody.classList.remove('agent-md-streaming');
-                    window.zcRenderMarkdown(agentNotesBody, data.agentNotes);
-                } else {
-                    agentNotesEl.hidden = true;
-                }
-
                 resultsEl.hidden = false;
+                if (draftsEl) draftsEl.hidden = false;
                 resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
                 // Surface input + raw output in the Engage Agent sub-tabs.

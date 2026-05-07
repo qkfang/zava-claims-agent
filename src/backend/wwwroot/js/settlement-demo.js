@@ -51,6 +51,7 @@
         const modalApproveBtn = $('#settlement-modal-approve-btn');
         const modalRejectBtn = $('#settlement-modal-reject-btn');
         const modalCancelBtn = $('#settlement-modal-cancel-btn');
+        const modalReleaseBtn = $('#settlement-modal-release-btn');
         const modalCloseBtn = root.querySelector('.settlement-modal-close');
         let modalApprovalContext = null;
 
@@ -358,9 +359,15 @@
             modalAgentBody.innerHTML = '';
             modalApproveBtn.disabled = false;
             modalRejectBtn.disabled = false;
-            modalApproveBtn.textContent = approval.agentResumeAvailable
-                ? 'Approve & release payment'
-                : 'Approve';
+            modalApproveBtn.textContent = 'Approve';
+            // Release button is gated on a successful approve. Reset it
+            // every time the modal opens so a previous run doesn't leak
+            // an enabled state across approvals.
+            if (modalReleaseBtn) {
+                modalReleaseBtn.hidden = false;
+                modalReleaseBtn.disabled = true;
+                modalReleaseBtn.textContent = 'Release payment';
+            }
             modalEl.hidden = false;
             modalApproveBtn.focus();
         }
@@ -375,6 +382,7 @@
             const approvalId = modalApprovalContext.approvalId;
             modalApproveBtn.disabled = true;
             modalRejectBtn.disabled = true;
+            if (modalReleaseBtn) modalReleaseBtn.disabled = true;
             modalStatus.hidden = false;
             modalStatus.className = 'settlement-modal-status';
             modalStatus.innerHTML = '<span class="spinner"></span>Approving and resuming agent conversation…';
@@ -401,6 +409,27 @@
                 if (data.agentError) msg += `. (Agent resume failed: ${data.agentError})`;
                 modalStatus.textContent = msg + '.';
 
+                // Update the modal Release button based on the new status.
+                // If the agent already released the payment in the same
+                // turn (status=released), keep it disabled and show "Released".
+                // Otherwise enable it so the operator can manually release.
+                const finalStatus = (approval.status || '').toLowerCase();
+                if (modalReleaseBtn) {
+                    if (finalStatus === 'released') {
+                        modalReleaseBtn.hidden = false;
+                        modalReleaseBtn.disabled = true;
+                        modalReleaseBtn.textContent = 'Released';
+                    } else if (finalStatus === 'approved') {
+                        modalReleaseBtn.hidden = false;
+                        modalReleaseBtn.disabled = false;
+                        modalReleaseBtn.textContent = 'Release payment';
+                        modalReleaseBtn.focus();
+                    } else {
+                        modalReleaseBtn.hidden = true;
+                        modalReleaseBtn.disabled = true;
+                    }
+                }
+
                 // Mirror the inline Teams card so the UI stays consistent.
                 if (currentApprovalId === approvalId) {
                     updateTeamsPill(approval.status || 'approved', true);
@@ -421,6 +450,42 @@
                 modalStatus.textContent = 'Failed: ' + err.message;
                 modalApproveBtn.disabled = false;
                 modalRejectBtn.disabled = false;
+            }
+        }
+
+        async function releaseViaModal() {
+            if (!modalApprovalContext) return;
+            const approvalId = modalApprovalContext.approvalId;
+            if (!modalReleaseBtn) return;
+            modalReleaseBtn.disabled = true;
+            modalStatus.hidden = false;
+            modalStatus.className = 'settlement-modal-status';
+            modalStatus.innerHTML = '<span class="spinner"></span>Releasing payment…';
+            try {
+                const res = await fetch(`/settlement/payment/${encodeURIComponent(approvalId)}/release`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+                modalStatus.textContent = `Payment released — status: ${data.status}` +
+                    (data.paymentReference ? `, reference: ${data.paymentReference}` : '') + '.';
+                modalReleaseBtn.textContent = 'Released';
+                modalReleaseBtn.disabled = true;
+
+                // Mirror the inline Teams card.
+                if (currentApprovalId === approvalId) {
+                    updateTeamsPill(data.status, true);
+                    teamsStatus.hidden = false;
+                    teamsStatus.className = 'settlement-teams-status';
+                    teamsStatus.textContent = `Payment released. Reference: ${data.paymentReference}.`;
+                    teamsReleaseBtn.hidden = true;
+                    teamsApproveBtn.disabled = true;
+                    teamsRejectBtn.disabled = true;
+                }
+            } catch (err) {
+                modalStatus.className = 'settlement-modal-status error';
+                modalStatus.textContent = 'Failed: ' + err.message;
+                modalReleaseBtn.disabled = false;
             }
         }
 
@@ -465,6 +530,7 @@
         // Real popup modal event wiring.
         modalApproveBtn.addEventListener('click', approveViaModal);
         modalRejectBtn.addEventListener('click', rejectViaModal);
+        if (modalReleaseBtn) modalReleaseBtn.addEventListener('click', releaseViaModal);
         modalCancelBtn.addEventListener('click', closeApprovalModal);
         if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeApprovalModal);
         modalEl.addEventListener('click', (ev) => {

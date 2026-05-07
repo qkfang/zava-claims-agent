@@ -1,0 +1,37 @@
+{
+  "id": "policy-schedule-home-44219",
+  "policyName": "Zava Home & Contents — Standard Policy Schedule HOME-44219 (Michael Harris)",
+  "productLine": "home",
+  "version": "3.2-HOME-44219",
+  "summary": "Policy schedule and wording extract for HOME-44219, held by Michael Harris. Insured address: 18 Banksia Street, Hawthorn VIC 3122 (owner-occupied, single dwelling, brick-veneer, built 2008). Cover period 2025-11-15 to 2026-11-14. Buildings sum insured AUD 850,000; Contents sum insured AUD 120,000. Standard excess AUD 500 per claim confirmed on this schedule. Make-safe / emergency repair benefit included up to AUD 5,000.",
+  "coverage": "ENTITLEMENT H1.3 Escape of liquid — covers sudden and accidental escape of water from a fixed pipe, fitting or appliance, including resulting damage to building, fixtures and contents. Limit: up to building / contents sum insured. The cost of the failed pipe or appliance itself is excluded under HX2 if caused by wear and tear. ENTITLEMENT H1.7 Temporary accommodation — covers reasonable temporary accommodation if the home is uninhabitable as a result of an insured event. Limit AUD 30,000 over up to 12 months. ENTITLEMENT H2.4 Emergency make-safe repairs — reimburses urgent make-safe repairs (e.g. after-hours plumber call-out) carried out to limit further damage, up to AUD 5,000 — does not require pre-authorisation. ENTITLEMENT H3.1 Damaged contents replacement — damaged contents are replaced new-for-old where practical, within the contents sum insured. ENTITLEMENT H4.2 Drying and dehumidification — reasonable cost of professional drying / dehumidification of timber and structure post-water-damage is covered as part of repair scope.",
+  "exclusions": "EXCLUSION HX1 Gradual leak / lack of maintenance — damage caused by a gradual or continuous leak that should reasonably have been detected is not covered. EXCLUSION HX2 Wear, tear and rust — the cost of replacing the failed pipe or appliance itself due to wear, tear or rust is not covered (resulting damage IS covered under H1.3). EXCLUSION HX3 Mould — pre-existing mould unrelated to the insured event is not covered.",
+  "evidenceRequired": [
+    "Photos of the failure point (e.g. compression joint) and damaged areas",
+    "Plumber report identifying the cause of failure and confirming a sudden, accidental event (clause H1.3 evidence — distinguishes from HX1 gradual leak)",
+    "After-hours plumber make-safe invoice (clause H2.4)",
+    "Builder / restoration scope of works for repairs >AUD 3,000",
+    "Proof of habitability impact if temporary accommodation is requested (clause H1.7)",
+    "Excess acknowledgement: AUD 500 per-claim excess will be deducted (clause HC2)"
+  ],
+  "owner": "Home Product Team",
+  "tags": [
+    "home",
+    "buildings",
+    "contents",
+    "HOME-44219",
+    "michael-harris",
+    "H1.3",
+    "H1.7",
+    "H2.4",
+    "H3.1",
+    "HX1",
+    "HX2",
+    "HC1",
+    "HC2",
+    "escape-of-liquid",
+    "excess-500",
+    "policy-schedule"
+  ],
+  "lastUpdated": "2025-11-15T00:00:00Z"
+}

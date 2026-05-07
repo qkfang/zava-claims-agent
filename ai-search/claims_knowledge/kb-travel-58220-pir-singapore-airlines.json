@@ -1,0 +1,21 @@
+{
+  "id": "kb-travel-58220-pir-singapore-airlines",
+  "title": "TRVL-58220 — Singapore Airlines PIR SQ-FCO-2605-1184 — bag declared lost (Grace Liu)",
+  "category": "Carrier Evidence",
+  "claimType": "travel",
+  "claimNumber": "",
+  "policyNumber": "TRVL-58220",
+  "content": "Property Irregularity Report SQ-FCO-2605-1184 issued by Singapore Airlines Baggage Services at Aeroporto di Roma–Fiumicino (FCO) on 2026-05-05 22:48 local time, raised by Grace Liu (passenger PNR XK7P2L) on flight SQ-358 SIN→FCO. Bag tag SQ-718-204318 — one (1) checked piece, 22.4kg, hard-shell silver Samsonite. Bag did not arrive on the connecting carousel; carrier system shows 'no positive read since SIN departure'. PIR escalated to global tracing. After 72 hours of unsuccessful tracing the carrier closed the file and on 2026-05-08 confirmed the bag is permanently unrecoverable, satisfying clause T2.1 (declared-lost-after-72-hours condition). PIR also confirms no negligence by the passenger and that the bag was correctly tagged through. Singapore Airlines liability under Montreal Convention is settled separately (1,288 SDR). This evidence satisfies travel-policy condition TC1 (carrier PIR required) on the TRVL-58220 schedule.",
+  "severity": "low",
+  "department": "Claims Assessment",
+  "tags": [
+    "travel",
+    "TRVL-58220",
+    "PIR",
+    "singapore-airlines",
+    "T2.1",
+    "TC1",
+    "evidence"
+  ],
+  "lastUpdated": "2026-05-08T11:20:00Z"
+}

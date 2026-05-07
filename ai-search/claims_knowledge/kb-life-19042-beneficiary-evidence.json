@@ -1,0 +1,24 @@
+{
+  "id": "kb-life-19042-beneficiary-evidence",
+  "title": "LIFE-19042 — Beneficiary identification & interim death certificate (Robert Chen)",
+  "category": "Life Claim Evidence",
+  "claimType": "life",
+  "claimNumber": "",
+  "policyNumber": "LIFE-19042",
+  "content": "Evidence pack supplied by Robert Chen (named beneficiary, son of the insured Mei-Ling Chen) for the LIFE-19042 death benefit claim notified 2026-05-09. INTERIM DEATH CERTIFICATE: hospital-issued cause-of-death certificate from St Vincent's Hospital, Fitzroy VIC, signed by Dr. A. Thanapalan on 2026-05-02. Cause: 'natural causes — complications following a short illness'. Document is sufficient under clause LC1 to OPEN the claim and to release the L1.6 funeral advancement, but the full L1.1 benefit will only be released upon receipt of the final BDM certificate (estimated 4-6 weeks). PHOTO ID: certified colour copy of Robert Chen's Victorian Driver Licence (number 0428-660-274) certified by Justice of the Peace #14491, 2026-05-09 — name and DOB match the named beneficiary on the LIFE-19042 schedule (clause LC2 satisfied). FUNERAL DIRECTOR: Tobin Brothers Funerals, Carlton — invoice and bank-receipt account details supplied for the funeral advancement payment (clause L1.6 / LC3). BANK ACCOUNT: Robert Chen has supplied his personal Westpac account BSB 033-186 / acc. 318-204-118 for the final L1.1 settlement; account to be verified by Settlement before release (clause LC3). VULNERABILITY FLAG: bereavement, primary contact prefers email, weekday-mornings best — apply sensitive-case handling (no upsell, no NPS prompt, single point of contact).",
+  "severity": "high",
+  "department": "Customer Communications",
+  "tags": [
+    "life",
+    "LIFE-19042",
+    "bereavement",
+    "vulnerable-customer",
+    "L1.6",
+    "LC1",
+    "LC2",
+    "LC3",
+    "funeral-advance",
+    "evidence"
+  ],
+  "lastUpdated": "2026-05-09T11:30:00Z"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "kb-business-30412-bi-financials",
+  "title": "BIZ-30412 — Business interruption financials & exhaust-hood compliance (Bluebird Café)",
+  "category": "Financial Evidence",
+  "claimType": "business",
+  "claimNumber": "",
+  "policyNumber": "BIZ-30412",
+  "content": "Business interruption substantiation pack for the BIZ-30412 fire claim. TRADING HISTORY: trailing 24-month BAS and tax-return summary supplied — annual turnover AUD 1.18m (FY24/25) and AUD 1.24m (FY25/26 YTD-annualised); declared annual gross profit AUD 462,000 (within the AUD 500,000 B2.1 sum insured); average weekly gross profit AUD 8,884; payroll AUD 11,200/week across 4 casuals + 1 chef + working director (B2.3 wages cover engaged for the 4 casuals + chef). EXPECTED BI EXPOSURE: based on a 2-3 week kitchen reinstatement period, BI loss is estimated at AUD 18,000 — AUD 27,000 plus continuing payroll AUD 11,200/week (max 13 weeks) — well below the AUD 500,000 indemnity-period limit. WAITING PERIOD: 24-hour waiting period (clause BC2) applies and is acknowledged. EXHAUST-HOOD COMPLIANCE — clause BC1: most recent kitchen-exhaust clean-down certificate CleanTrade Vic CT-V-2025-12-04-7714 dated 2026-02-04 (within the rolling 12-month BC1 window at date of loss). NEXT scheduled clean-down was due 2026-02-03 — Bluebird is technically 1 day late but within the 7-day grace period the BC1 wording allows; compliance is therefore preserved. Minor finding to be acknowledged in the assessment. CLAIM PREPARATION (B2.5): forensic accountant Whitfield Partners has been engaged at AUD 5,500 ex-GST to prepare the formal BI calculation — well under the AUD 25,000 cap. Claim NOT expected to exceed the AUD 100,000 BC4 forensic-accountant trigger.",
+  "severity": "high",
+  "department": "Loss Adjusting",
+  "tags": [
+    "business",
+    "BIZ-30412",
+    "BI",
+    "B2.1",
+    "B2.3",
+    "B2.5",
+    "BC1",
+    "BC2",
+    "exhaust-hood",
+    "compliance",
+    "evidence"
+  ],
+  "lastUpdated": "2026-05-08T17:00:00Z"
+}

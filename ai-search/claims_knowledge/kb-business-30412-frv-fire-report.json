@@ -1,0 +1,21 @@
+{
+  "id": "kb-business-30412-frv-fire-report",
+  "title": "BIZ-30412 — FRV Fire Report event 26-118432 — Bluebird Café (Tom Bennett)",
+  "category": "Fire Authority Report",
+  "claimType": "business",
+  "claimNumber": "",
+  "policyNumber": "BIZ-30412",
+  "content": "Fire Rescue Victoria event 26-118432 — Bluebird Café, 42 Lygon Street, Carlton VIC 3053. Call received 22:42 on 2026-05-06; Pumper 2 (Carlton) and Pumper 5 (Brunswick) on scene 22:48; fire contained 22:53; declared out 23:04; crews left scene 23:55. Officer in charge: Station Officer K. Naidu. CAUSE OF FIRE: accidental — confirmed origin in the kitchen exhaust hood / Type-1 plenum. Heat from the cooking line ignited grease deposits in the lower duct section after close, with combustion sustained until detected by the building's fire-alarm system. Independent of any deliberate act (clearing exclusion BX1). Building electrical and gas isolated by FRV at the meter. SCOPE OF FIRE DAMAGE OBSERVED ON SCENE: hood and ducting destroyed; ceiling tiles, lighting and acoustic insulation in kitchen damaged by heat; smoke ingress to front-of-house with soot deposition on walls, soft furnishings, stock and POS equipment; minor water damage from suppression activity localised to kitchen. NO STRUCTURAL DAMAGE TO BUILDING SHELL. Premises secured before crews left; landlord notified. This report satisfies clause B1.1 fire-cause evidence on the BIZ-30412 schedule.",
+  "severity": "high",
+  "department": "Loss Adjusting",
+  "tags": [
+    "business",
+    "BIZ-30412",
+    "fire",
+    "FRV",
+    "B1.1",
+    "BX1",
+    "evidence"
+  ],
+  "lastUpdated": "2026-05-07T08:30:00Z"
+}

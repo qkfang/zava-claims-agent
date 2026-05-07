@@ -178,11 +178,11 @@
             </div>
         </div>
 
-        <!-- Step 3 — drafts -->
+        <!-- Step 3 — claim summary & flags -->
         <div class="comms-step" data-step="3" id="comms-results" hidden>
             <div class="comms-step-head">
                 <span class="comms-step-num">3</span>
-                <h3>Cara's drafts</h3>
+                <h3>Cara's claim summary</h3>
             </div>
 
             <div class="comms-summary-card">
@@ -203,6 +203,18 @@
                 <ul id="comms-flags-list"></ul>
                 <p class="muted" id="comms-approval-reason"></p>
             </div>
+        </div>
+
+        <!-- Step 4 — customer-facing drafts -->
+        <div class="comms-step" data-step="4" id="comms-drafts" hidden>
+            <div class="comms-step-head">
+                <span class="comms-step-num">4</span>
+                <h3>Customer-facing drafts</h3>
+            </div>
+            <p class="muted">
+                Email, SMS, and portal updates drafted by Cara — ready for a
+                human reviewer to approve before they're sent.
+            </p>
 
             <div class="comms-channels">
                 <div class="comms-channel">
@@ -230,11 +242,6 @@
                     <div class="comms-portal-heading" id="comms-portal-heading"></div>
                     <div class="comms-channel-body agent-md" id="comms-portal-body"></div>
                 </div>
-            </div>
-
-            <div class="comms-agent-notes" id="comms-agent-notes" hidden>
-                <div class="comms-agent-notes-label">Foundry agent narrative</div>
-                <div id="comms-agent-notes-body" class="agent-md"></div>
             </div>
         </div>
     </section>
@@ -495,26 +502,6 @@
         margin: 0;
     }
     .comms-channel-body.comms-sms { font-size: 0.85rem; }
-
-    .comms-agent-notes {
-        margin-top: 0.85rem;
-        background: rgba(10, 16, 28, 0.7);
-        border: 1px solid rgba(120, 150, 200, 0.18);
-        border-radius: 8px;
-        padding: 0.7rem 0.85rem;
-    }
-    .comms-agent-notes-label {
-        font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em;
-        color: var(--zava-muted, #97a3b6); font-weight: 700; margin-bottom: 0.35rem;
-    }
-    .comms-agent-notes pre {
-        color: rgba(238, 242, 247, 0.86);
-        font-size: 0.82rem;
-        line-height: 1.5;
-        white-space: pre-wrap;
-        margin: 0;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    }
 
     /* Voice chat tab */
     .voice-panel { --voice-accent: #ec4899; }

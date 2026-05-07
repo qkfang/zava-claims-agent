@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using OpenAI.Responses;
 using ZavaClaims.Agents;
+using ZavaClaims.App.Mcp;
 using ZavaClaims.App.Services;
 
 namespace ZavaClaims.App.Api;
@@ -37,10 +38,10 @@ public static class SettlementApi
     {
         // Resolve services used by both the agent invocation and the
         // payment-approval HTTP endpoints. These are always registered
-        // (TeamsNotificationService degrades gracefully when no webhook
-        // URL is configured).
+        // (TeamsMcpTools simulates delivery so the demo flow always
+        // works without external infra).
         var paymentStore = app.Services.GetRequiredService<PaymentApprovalStore>();
-        var teamsService = app.Services.GetRequiredService<TeamsNotificationService>();
+        var teamsService = app.Services.GetRequiredService<TeamsMcpTools>();
 
         // Build the MCP ResponseTool that points the Settlement Agent at
         // the SettlementMcpTools served from /mcp on this app. We always
@@ -184,7 +185,7 @@ public static class SettlementApi
                 Status = PaymentApprovalStatus.Pending
             };
             paymentStore.Add(apiApproval);
-            var teamsResult = await teamsService.SendPaymentApprovalAsync(new PaymentApprovalRequest(
+            var teamsResult = await teamsService.SendApprovalCardCoreAsync(new TeamsApprovalCardRequest(
                 ApprovalId: apiApproval.ApprovalId,
                 ClaimNumber: apiApproval.ClaimNumber,
                 CustomerName: apiApproval.CustomerName,
@@ -634,7 +635,7 @@ public static class SettlementApi
         decimal priorPayments,
         decimal payableAmount,
         PaymentApprovalRecord apiApproval,
-        TeamsSendResult teamsResult,
+        TeamsCardSendResult teamsResult,
         bool teamsConfigured)
     {
         // Default payee on the API-side approval is the customer name,

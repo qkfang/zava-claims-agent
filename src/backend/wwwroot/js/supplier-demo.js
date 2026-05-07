@@ -113,6 +113,17 @@
             approvalEl.hidden = true;
             if (pdfEl) pdfEl.hidden = true;
 
+            // Helper that sets textContent only if the element exists. The
+            // razor markup may be partially-streamed during Blazor enhanced
+            // navigation, so every DOM lookup needs a defensive null guard.
+            const setText = (sel, value) => {
+                const el = $(sel);
+                if (el) el.textContent = value;
+            };
+            const setHtml = (el, value) => {
+                if (el) el.innerHTML = value;
+            };
+
             try {
                 const data = await window.zcAgentStream({
                     url: '/supplier/process',
@@ -123,61 +134,66 @@
                         }
                     },
                     onError: (msg) => {
-                        processStatus.className = 'supplier-status error';
-                        processStatus.textContent = 'Agent error: ' + msg;
+                        if (processStatus) {
+                            processStatus.className = 'supplier-status error';
+                            processStatus.textContent = 'Agent error: ' + msg;
+                        }
                     }
                 });
                 if (!data) throw new Error('No response from agent');
 
-                processStatus.textContent = data.agentConfigured
-                    ? 'Supplier Coordinator Agent matched a supplier and dispatched a work order.'
-                    : 'Processed (Foundry agent not configured — using deterministic demo match).';
+                if (processStatus) {
+                    processStatus.textContent = data.agentConfigured
+                        ? 'Supplier Coordinator Agent matched a supplier and dispatched a work order.'
+                        : 'Processed (Foundry agent not configured — using deterministic demo match).';
+                }
 
                 const r = data.recommendedSupplier || {};
-                $('#supplier-rec-name').textContent = r.name || '';
-                $('#supplier-rec-specialty').textContent = r.specialty || '';
-                $('#supplier-rec-location').textContent = '📍 ' + (r.location || '');
-                $('#supplier-rec-rating').textContent = '★ ' + Number(r.rating || 0).toFixed(1) + '/5';
-                $('#supplier-rec-sla').textContent = 'SLA ' + (r.slaDays ?? '—') + ' days';
+                setText('#supplier-rec-name', r.name || '');
+                setText('#supplier-rec-specialty', r.specialty || '');
+                setText('#supplier-rec-location', '📍 ' + (r.location || ''));
+                setText('#supplier-rec-rating', '★ ' + Number(r.rating || 0).toFixed(1) + '/5');
+                setText('#supplier-rec-sla', 'SLA ' + (r.slaDays ?? '—') + ' days');
 
-                apptsEl.innerHTML = (data.appointmentOptions || []).map(a =>
-                    `<li>📅 ${escapeHtml(a)}</li>`).join('');
+                setHtml(apptsEl, (data.appointmentOptions || []).map(a =>
+                    `<li>📅 ${escapeHtml(a)}</li>`).join(''));
 
-                altsEl.innerHTML = (data.alternativeSuppliers || []).map(s =>
-                    `<li><strong>${escapeHtml(s.name)}</strong> — ${escapeHtml(s.specialty)} <em>(SLA ${s.slaDays}d, ★ ${Number(s.rating || 0).toFixed(1)})</em></li>`).join('');
+                setHtml(altsEl, (data.alternativeSuppliers || []).map(s =>
+                    `<li><strong>${escapeHtml(s.name)}</strong> — ${escapeHtml(s.specialty)} <em>(SLA ${s.slaDays}d, ★ ${Number(s.rating || 0).toFixed(1)})</em></li>`).join(''));
 
-                resultEl.hidden = false;
+                if (resultEl) resultEl.hidden = false;
 
                 const w = data.workOrder || {};
-                $('#supplier-wo-num').textContent = w.workOrderNumber || '';
-                $('#supplier-wo-scope').textContent = w.scope || '';
-                $('#supplier-wo-eta').textContent = w.eta || '';
-                $('#supplier-wo-type').textContent = data.supplierType || '';
-                window.zcRenderMarkdown('#supplier-customer-body', data.customerUpdate || '');
-                dispatchEl.hidden = false;
+                setText('#supplier-wo-num', w.workOrderNumber || '');
+                setText('#supplier-wo-scope', w.scope || '');
+                setText('#supplier-wo-eta', w.eta || '');
+                setText('#supplier-wo-type', data.supplierType || '');
+                if ($('#supplier-customer-body') && typeof window.zcRenderMarkdown === 'function') {
+                    window.zcRenderMarkdown('#supplier-customer-body', data.customerUpdate || '');
+                }
+                if (dispatchEl) dispatchEl.hidden = false;
 
                 // Surface the quote-request PDF download produced by the
                 // generateQuoteRequestPdf MCP tool (and deterministically by
-                // /supplier/process) and trigger an automatic download so
-                // the operator gets the PDF at the end of the flow.
-                if (data.quoteRequestPdfUrl && pdfEl) {
+                // /supplier/process). The operator clicks the link manually
+                // when they want the PDF — no automatic download.
+                if (data.quoteRequestPdfUrl && pdfEl && pdfLink) {
                     const fileName = data.quoteRequestPdfFileName || 'quote-request.pdf';
                     pdfLink.href = data.quoteRequestPdfUrl;
                     pdfLink.setAttribute('download', fileName);
-                    pdfName.textContent = fileName;
+                    if (pdfName) pdfName.textContent = fileName;
                     const best = data.bestPriceSupplier;
-                    pdfSub.textContent = best
-                        ? `Quote request issued to ${best.name} — ${best.quoteCurrency} ${Number(best.quoteAmount).toLocaleString()}`
-                        : 'Generated by the Supplier Coordinator agent.';
+                    if (pdfSub) {
+                        pdfSub.textContent = best
+                            ? `Quote request issued to ${best.name} — ${best.quoteCurrency} ${Number(best.quoteAmount).toLocaleString()}`
+                            : 'Generated by the Supplier Coordinator agent.';
+                    }
                     pdfEl.hidden = false;
-
-                    // Auto-trigger the download once via the existing link.
-                    try { pdfLink.click(); } catch (_) { /* ignore — user can still click manually */ }
                 }
 
                 if (data.humanApprovalRequired) {
-                    approvalReason.textContent = data.humanApprovalReason || '';
-                    approvalEl.hidden = false;
+                    if (approvalReason) approvalReason.textContent = data.humanApprovalReason || '';
+                    if (approvalEl) approvalEl.hidden = false;
                 }
 
                 // Surface input + raw output in the Engage Agent sub-tabs.
@@ -185,12 +201,14 @@
                     window.engageTabsRender(engageScope, data);
                 }
 
-                dispatchEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (dispatchEl) dispatchEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } catch (err) {
-                processStatus.className = 'supplier-status error';
-                processStatus.textContent = 'Failed to process: ' + err.message;
+                if (processStatus) {
+                    processStatus.className = 'supplier-status error';
+                    processStatus.textContent = 'Failed to process: ' + err.message;
+                }
             } finally {
-                processBtn.disabled = !select.value;
+                if (processBtn) processBtn.disabled = !select.value;
             }
         }
 

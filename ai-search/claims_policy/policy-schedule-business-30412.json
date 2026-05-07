@@ -1,0 +1,40 @@
+{
+  "id": "policy-schedule-business-30412",
+  "policyName": "Zava Small Business Pack — Property + Business Interruption Schedule BIZ-30412 (Bluebird Café)",
+  "productLine": "business",
+  "version": "5.0-BIZ-30412",
+  "summary": "Policy schedule and wording extract for BIZ-30412, held by Bluebird Café Pty Ltd (director Tom Bennett). Trading address: 42 Lygon Street, Carlton VIC 3053. Cover period 2026-01-01 to 2026-12-31. Property sum insured AUD 250,000 (contents, fit-out, stock); business-interruption (BI) sum insured AUD 500,000 annual gross profit, indemnity period 12 months. Property excess AUD 1,000 per claim. BI waiting period 24 hours from the property loss event. Insured trade: licensed café (Cat 4 commercial kitchen with Type-1 exhaust hood).",
+  "coverage": "ENTITLEMENT B1.1 Fire and smoke damage — covers physical damage to building, fittings, contents and stock from fire, smoke or firefighting activity. Limit up to property sum insured. ENTITLEMENT B1.5 Removal of debris and clean-up — reasonable cost of debris removal, smoke deodorisation and post-fire clean-up after an insured loss, up to AUD 25,000. ENTITLEMENT B2.1 Business interruption — gross profit — covers loss of gross profit resulting from interruption of the business by an insured property event, after a 24-hour waiting period (clause BC2). Maximum AUD 500,000 over the 12-month indemnity period. ENTITLEMENT B2.3 Wages — payroll cover — continues payroll for retained staff during the interruption period, up to 13 weeks at 100% of insured wages. ENTITLEMENT B2.5 Claim preparation costs — reasonable cost of a forensic accountant or claim preparer engaged to substantiate the BI claim, up to AUD 25,000.",
+  "exclusions": "EXCLUSION BX1 Deliberate or unlawful acts — loss caused by a deliberate act of the insured is not covered. EXCLUSION BX2 Cyber events — damage to data or losses arising solely from cyber events are not covered under this property pack. EXCLUSION BX3 Wear, tear and gradual deterioration — including failure to maintain mechanical and electrical equipment.",
+  "evidenceRequired": [
+    "Sworn statement of loss / damage signed by an authorised director",
+    "Stock and asset register at time of loss",
+    "Fire & Rescue Victoria event number and report (clause B1.1 evidence)",
+    "Annual exhaust-hood and ducting clean-down certificate covering the 12 months preceding the event (clause BC1 fire-safety compliance)",
+    "Photos of fire damage and smoke ingress",
+    "Indicative scope of works from a licensed builder for property reinstatement",
+    "Last 24 months of BAS and tax returns for BI calculation",
+    "Forensic accountant report for any BI claim greater than AUD 100,000 (clause B2.5 / BC4)"
+  ],
+  "owner": "Commercial Product Team",
+  "tags": [
+    "business",
+    "SME",
+    "BIZ-30412",
+    "tom-bennett",
+    "bluebird-cafe",
+    "B1.1",
+    "B1.5",
+    "B2.1",
+    "B2.3",
+    "B2.5",
+    "BX1",
+    "BX2",
+    "BC1",
+    "BC2",
+    "fire",
+    "BI",
+    "policy-schedule"
+  ],
+  "lastUpdated": "2026-01-01T00:00:00Z"
+}
